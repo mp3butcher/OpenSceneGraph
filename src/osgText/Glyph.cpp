@@ -189,7 +189,7 @@ void GlyphTexture::apply(osg::State& state) const
         textureObject = osg::Texture::generateAndAssignTextureObject(
             contextID, GL_TEXTURE_2D, 1, OSGTEXT_GLYPH_INTERNALFORMAT, getTextureWidth(), getTextureHeight(), 1, 0);
 
-        textureObject->bind();
+        textureObject->bind(state);
 
 
         applyTexParameters(GL_TEXTURE_2D,state);
@@ -240,7 +240,7 @@ void GlyphTexture::apply(osg::State& state) const
     else
     {
         // reuse texture by binding.
-        textureObject->bind();
+        textureObject->bind(state);
 
         if (getTextureParameterDirty(contextID))
         {

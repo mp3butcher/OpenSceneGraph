@@ -937,7 +937,7 @@ GLExtensions::GLExtensions(unsigned int in_contextID):
     max2DSize = 0;
     if (validContext) glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max2DSize);
     maxLayerCount = 0;
-    if (validContext) glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS_EXT, &maxLayerCount);
+    if (validContext) glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxLayerCount);
 
     // Blending
     isBlendColorSupported = OSG_GLES2_FEATURES || OSG_GL3_FEATURES ||
