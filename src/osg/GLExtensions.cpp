@@ -643,6 +643,25 @@ GLExtensions::GLExtensions(unsigned int in_contextID):
     setGLExtensionFuncPtr(glUniform2uiv,  "glUniform2uiv", "glUniform2uivEXT", validContext);
     setGLExtensionFuncPtr(glUniform3uiv,  "glUniform3uiv", "glUniform3uivEXT", validContext);
     setGLExtensionFuncPtr(glUniform4uiv,  "glUniform4uiv", "glUniform4uivEXT", validContext);
+
+    // ARB_gpu_shader_int64
+    setGLExtensionFuncPtr(glUniform1i64,  "glUniform1i64",  "glUniform1i64ARB",  validContext);
+    setGLExtensionFuncPtr(glUniform1ui64, "glUniform1ui64", "glUniform1ui64ARB", validContext);
+    setGLExtensionFuncPtr(glUniform2i64,  "glUniform2i64",  "glUniform2i64ARB",  validContext);
+    setGLExtensionFuncPtr(glUniform2ui64, "glUniform2ui64", "glUniform2ui64ARB", validContext);
+    setGLExtensionFuncPtr(glUniform3i64,  "glUniform3i64",  "glUniform3i64ARB",  validContext);
+    setGLExtensionFuncPtr(glUniform3ui64, "glUniform3ui64", "glUniform3ui64ARB", validContext);
+    setGLExtensionFuncPtr(glUniform4i64,  "glUniform4i64",  "glUniform4i64ARB",  validContext);
+    setGLExtensionFuncPtr(glUniform4ui64, "glUniform4ui64", "glUniform4ui64ARB", validContext);
+    setGLExtensionFuncPtr(glUniform1i64v, "glUniform1i64v", "glUniform1i64vARB", validContext);
+    setGLExtensionFuncPtr(glUniform1ui64v,"glUniform1ui64v","glUniform1ui64vARB",validContext);
+    setGLExtensionFuncPtr(glUniform2i64v, "glUniform2i64v", "glUniform2i64vARB", validContext);
+    setGLExtensionFuncPtr(glUniform2ui64v,"glUniform2ui64v","glUniform2ui64vARB",validContext);
+    setGLExtensionFuncPtr(glUniform3i64v, "glUniform3i64v", "glUniform3i64vARB", validContext);
+    setGLExtensionFuncPtr(glUniform3ui64v,"glUniform3ui64v","glUniform3ui64vARB",validContext);
+    setGLExtensionFuncPtr(glUniform4i64v, "glUniform4i64v", "glUniform4i64vARB", validContext);
+    setGLExtensionFuncPtr(glUniform4ui64v,"glUniform4ui64v","glUniform4ui64vARB",validContext);
+
     // ARB_uniform_buffer_object
     setGLExtensionFuncPtr(glGetUniformIndices, "glGetUniformIndices", validContext);
     setGLExtensionFuncPtr(glGetActiveUniformsiv, "glGetActiveUniformsiv", validContext);
