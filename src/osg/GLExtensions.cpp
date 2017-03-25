@@ -856,7 +856,7 @@ GLExtensions::GLExtensions(unsigned int in_contextID):
     isTextureBorderClampSupported = validContext && 
                                     (OSG_GL3_FEATURES ||
                                      ((OSG_GL1_FEATURES || OSG_GL2_FEATURES) && isGLExtensionOrVersionSupported(contextID,"GL_ARB_texture_border_clamp", 1.3f)) ||
-                                      ((OSG_GLES2_FEATURES || OSG_GLES3_FEATURES) && isGLExtensionSupported(contextID,"GL_EXT_texture_border_clamp")));
+                                     ((OSG_GLES2_FEATURES || OSG_GLES3_FEATURES) && isGLExtensionSupported(contextID,"GL_EXT_texture_border_clamp")));
 
     isGenerateMipMapSupported = validContext && (builtInSupport || isGLExtensionOrVersionSupported(contextID,"GL_SGIS_generate_mipmap", 1.4f));
     preferGenerateMipmapSGISForPowerOfTwo = (radeonHardwareDetected||fireGLHardwareDetected) ? false : true;
@@ -1017,7 +1017,7 @@ GLExtensions::GLExtensions(unsigned int in_contextID):
                                   isGLExtensionSupported(contextID,"GL_SGIS_point_parameters"));
 
 
-    isPointSpriteSupported = validContext && (OSG_GL3_FEATURES || isGLExtensionSupported(contextID, "GL_ARB_point_sprite") || isGLExtensionSupported(contextID, "GL_OES_point_sprite") || isGLExtensionSupported(contextID, "GL_NV_point_sprite"));
+    isPointSpriteSupported = validContext && (OSG_GLES2_FEATURES || OSG_GLES3_FEATURES || OSG_GL3_FEATURES || isGLExtensionSupported(contextID, "GL_ARB_point_sprite") || isGLExtensionSupported(contextID, "GL_OES_point_sprite") || isGLExtensionSupported(contextID, "GL_NV_point_sprite"));
     isPointSpriteCoordOriginSupported = validContext && (OSG_GL3_FEATURES || (glVersion >= 2.0f));
 
 
@@ -1178,7 +1178,7 @@ GLExtensions::GLExtensions(unsigned int in_contextID):
 
     if (validContext)
     {
-        if (osg::getGLVersionNumber() >= 2.0 || osg::isGLExtensionSupported(contextID, "GL_ARB_vertex_shader") || OSG_GLES2_FEATURES ||OSG_GLES3_FEATURES || OSG_GL3_FEATURES)
+        if (osg::getGLVersionNumber() >= 2.0 || osg::isGLExtensionSupported(contextID, "GL_ARB_vertex_shader") || OSG_GLES2_FEATURES || OSG_GLES3_FEATURES || OSG_GL3_FEATURES)
         {
             glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,&glMaxTextureUnits);
             #ifdef OSG_GL_FIXED_FUNCTION_AVAILABLE
