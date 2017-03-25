@@ -1293,3 +1293,4 @@ bool GLExtensions::getFragDataLocation( const char* fragDataName, GLuint& locati
     location = loc;
     return true;
 }
+

@@ -865,6 +865,8 @@ void SharedGeometry::compileGLObjects(osg::RenderInfo& renderInfo) const
 
             if (vbo_glBufferObject) vas->bindVertexBufferObject(vbo_glBufferObject);
             if (ebo_glBufferObject) vas->bindElementBufferObject(ebo_glBufferObject);
+
+            state.unbindVertexArrayObject();
         }
 
     }
