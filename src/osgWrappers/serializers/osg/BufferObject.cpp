@@ -21,35 +21,56 @@ public:
         _bufferObject = bufferObject;
     }
 };
-static bool checkBufferObject( const osg::BufferData& node )
+static bool checkBufferObject(const osg::BufferData& node)
 {
-    return true;
+	return true;
 }
 
-static bool readBufferObject( osgDB::InputStream& is, osg::BufferData& node1 )
+static bool readBufferObject(osgDB::InputStream& is, osg::BufferData& node1)
 {
-    unsigned int size = 0;
-    HackedBufferData&node  =static_cast<HackedBufferData&>(node1);
+	HackedBufferData&node = static_cast<HackedBufferData&>(node1);
 
-    osg::ref_ptr<osg::Object> obj = is.readObject();
-    osg::BufferObject* bo = dynamic_cast<osg::BufferObject*>( obj.get() );
-    if ( bo ) node.setBufferObjectWithoutAddingBD2BO(bo);///don't add BufferData to BufferObject (let Serializer do it)
-    return true;
+	osg::ref_ptr<osg::Object> obj = is.readObject();
+	osg::BufferObject* bo = dynamic_cast<osg::BufferObject*>(obj.get());
+	if (bo) node.setBufferObjectWithoutAddingBD2BO(bo);///don't add BufferData to BufferObject (let Serializer do it)
+	return true;
 }
 
-static bool writeBufferObject( osgDB::OutputStream& os, const osg::BufferData& node )
+static bool writeBufferObject(osgDB::OutputStream& os, const osg::BufferData& node)
 {
-    os << node.getBufferObject();
-    return true;
+	if (os.getWriteBufferObjectConfiguration())
+		os << node.getBufferObject();
+	else os << NULL;
+	return true;
+}
+static bool checkBufferIndex(const osg::BufferData& node)
+{
+	return true;
 }
 
+static bool readBufferIndex(osgDB::InputStream& is, osg::BufferData& node1)
+{
+	unsigned int size = 0;
+	is >> size;
+	node1.setBufferIndex(size);
+	return true;
+}
+
+static bool writeBufferIndex(osgDB::OutputStream& os, const osg::BufferData& node)
+{
+	if (os.getWriteBufferObjectConfiguration())
+		os << node.getBufferIndex();
+	else os << 0;
+	return true;
+}
 REGISTER_OBJECT_WRAPPER( BufferData,
                          0,
                          osg::BufferData,
                          "osg::Object osg::BufferData" )
 {
-    ADD_USER_SERIALIZER(BufferObject);
-    ADD_UINT_SERIALIZER(BufferIndex,0);
+	ADD_USER_SERIALIZER(BufferObject);
+	ADD_USER_SERIALIZER(BufferIndex);
+    //ADD_UINT_SERIALIZER(BufferIndex,0);
 }
 }
 
