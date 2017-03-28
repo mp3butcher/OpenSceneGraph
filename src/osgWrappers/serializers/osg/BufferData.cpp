@@ -54,7 +54,7 @@ static bool writeBufferIndex( osgDB::OutputStream& os, const osg::BufferData& bd
 {
     if (os.getWriteBufferObjectConfiguration())
         os << bd.getBufferIndex();
-    else os << 0;
+    else os << 0u;
     return true;
 }
 
