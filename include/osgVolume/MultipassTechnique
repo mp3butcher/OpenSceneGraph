@@ -17,6 +17,7 @@
 #include <osgVolume/VolumeTechnique>
 #include <osg/Texture2D>
 #include <osg/MatrixTransform>
+#include <osg/Texture2D>
 
 namespace osgVolume {
 
