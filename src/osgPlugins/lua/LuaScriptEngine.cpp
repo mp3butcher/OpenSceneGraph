@@ -40,8 +40,8 @@ public:
         _lse->pushParameter(object);
 
         for(osg::Parameters::iterator itr = inputParameters.begin();
-            itr != inputParameters.end();
-            ++itr)
+                itr != inputParameters.end();
+                ++itr)
         {
             _lse->pushParameter(itr->get());
             ++numInputs;
@@ -62,7 +62,10 @@ public:
         return true;
     }
 
-    int getRef() const { return _ref; }
+    int getRef() const
+    {
+        return _ref;
+    }
 
 protected:
 
@@ -373,7 +376,7 @@ static int getMapProperty(lua_State * _lua)
                         return 1;
                     }
 
-                   return 0;
+                    return 0;
                 }
             }
         }
@@ -638,8 +641,16 @@ static int convertStringToStateAttributeValue(const std::string& valueString, os
 {
     osg::StateAttribute::OverrideValue value=defaultValue;
 
-    if (valueString.find("ON")!=std::string::npos) { value = osg::StateAttribute::ON; setOnOff = true; }
-    if (valueString.find("OFF")!=std::string::npos) { value = osg::StateAttribute::OFF; setOnOff = true; }
+    if (valueString.find("ON")!=std::string::npos)
+    {
+        value = osg::StateAttribute::ON;
+        setOnOff = true;
+    }
+    if (valueString.find("OFF")!=std::string::npos)
+    {
+        value = osg::StateAttribute::OFF;
+        setOnOff = true;
+    }
 
     if (valueString.find("OVERRIDE")!=std::string::npos) value = value | osg::StateAttribute::OVERRIDE;
     if (valueString.find("PROTECTED")!=std::string::npos) value = value | osg::StateAttribute::PROTECTED;
@@ -652,12 +663,32 @@ static std::string convertStateAttributeValueToString(unsigned int value, bool w
     std::string valueString;
     if (withOnOffCheck)
     {
-        if ((value&osg::StateAttribute::ON)!=0) { if (!valueString.empty()) valueString.append(", "); valueString.append("ON"); }
-        else { if (!valueString.empty()) valueString.append(", "); valueString.append("OFF"); }
+        if ((value&osg::StateAttribute::ON)!=0)
+        {
+            if (!valueString.empty()) valueString.append(", ");
+            valueString.append("ON");
+        }
+        else
+        {
+            if (!valueString.empty()) valueString.append(", ");
+            valueString.append("OFF");
+        }
     }
-    if ((value&osg::StateAttribute::OVERRIDE)!=0) { if (!valueString.empty()) valueString.append(", "); valueString.append("OVERRIDE"); }
-    if ((value&osg::StateAttribute::PROTECTED)!=0) { if (!valueString.empty()) valueString.append(", "); valueString.append("PROTECTED"); }
-    if ((value&osg::StateAttribute::INHERIT)!=0) { if (!valueString.empty()) valueString.append(", "); valueString.append("INHERIT"); }
+    if ((value&osg::StateAttribute::OVERRIDE)!=0)
+    {
+        if (!valueString.empty()) valueString.append(", ");
+        valueString.append("OVERRIDE");
+    }
+    if ((value&osg::StateAttribute::PROTECTED)!=0)
+    {
+        if (!valueString.empty()) valueString.append(", ");
+        valueString.append("PROTECTED");
+    }
+    if ((value&osg::StateAttribute::INHERIT)!=0)
+    {
+        if (!valueString.empty()) valueString.append(", ");
+        valueString.append("INHERIT");
+    }
     return valueString;
 }
 
@@ -811,14 +842,18 @@ static int callStateSetGet(lua_State* _lua)
                 {
                     const osg::StateSet::AttributeList& al = stateset->getTextureAttributeList()[index];
                     for(osg::StateSet::AttributeList::const_iterator itr = al.begin();
-                        itr != al.end();
-                        ++itr)
+                            itr != al.end();
+                            ++itr)
                     {
                         if (itr->second.first==sa)
                         {
                             lua_newtable(_lua);
-                            lua_pushstring(_lua, "attribute"); lse->pushObject(itr->second.first.get()); lua_settable(_lua, -3);
-                            lua_pushstring(_lua, "value"); lua_pushstring(_lua, convertStateAttributeValueToString(itr->second.second, false).c_str()); lua_settable(_lua, -3);
+                            lua_pushstring(_lua, "attribute");
+                            lse->pushObject(itr->second.first.get());
+                            lua_settable(_lua, -3);
+                            lua_pushstring(_lua, "value");
+                            lua_pushstring(_lua, convertStateAttributeValueToString(itr->second.second, false).c_str());
+                            lua_settable(_lua, -3);
                             return 1;
                         }
                     }
@@ -838,15 +873,19 @@ static int callStateSetGet(lua_State* _lua)
             {
                 const osg::StateSet::AttributeList& al = stateset->getTextureAttributeList()[index];
                 for(osg::StateSet::AttributeList::const_iterator itr = al.begin();
-                    itr != al.end();
-                    ++itr)
+                        itr != al.end();
+                        ++itr)
                 {
                     if (value == itr->second.first->className() ||
-                        value == itr->second.first->getName())
+                            value == itr->second.first->getName())
                     {
                         lua_newtable(_lua);
-                        lua_pushstring(_lua, "attribute"); lse->pushObject(itr->second.first.get()); lua_settable(_lua, -3);
-                        lua_pushstring(_lua, "value"); lua_pushstring(_lua, convertStateAttributeValueToString(itr->second.second, false).c_str()); lua_settable(_lua, -3);
+                        lua_pushstring(_lua, "attribute");
+                        lse->pushObject(itr->second.first.get());
+                        lua_settable(_lua, -3);
+                        lua_pushstring(_lua, "value");
+                        lua_pushstring(_lua, convertStateAttributeValueToString(itr->second.second, false).c_str());
+                        lua_settable(_lua, -3);
                         return 1;
                     }
                 }
@@ -856,8 +895,8 @@ static int callStateSetGet(lua_State* _lua)
                 osg::StateAttribute::GLMode mode = lse->lookUpGLenumValue(value);
                 const osg::StateSet::ModeList& ml = stateset->getTextureModeList()[index];
                 for(osg::StateSet::ModeList::const_iterator itr = ml.begin();
-                    itr != ml.end();
-                    ++itr)
+                        itr != ml.end();
+                        ++itr)
                 {
                     if (mode == itr->first)
                     {
@@ -882,14 +921,18 @@ static int callStateSetGet(lua_State* _lua)
         {
             const osg::StateSet::AttributeList& al = stateset->getTextureAttributeList()[0];
             for(osg::StateSet::AttributeList::const_iterator itr = al.begin();
-                itr != al.end();
-                ++itr)
+                    itr != al.end();
+                    ++itr)
             {
                 if (itr->second.first==sa)
                 {
                     lua_newtable(_lua);
-                    lua_pushstring(_lua, "attribute"); lse->pushObject(itr->second.first.get()); lua_settable(_lua, -3);
-                    lua_pushstring(_lua, "value"); lua_pushstring(_lua, convertStateAttributeValueToString(itr->second.second, false).c_str()); lua_settable(_lua, -3);
+                    lua_pushstring(_lua, "attribute");
+                    lse->pushObject(itr->second.first.get());
+                    lua_settable(_lua, -3);
+                    lua_pushstring(_lua, "value");
+                    lua_pushstring(_lua, convertStateAttributeValueToString(itr->second.second, false).c_str());
+                    lua_settable(_lua, -3);
                     return 1;
                 }
             }
@@ -901,14 +944,18 @@ static int callStateSetGet(lua_State* _lua)
         {
             const osg::StateSet::AttributeList& al = stateset->getAttributeList();
             for(osg::StateSet::AttributeList::const_iterator itr = al.begin();
-                itr != al.end();
-                ++itr)
+                    itr != al.end();
+                    ++itr)
             {
                 if (itr->second.first==sa)
                 {
                     lua_newtable(_lua);
-                    lua_pushstring(_lua, "attribute"); lse->pushObject(itr->second.first.get()); lua_settable(_lua, -3);
-                    lua_pushstring(_lua, "value"); lua_pushstring(_lua, convertStateAttributeValueToString(itr->second.second, false).c_str()); lua_settable(_lua, -3);
+                    lua_pushstring(_lua, "attribute");
+                    lse->pushObject(itr->second.first.get());
+                    lua_settable(_lua, -3);
+                    lua_pushstring(_lua, "value");
+                    lua_pushstring(_lua, convertStateAttributeValueToString(itr->second.second, false).c_str());
+                    lua_settable(_lua, -3);
                     return 1;
                 }
             }
@@ -920,14 +967,18 @@ static int callStateSetGet(lua_State* _lua)
         {
             const osg::StateSet::UniformList& ul = stateset->getUniformList();
             for(osg::StateSet::UniformList::const_iterator itr = ul.begin();
-                itr != ul.end();
-                ++itr)
+                    itr != ul.end();
+                    ++itr)
             {
                 if (itr->second.first==uniform)
                 {
                     lua_newtable(_lua);
-                    lua_pushstring(_lua, "attribute"); lse->pushObject(itr->second.first.get()); lua_settable(_lua, -3);
-                    lua_pushstring(_lua, "value"); lua_pushstring(_lua, convertStateAttributeValueToString(itr->second.second, false).c_str()); lua_settable(_lua, -3);
+                    lua_pushstring(_lua, "attribute");
+                    lse->pushObject(itr->second.first.get());
+                    lua_settable(_lua, -3);
+                    lua_pushstring(_lua, "value");
+                    lua_pushstring(_lua, convertStateAttributeValueToString(itr->second.second, false).c_str());
+                    lua_settable(_lua, -3);
                     return 1;
                 }
             }
@@ -941,30 +992,38 @@ static int callStateSetGet(lua_State* _lua)
         std::string value = lua_tostring(_lua, 2);
         const osg::StateSet::AttributeList& al = stateset->getAttributeList();
         for(osg::StateSet::AttributeList::const_iterator itr = al.begin();
-            itr != al.end();
-            ++itr)
+                itr != al.end();
+                ++itr)
         {
             if (value == itr->second.first->className() ||
-                value == itr->second.first->getName())
+                    value == itr->second.first->getName())
             {
                 lua_newtable(_lua);
-                lua_pushstring(_lua, "attribute"); lse->pushObject(itr->second.first.get()); lua_settable(_lua, -3);
-                lua_pushstring(_lua, "value"); lua_pushstring(_lua, convertStateAttributeValueToString(itr->second.second, false).c_str()); lua_settable(_lua, -3);
+                lua_pushstring(_lua, "attribute");
+                lse->pushObject(itr->second.first.get());
+                lua_settable(_lua, -3);
+                lua_pushstring(_lua, "value");
+                lua_pushstring(_lua, convertStateAttributeValueToString(itr->second.second, false).c_str());
+                lua_settable(_lua, -3);
                 return 1;
             }
         }
 
         const osg::StateSet::UniformList& ul = stateset->getUniformList();
         for(osg::StateSet::UniformList::const_iterator itr = ul.begin();
-            itr != ul.end();
-            ++itr)
+                itr != ul.end();
+                ++itr)
         {
             if (value == itr->second.first->className() ||
-                value == itr->second.first->getName())
+                    value == itr->second.first->getName())
             {
                 lua_newtable(_lua);
-                lua_pushstring(_lua, "attribute"); lse->pushObject(itr->second.first.get()); lua_settable(_lua, -3);
-                lua_pushstring(_lua, "value"); lua_pushstring(_lua, convertStateAttributeValueToString(itr->second.second, false).c_str()); lua_settable(_lua, -3);
+                lua_pushstring(_lua, "attribute");
+                lse->pushObject(itr->second.first.get());
+                lua_settable(_lua, -3);
+                lua_pushstring(_lua, "value");
+                lua_pushstring(_lua, convertStateAttributeValueToString(itr->second.second, false).c_str());
+                lua_settable(_lua, -3);
                 return 1;
             }
         }
@@ -972,8 +1031,8 @@ static int callStateSetGet(lua_State* _lua)
         osg::StateAttribute::GLMode mode = lse->lookUpGLenumValue(value);
         const osg::StateSet::ModeList& ml = stateset->getModeList();
         for(osg::StateSet::ModeList::const_iterator itr = ml.begin();
-            itr != ml.end();
-            ++itr)
+                itr != ml.end();
+                ++itr)
         {
             if (mode == itr->first)
             {
@@ -1006,8 +1065,8 @@ static int callStateSetRemove(lua_State* _lua)
     osg::StateSet* stateset  = lse->getObjectFromTable<osg::StateSet>(1);
     if (!stateset)
     {
-            OSG_NOTICE<<"Warning: StateSet:remove() can only be called on a StateSet"<<std::endl;
-            return 0;
+        OSG_NOTICE<<"Warning: StateSet:remove() can only be called on a StateSet"<<std::endl;
+        return 0;
     }
 
     if (lua_type(_lua,2)==LUA_TNUMBER)
@@ -1033,11 +1092,11 @@ static int callStateSetRemove(lua_State* _lua)
             {
                 const osg::StateSet::AttributeList& al = stateset->getTextureAttributeList()[index];
                 for(osg::StateSet::AttributeList::const_iterator itr = al.begin();
-                    itr != al.end();
-                    ++itr)
+                        itr != al.end();
+                        ++itr)
                 {
                     if (value == itr->second.first->className() ||
-                        value == itr->second.first->getName())
+                            value == itr->second.first->getName())
                     {
                         stateset->removeTextureAttribute(index, itr->second.first.get());
                         return 0;
@@ -1050,8 +1109,8 @@ static int callStateSetRemove(lua_State* _lua)
                 osg::StateAttribute::GLMode mode = lse->lookUpGLenumValue(value);
                 const osg::StateSet::ModeList& ml = stateset->getTextureModeList()[static_cast<unsigned int>(index)];
                 for(osg::StateSet::ModeList::const_iterator itr = ml.begin();
-                    itr != ml.end();
-                    ++itr)
+                        itr != ml.end();
+                        ++itr)
                 {
                     if (mode == itr->first)
                     {
@@ -1092,11 +1151,11 @@ static int callStateSetRemove(lua_State* _lua)
         std::string value = lua_tostring(_lua, 2);
         const osg::StateSet::AttributeList& al = stateset->getAttributeList();
         for(osg::StateSet::AttributeList::const_iterator itr = al.begin();
-            itr != al.end();
-            ++itr)
+                itr != al.end();
+                ++itr)
         {
             if (value == itr->second.first->className() ||
-                value == itr->second.first->getName())
+                    value == itr->second.first->getName())
             {
                 stateset->removeAttribute(itr->second.first.get());
                 return 0;
@@ -1105,11 +1164,11 @@ static int callStateSetRemove(lua_State* _lua)
 
         const osg::StateSet::UniformList& ul = stateset->getUniformList();
         for(osg::StateSet::UniformList::const_iterator itr = ul.begin();
-            itr != ul.end();
-            ++itr)
+                itr != ul.end();
+                ++itr)
         {
             if (value == itr->second.first->className() ||
-                value == itr->second.first->getName())
+                    value == itr->second.first->getName())
             {
                 stateset->removeUniform(itr->second.first.get());
                 return 0;
@@ -1119,8 +1178,8 @@ static int callStateSetRemove(lua_State* _lua)
         osg::StateAttribute::GLMode mode = lse->lookUpGLenumValue(value);
         const osg::StateSet::ModeList& ml = stateset->getModeList();
         for(osg::StateSet::ModeList::const_iterator itr = ml.begin();
-            itr != ml.end();
-            ++itr)
+                itr != ml.end();
+                ++itr)
         {
             if (mode == itr->first)
             {
@@ -1383,65 +1442,153 @@ static int callImageGet(lua_State* _lua)
     osg::Vec4d colour;
     switch(image->getDataType())
     {
-        case(GL_BYTE): for(unsigned int i=0; i<numComponents; ++i) { colour[i] = static_cast<double>(*(reinterpret_cast<const char*>(ptr)+i)); } break;
-        case(GL_UNSIGNED_BYTE): for(unsigned int i=0; i<numComponents; ++i) { colour[i] = static_cast<double>(*(ptr+i)); } break;
-        case(GL_SHORT): for(unsigned int i=0; i<numComponents; ++i) { colour[i] = static_cast<double>(*(reinterpret_cast<const short*>(ptr)+i)); } break;
-        case(GL_UNSIGNED_SHORT): for(unsigned int i=0; i<numComponents; ++i) { colour[i] = static_cast<double>(*(reinterpret_cast<const unsigned short*>(ptr)+i)); } break;
-        case(GL_INT): for(unsigned int i=0; i<numComponents; ++i) { colour[i] = static_cast<double>(*(reinterpret_cast<const int*>(ptr)+i)); } break;
-        case(GL_UNSIGNED_INT): for(unsigned int i=0; i<numComponents; ++i) { colour[i] = static_cast<double>(*(reinterpret_cast<const unsigned int*>(ptr)+i)); } break;
-        case(GL_FLOAT): for(unsigned int i=0; i<numComponents; ++i) { colour[i] = static_cast<double>(*(reinterpret_cast<const float*>(ptr)+i)); } break;
-        case(GL_DOUBLE): for(unsigned int i=0; i<numComponents; ++i) { colour[i] = static_cast<double>(*(reinterpret_cast<const double*>(ptr)+i)); } break;
-        default:
-            OSG_NOTICE<<"Warning: Unsupported DataType in Image::get()"<<std::endl;
-            return 0;
+    case(GL_BYTE):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            colour[i] = static_cast<double>(*(reinterpret_cast<const char*>(ptr)+i));
+        }
+        break;
+    case(GL_UNSIGNED_BYTE):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            colour[i] = static_cast<double>(*(ptr+i));
+        }
+        break;
+    case(GL_SHORT):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            colour[i] = static_cast<double>(*(reinterpret_cast<const short*>(ptr)+i));
+        }
+        break;
+    case(GL_UNSIGNED_SHORT):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            colour[i] = static_cast<double>(*(reinterpret_cast<const unsigned short*>(ptr)+i));
+        }
+        break;
+    case(GL_INT):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            colour[i] = static_cast<double>(*(reinterpret_cast<const int*>(ptr)+i));
+        }
+        break;
+    case(GL_UNSIGNED_INT):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            colour[i] = static_cast<double>(*(reinterpret_cast<const unsigned int*>(ptr)+i));
+        }
+        break;
+    case(GL_FLOAT):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            colour[i] = static_cast<double>(*(reinterpret_cast<const float*>(ptr)+i));
+        }
+        break;
+    case(GL_DOUBLE):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            colour[i] = static_cast<double>(*(reinterpret_cast<const double*>(ptr)+i));
+        }
+        break;
+    default:
+        OSG_NOTICE<<"Warning: Unsupported DataType in Image::get()"<<std::endl;
+        return 0;
     }
 
     switch(image->getPixelFormat())
     {
-        case(GL_INTENSITY):     lua_pushnumber(_lua, colour[0]); return 1;
-        case(GL_LUMINANCE):     lua_pushnumber(_lua, colour[0]); return 1;
-        case(GL_ALPHA):         lua_pushnumber(_lua, colour[0]); return 1;
-        case(GL_LUMINANCE_ALPHA):
-        {
-            lua_newtable(_lua); luaL_getmetatable(_lua, "LuaScriptEngine.Table"); lua_setmetatable(_lua, -2);
-            lua_pushstring(_lua, "luminance"); lua_pushnumber(_lua, colour[0]); lua_settable(_lua, -3);
-            lua_pushstring(_lua, "alpha"); lua_pushnumber(_lua, colour[1]); lua_settable(_lua, -3);
-            return 1;
-        }
-        case(GL_RGB):
-        {
-            lua_newtable(_lua); luaL_getmetatable(_lua, "LuaScriptEngine.Table"); lua_setmetatable(_lua, -2);
-            lua_pushstring(_lua, "red"); lua_pushnumber(_lua, colour[0]); lua_settable(_lua, -3);
-            lua_pushstring(_lua, "green"); lua_pushnumber(_lua, colour[1]); lua_settable(_lua, -3);
-            lua_pushstring(_lua, "blue"); lua_pushnumber(_lua, colour[2]); lua_settable(_lua, -3);
-            return 1;
-        }
-        case(GL_RGBA):
-        {
-            lua_newtable(_lua); luaL_getmetatable(_lua, "LuaScriptEngine.Table"); lua_setmetatable(_lua, -2);
-            lua_pushstring(_lua, "red"); lua_pushnumber(_lua, colour[0]); lua_settable(_lua, -3);
-            lua_pushstring(_lua, "green"); lua_pushnumber(_lua, colour[1]); lua_settable(_lua, -3);
-            lua_pushstring(_lua, "blue"); lua_pushnumber(_lua, colour[2]); lua_settable(_lua, -3);
-            lua_pushstring(_lua, "alpha"); lua_pushnumber(_lua, colour[3]); lua_settable(_lua, -3);
-            return 1;
-        }
-        case(GL_BGR):
-        {
-            lua_newtable(_lua); luaL_getmetatable(_lua, "LuaScriptEngine.Table"); lua_setmetatable(_lua, -2);
-            lua_pushstring(_lua, "red"); lua_pushnumber(_lua, colour[2]); lua_settable(_lua, -3);
-            lua_pushstring(_lua, "green"); lua_pushnumber(_lua, colour[1]); lua_settable(_lua, -3);
-            lua_pushstring(_lua, "blue"); lua_pushnumber(_lua, colour[0]); lua_settable(_lua, -3);
-            return 1;
-        }
-        case(GL_BGRA):
-        {
-            lua_newtable(_lua); luaL_getmetatable(_lua, "LuaScriptEngine.Table"); lua_setmetatable(_lua, -2);
-            lua_pushstring(_lua, "red"); lua_pushnumber(_lua, colour[2]); lua_settable(_lua, -3);
-            lua_pushstring(_lua, "green"); lua_pushnumber(_lua, colour[1]); lua_settable(_lua, -3);
-            lua_pushstring(_lua, "blue"); lua_pushnumber(_lua, colour[0]); lua_settable(_lua, -3);
-            lua_pushstring(_lua, "alpha"); lua_pushnumber(_lua, colour[3]); lua_settable(_lua, -3);
-            return 1;
-        }
+    case(GL_INTENSITY):
+        lua_pushnumber(_lua, colour[0]);
+        return 1;
+    case(GL_LUMINANCE):
+        lua_pushnumber(_lua, colour[0]);
+        return 1;
+    case(GL_ALPHA):
+        lua_pushnumber(_lua, colour[0]);
+        return 1;
+    case(GL_LUMINANCE_ALPHA):
+    {
+        lua_newtable(_lua);
+        luaL_getmetatable(_lua, "LuaScriptEngine.Table");
+        lua_setmetatable(_lua, -2);
+        lua_pushstring(_lua, "luminance");
+        lua_pushnumber(_lua, colour[0]);
+        lua_settable(_lua, -3);
+        lua_pushstring(_lua, "alpha");
+        lua_pushnumber(_lua, colour[1]);
+        lua_settable(_lua, -3);
+        return 1;
+    }
+    case(GL_RGB):
+    {
+        lua_newtable(_lua);
+        luaL_getmetatable(_lua, "LuaScriptEngine.Table");
+        lua_setmetatable(_lua, -2);
+        lua_pushstring(_lua, "red");
+        lua_pushnumber(_lua, colour[0]);
+        lua_settable(_lua, -3);
+        lua_pushstring(_lua, "green");
+        lua_pushnumber(_lua, colour[1]);
+        lua_settable(_lua, -3);
+        lua_pushstring(_lua, "blue");
+        lua_pushnumber(_lua, colour[2]);
+        lua_settable(_lua, -3);
+        return 1;
+    }
+    case(GL_RGBA):
+    {
+        lua_newtable(_lua);
+        luaL_getmetatable(_lua, "LuaScriptEngine.Table");
+        lua_setmetatable(_lua, -2);
+        lua_pushstring(_lua, "red");
+        lua_pushnumber(_lua, colour[0]);
+        lua_settable(_lua, -3);
+        lua_pushstring(_lua, "green");
+        lua_pushnumber(_lua, colour[1]);
+        lua_settable(_lua, -3);
+        lua_pushstring(_lua, "blue");
+        lua_pushnumber(_lua, colour[2]);
+        lua_settable(_lua, -3);
+        lua_pushstring(_lua, "alpha");
+        lua_pushnumber(_lua, colour[3]);
+        lua_settable(_lua, -3);
+        return 1;
+    }
+    case(GL_BGR):
+    {
+        lua_newtable(_lua);
+        luaL_getmetatable(_lua, "LuaScriptEngine.Table");
+        lua_setmetatable(_lua, -2);
+        lua_pushstring(_lua, "red");
+        lua_pushnumber(_lua, colour[2]);
+        lua_settable(_lua, -3);
+        lua_pushstring(_lua, "green");
+        lua_pushnumber(_lua, colour[1]);
+        lua_settable(_lua, -3);
+        lua_pushstring(_lua, "blue");
+        lua_pushnumber(_lua, colour[0]);
+        lua_settable(_lua, -3);
+        return 1;
+    }
+    case(GL_BGRA):
+    {
+        lua_newtable(_lua);
+        luaL_getmetatable(_lua, "LuaScriptEngine.Table");
+        lua_setmetatable(_lua, -2);
+        lua_pushstring(_lua, "red");
+        lua_pushnumber(_lua, colour[2]);
+        lua_settable(_lua, -3);
+        lua_pushstring(_lua, "green");
+        lua_pushnumber(_lua, colour[1]);
+        lua_settable(_lua, -3);
+        lua_pushstring(_lua, "blue");
+        lua_pushnumber(_lua, colour[0]);
+        lua_settable(_lua, -3);
+        lua_pushstring(_lua, "alpha");
+        lua_pushnumber(_lua, colour[3]);
+        lua_settable(_lua, -3);
+        return 1;
+    }
     }
 
     OSG_NOTICE<<"Warning: Image:get() unsupported PixelFormat"<<std::endl;
@@ -1461,17 +1608,57 @@ static void setImageColour(osg::Image* image, int image_i, int image_j, int imag
 
     switch(image->getDataType())
     {
-        case(GL_BYTE): for(unsigned int i=0; i<numComponents; ++i) { *(reinterpret_cast<char*>(ptr)+i) = static_cast<char>(colourToWrite[i]); } break;
-        case(GL_UNSIGNED_BYTE): for(unsigned int i=0; i<numComponents; ++i) { *(reinterpret_cast<unsigned char*>(ptr)+i) = static_cast<unsigned char>(colourToWrite[i]); } break;
-        case(GL_SHORT): for(unsigned int i=0; i<numComponents; ++i) { *(reinterpret_cast<short*>(ptr)+i) = static_cast<short>(colourToWrite[i]); } break;
-        case(GL_UNSIGNED_SHORT): for(unsigned int i=0; i<numComponents; ++i) { *(reinterpret_cast<unsigned short*>(ptr)+i) = static_cast<unsigned short>(colourToWrite[i]); } break;
-        case(GL_INT): for(unsigned int i=0; i<numComponents; ++i) {  *(reinterpret_cast<int*>(ptr)+i) = static_cast<int>(colourToWrite[i]); } break;
-        case(GL_UNSIGNED_INT): for(unsigned int i=0; i<numComponents; ++i) { *(reinterpret_cast<unsigned int*>(ptr)+i) = static_cast<unsigned int>(colourToWrite[i]); } break;
-        case(GL_FLOAT): for(unsigned int i=0; i<numComponents; ++i) { *(reinterpret_cast<float*>(ptr)+i) = static_cast<float>(colourToWrite[i]); } break;
-        case(GL_DOUBLE): for(unsigned int i=0; i<numComponents; ++i) { *(reinterpret_cast<double*>(ptr)+i) = static_cast<double>(colourToWrite[i]); } break;
-        default:
-            OSG_NOTICE<<"Warning: Unsupported DataType in Image::set()"<<std::endl;
-            return;
+    case(GL_BYTE):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            *(reinterpret_cast<char*>(ptr)+i) = static_cast<char>(colourToWrite[i]);
+        }
+        break;
+    case(GL_UNSIGNED_BYTE):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            *(reinterpret_cast<unsigned char*>(ptr)+i) = static_cast<unsigned char>(colourToWrite[i]);
+        }
+        break;
+    case(GL_SHORT):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            *(reinterpret_cast<short*>(ptr)+i) = static_cast<short>(colourToWrite[i]);
+        }
+        break;
+    case(GL_UNSIGNED_SHORT):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            *(reinterpret_cast<unsigned short*>(ptr)+i) = static_cast<unsigned short>(colourToWrite[i]);
+        }
+        break;
+    case(GL_INT):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            *(reinterpret_cast<int*>(ptr)+i) = static_cast<int>(colourToWrite[i]);
+        }
+        break;
+    case(GL_UNSIGNED_INT):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            *(reinterpret_cast<unsigned int*>(ptr)+i) = static_cast<unsigned int>(colourToWrite[i]);
+        }
+        break;
+    case(GL_FLOAT):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            *(reinterpret_cast<float*>(ptr)+i) = static_cast<float>(colourToWrite[i]);
+        }
+        break;
+    case(GL_DOUBLE):
+        for(unsigned int i=0; i<numComponents; ++i)
+        {
+            *(reinterpret_cast<double*>(ptr)+i) = static_cast<double>(colourToWrite[i]);
+        }
+        break;
+    default:
+        OSG_NOTICE<<"Warning: Unsupported DataType in Image::set()"<<std::endl;
+        return;
     }
 }
 
@@ -1492,9 +1679,21 @@ static int callImageSet(lua_State* _lua)
     int image_i = 0;
     int image_j = 0;
     int image_k = 0;
-    if (n>=3 && lua_isnumber(_lua, 2)) { image_i = static_cast<int>(lua_tonumber(_lua, 2)); positionSet = true; }
-    if (n>=4 && lua_isnumber(_lua, 3)) { image_j = static_cast<int>(lua_tonumber(_lua, 3)); positionSet = true; }
-    if (n>=5 && lua_isnumber(_lua, 4)) { image_k = static_cast<int>(lua_tonumber(_lua, 4)); positionSet = true; }
+    if (n>=3 && lua_isnumber(_lua, 2))
+    {
+        image_i = static_cast<int>(lua_tonumber(_lua, 2));
+        positionSet = true;
+    }
+    if (n>=4 && lua_isnumber(_lua, 3))
+    {
+        image_j = static_cast<int>(lua_tonumber(_lua, 3));
+        positionSet = true;
+    }
+    if (n>=5 && lua_isnumber(_lua, 4))
+    {
+        image_k = static_cast<int>(lua_tonumber(_lua, 4));
+        positionSet = true;
+    }
 
     osg::Vec4d colour(1.0,1.0,1.0,1.0);
     if (lua_isnumber(_lua, n))
@@ -1504,56 +1703,114 @@ static int callImageSet(lua_State* _lua)
     else if (lua_istable(_lua, n))
     {
         lua_getfield(_lua, n, "intensity");
-        if (lua_isnumber(_lua, -1)) { double i = lua_tonumber(_lua, -1); colour[0] = i; colour[1] = i; colour[2] = i; colour[3] = i; }
+        if (lua_isnumber(_lua, -1))
+        {
+            double i = lua_tonumber(_lua, -1);
+            colour[0] = i;
+            colour[1] = i;
+            colour[2] = i;
+            colour[3] = i;
+        }
         lua_pop(_lua, 1);
 
         lua_getfield(_lua, n, "i");
-        if (lua_isnumber(_lua, -1)) { double i = lua_tonumber(_lua, -1); colour[0] = i; colour[1] = i; colour[2] = i; colour[3] = i; }
+        if (lua_isnumber(_lua, -1))
+        {
+            double i = lua_tonumber(_lua, -1);
+            colour[0] = i;
+            colour[1] = i;
+            colour[2] = i;
+            colour[3] = i;
+        }
         lua_pop(_lua, 1);
 
 
         lua_getfield(_lua, n, "luminance");
-        if (lua_isnumber(_lua, -1)) { double l = lua_tonumber(_lua, -1); colour[0] = l; colour[1] = l; colour[2] = l; }
+        if (lua_isnumber(_lua, -1))
+        {
+            double l = lua_tonumber(_lua, -1);
+            colour[0] = l;
+            colour[1] = l;
+            colour[2] = l;
+        }
         lua_pop(_lua, 1);
 
         lua_getfield(_lua, n, "l");
-        if (lua_isnumber(_lua, -1)) { double l = lua_tonumber(_lua, -1); colour[0] = l; colour[1] = l; colour[2] = l; }
+        if (lua_isnumber(_lua, -1))
+        {
+            double l = lua_tonumber(_lua, -1);
+            colour[0] = l;
+            colour[1] = l;
+            colour[2] = l;
+        }
         lua_pop(_lua, 1);
 
 
         lua_getfield(_lua, n, "alpha");
-        if (lua_isnumber(_lua, -1)) { double a = lua_tonumber(_lua, -1); colour[3] = a; }
+        if (lua_isnumber(_lua, -1))
+        {
+            double a = lua_tonumber(_lua, -1);
+            colour[3] = a;
+        }
         lua_pop(_lua, 1);
 
         lua_getfield(_lua, n, "a");
-        if (lua_isnumber(_lua, -1)) { double a = lua_tonumber(_lua, -1); colour[3] = a; }
+        if (lua_isnumber(_lua, -1))
+        {
+            double a = lua_tonumber(_lua, -1);
+            colour[3] = a;
+        }
         lua_pop(_lua, 1);
 
 
         lua_getfield(_lua, n, "red");
-        if (lua_isnumber(_lua, -1)) { double r = lua_tonumber(_lua, -1); colour[0] = r; }
+        if (lua_isnumber(_lua, -1))
+        {
+            double r = lua_tonumber(_lua, -1);
+            colour[0] = r;
+        }
         lua_pop(_lua, 1);
 
         lua_getfield(_lua, n, "r");
-        if (lua_isnumber(_lua, -1)) { double r = lua_tonumber(_lua, -1); colour[0] = r; }
+        if (lua_isnumber(_lua, -1))
+        {
+            double r = lua_tonumber(_lua, -1);
+            colour[0] = r;
+        }
         lua_pop(_lua, 1);
 
 
         lua_getfield(_lua, n, "green");
-        if (lua_isnumber(_lua, -1)) { double g = lua_tonumber(_lua, -1); colour[1] = g; }
+        if (lua_isnumber(_lua, -1))
+        {
+            double g = lua_tonumber(_lua, -1);
+            colour[1] = g;
+        }
         lua_pop(_lua, 1);
 
         lua_getfield(_lua, n, "g");
-        if (lua_isnumber(_lua, -1)) { double g = lua_tonumber(_lua, -1); colour[1] = g; }
+        if (lua_isnumber(_lua, -1))
+        {
+            double g = lua_tonumber(_lua, -1);
+            colour[1] = g;
+        }
         lua_pop(_lua, 1);
 
 
         lua_getfield(_lua, n, "blue");
-        if (lua_isnumber(_lua, -1)) { double b = lua_tonumber(_lua, -1); colour[2] = b; }
+        if (lua_isnumber(_lua, -1))
+        {
+            double b = lua_tonumber(_lua, -1);
+            colour[2] = b;
+        }
         lua_pop(_lua, 1);
 
         lua_getfield(_lua, n, "b");
-        if (lua_isnumber(_lua, -1)) { double b = lua_tonumber(_lua, -1); colour[2] = b; }
+        if (lua_isnumber(_lua, -1))
+        {
+            double b = lua_tonumber(_lua, -1);
+            colour[2] = b;
+        }
         lua_pop(_lua, 1);
 
     }
@@ -1562,30 +1819,36 @@ static int callImageSet(lua_State* _lua)
     osg::Vec4d colourToWrite = colour;
     switch(image->getPixelFormat())
     {
-        case(GL_INTENSITY):     colourToWrite[0] = colour[0]; break;
-        case(GL_LUMINANCE):     colourToWrite[0] = colour[0]; break;
-        case(GL_ALPHA):         colourToWrite[0] = colour[3]; break;
-        case(GL_LUMINANCE_ALPHA):
-        {
-            colourToWrite[0] = colour[0];
-            colourToWrite[1] = colour[3];
-            break;
-        }
-        case(GL_RGB):
-        case(GL_RGBA):
-        {
-            // nothing to do as data is already in the correct form
-            break;
-        }
-        case(GL_BGR):
-        case(GL_BGRA):
-        {
-            colourToWrite[0] = colour[2];
-            colourToWrite[1] = colour[1];
-            colourToWrite[2] = colour[0];
-            colourToWrite[3] = colour[3];
-            return 1;
-        }
+    case(GL_INTENSITY):
+        colourToWrite[0] = colour[0];
+        break;
+    case(GL_LUMINANCE):
+        colourToWrite[0] = colour[0];
+        break;
+    case(GL_ALPHA):
+        colourToWrite[0] = colour[3];
+        break;
+    case(GL_LUMINANCE_ALPHA):
+    {
+        colourToWrite[0] = colour[0];
+        colourToWrite[1] = colour[3];
+        break;
+    }
+    case(GL_RGB):
+    case(GL_RGBA):
+    {
+        // nothing to do as data is already in the correct form
+        break;
+    }
+    case(GL_BGR):
+    case(GL_BGRA):
+    {
+        colourToWrite[0] = colour[2];
+        colourToWrite[1] = colour[1];
+        colourToWrite[2] = colour[0];
+        colourToWrite[3] = colour[3];
+        return 1;
+    }
     }
 
     if (positionSet)
@@ -1692,8 +1955,8 @@ static int callClassMethod(lua_State* _lua)
         if (lse->getClassInterface().run(object, compoundClassName, methodName, inputParameters, outputParameters))
         {
             for(osg::Parameters::iterator itr = outputParameters.begin();
-                itr != outputParameters.end();
-                ++itr)
+                    itr != outputParameters.end();
+                    ++itr)
             {
                 // OSG_NOTICE<<" pushing return "<<(*itr)->className()<<std::endl;
                 lse->pushParameter(itr->get());
@@ -2063,8 +2326,8 @@ bool LuaScriptEngine::run(osg::Script* script, const std::string& entryPoint, os
     }
 
     for(osg::Parameters::const_iterator itr = inputParameters.begin();
-        itr != inputParameters.end();
-        ++itr)
+            itr != inputParameters.end();
+            ++itr)
     {
         pushParameter(itr->get());
     }
@@ -2098,59 +2361,176 @@ public:
     const LuaScriptEngine* _lse;
     lua_State* _lua;
 
-    PushStackValueVisitor(const LuaScriptEngine* lse) : _lse(lse) { _lua = const_cast<LuaScriptEngine*>(lse)->getLuaState(); }
+    PushStackValueVisitor(const LuaScriptEngine* lse) : _lse(lse)
+    {
+        _lua = const_cast<LuaScriptEngine*>(lse)->getLuaState();
+    }
 
-    virtual void apply(bool value)                      { lua_pushboolean(_lua, value ? 1 : 0); }
-    virtual void apply(char value)                      { lua_pushnumber(_lua, value); }
-    virtual void apply(unsigned char value)             { lua_pushnumber(_lua, value); }
-    virtual void apply(short value)                     { lua_pushnumber(_lua, value); }
-    virtual void apply(unsigned short value)            { lua_pushnumber(_lua, value); }
-    virtual void apply(int value)                       { lua_pushnumber(_lua, value); }
-    virtual void apply(unsigned int value)              { lua_pushnumber(_lua, value); }
-    virtual void apply(float value)                     { lua_pushnumber(_lua, value); }
-    virtual void apply(double value)                    { lua_pushnumber(_lua, value); }
-    virtual void apply(const std::string& value)        { lua_pushlstring(_lua, &value[0], value.size()); }
+    virtual void apply(bool value)
+    {
+        lua_pushboolean(_lua, value ? 1 : 0);
+    }
+    virtual void apply(char value)
+    {
+        lua_pushnumber(_lua, value);
+    }
+    virtual void apply(unsigned char value)
+    {
+        lua_pushnumber(_lua, value);
+    }
+    virtual void apply(short value)
+    {
+        lua_pushnumber(_lua, value);
+    }
+    virtual void apply(unsigned short value)
+    {
+        lua_pushnumber(_lua, value);
+    }
+    virtual void apply(int value)
+    {
+        lua_pushnumber(_lua, value);
+    }
+    virtual void apply(unsigned int value)
+    {
+        lua_pushnumber(_lua, value);
+    }
+    virtual void apply(float value)
+    {
+        lua_pushnumber(_lua, value);
+    }
+    virtual void apply(double value)
+    {
+        lua_pushnumber(_lua, value);
+    }
+    virtual void apply(const std::string& value)
+    {
+        lua_pushlstring(_lua, &value[0], value.size());
+    }
 
-    virtual void apply(const osg::Vec2b& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec3b& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec4b& value)         { _lse->pushValue(value); }
+    virtual void apply(const osg::Vec2b& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec3b& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec4b& value)
+    {
+        _lse->pushValue(value);
+    }
 
-    virtual void apply(const osg::Vec2ub& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec3ub& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec4ub& value)         { _lse->pushValue(value); }
+    virtual void apply(const osg::Vec2ub& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec3ub& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec4ub& value)
+    {
+        _lse->pushValue(value);
+    }
 
-    virtual void apply(const osg::Vec2s& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec3s& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec4s& value)         { _lse->pushValue(value); }
+    virtual void apply(const osg::Vec2s& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec3s& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec4s& value)
+    {
+        _lse->pushValue(value);
+    }
 
-    virtual void apply(const osg::Vec2us& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec3us& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec4us& value)         { _lse->pushValue(value); }
+    virtual void apply(const osg::Vec2us& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec3us& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec4us& value)
+    {
+        _lse->pushValue(value);
+    }
 
-    virtual void apply(const osg::Vec2i& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec3i& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec4i& value)         { _lse->pushValue(value); }
+    virtual void apply(const osg::Vec2i& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec3i& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec4i& value)
+    {
+        _lse->pushValue(value);
+    }
 
-    virtual void apply(const osg::Vec2ui& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec3ui& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec4ui& value)         { _lse->pushValue(value); }
+    virtual void apply(const osg::Vec2ui& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec3ui& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec4ui& value)
+    {
+        _lse->pushValue(value);
+    }
 
-    virtual void apply(const osg::Vec2f& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec3f& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec4f& value)         { _lse->pushValue(value); }
+    virtual void apply(const osg::Vec2f& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec3f& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec4f& value)
+    {
+        _lse->pushValue(value);
+    }
 
-    virtual void apply(const osg::Vec2d& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec3d& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Vec4d& value)         { _lse->pushValue(value); }
+    virtual void apply(const osg::Vec2d& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec3d& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Vec4d& value)
+    {
+        _lse->pushValue(value);
+    }
 
-    virtual void apply(const osg::Quat& value)          { _lse->pushValue(value); }
-    virtual void apply(const osg::Plane& value)         { _lse->pushValue(value); }
-    virtual void apply(const osg::Matrixf& value)       { _lse->pushValue(value); }
-    virtual void apply(const osg::Matrixd& value)       { _lse->pushValue(value); }
+    virtual void apply(const osg::Quat& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Plane& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Matrixf& value)
+    {
+        _lse->pushValue(value);
+    }
+    virtual void apply(const osg::Matrixd& value)
+    {
+        _lse->pushValue(value);
+    }
 };
 
 #if LUA_VERSION_NUM<=501
-    #define lua_rawlen lua_strlen
+#define lua_rawlen lua_strlen
 #endif
 
 class GetStackValueVisitor : public osg::ValueObject::SetValueVisitor
@@ -2163,33 +2543,209 @@ public:
     int _numberToPop;
     bool _success;
 
-    GetStackValueVisitor(const LuaScriptEngine* lse, int index) : _lse(lse), _lua(0), _index(index), _numberToPop(0), _success(false) { _lua = const_cast<LuaScriptEngine*>(lse  )->getLuaState(); }
+    GetStackValueVisitor(const LuaScriptEngine* lse, int index) : _lse(lse), _lua(0), _index(index), _numberToPop(0), _success(false)
+    {
+        _lua = const_cast<LuaScriptEngine*>(lse  )->getLuaState();
+    }
 
 
-    virtual void apply(bool& value)             { if (lua_isboolean(_lua, _index)) { value = (lua_toboolean(_lua, _index)!=0); _success=true; _numberToPop = 1; } }
-    virtual void apply(char& value)             { if (lua_isnumber(_lua, _index)) { value = lua_tonumber(_lua, _index)!=0; _success=true; _numberToPop = 1; } }
-    virtual void apply(unsigned char& value)    { if (lua_isnumber(_lua, _index)) { value = lua_tonumber(_lua, _index)!=0; _success=true; _numberToPop = 1; } }
-    virtual void apply(short& value)            { if (lua_isnumber(_lua, _index)) { value = lua_tonumber(_lua, _index)!=0; _success=true; _numberToPop = 1; } }
-    virtual void apply(unsigned short& value)   { if (lua_isnumber(_lua, _index)) { value = lua_tonumber(_lua, _index)!=0; _success=true; _numberToPop = 1; } }
-    virtual void apply(int& value)              { if (lua_isnumber(_lua, _index)) { value = lua_tonumber(_lua, _index)!=0; _success=true; _numberToPop = 1; } }
-    virtual void apply(unsigned int& value)     { if (lua_isnumber(_lua, _index)) { value = lua_tonumber(_lua, _index)!=0; _success=true; _numberToPop = 1; } }
-    virtual void apply(float& value)            { if (lua_isnumber(_lua, _index)) { value = lua_tonumber(_lua, _index)!=0; _success=true; _numberToPop = 1; } }
-    virtual void apply(double& value)           { if (lua_isnumber(_lua, _index)) { value = lua_tonumber(_lua, _index)!=0; _success=true; _numberToPop = 1; } }
-    virtual void apply(std::string& value)      { if (lua_isstring(_lua, _index)) { value = std::string(lua_tostring(_lua, _index), lua_rawlen(_lua, _index)); _numberToPop = 1; } }
-    virtual void apply(osg::Vec2f& value)       { if (_lse->getValue(_index, value)) { _success=true; _numberToPop = 2;} }
-    virtual void apply(osg::Vec3f& value)       { if (_lse->getValue(_index, value)) { _success=true; _numberToPop = 2; } }
-    virtual void apply(osg::Vec4f& value)       { if (_lse->getValue(_index, value)) { _success=true; _numberToPop = 4; } }
-    virtual void apply(osg::Vec2d& value)       { if (_lse->getValue(_index, value)) { _success=true; _numberToPop = 2; } }
-    virtual void apply(osg::Vec3d& value)       { if (_lse->getValue(_index, value)) { _success=true; _numberToPop = 3; } }
-    virtual void apply(osg::Vec4d& value)       { if (_lse->getValue(_index, value)) { _success=true; _numberToPop = 4; } }
-    virtual void apply(osg::Quat& value)        { if (_lse->getValue(_index, value)) { _success=true; _numberToPop = 4; } }
-    virtual void apply(osg::Plane& value)       { if (_lse->getValue(_index, value)) { _success=true; _numberToPop = 4; } }
-    virtual void apply(osg::Matrixf& value)     { if (_lse->getValue(_index, value)) { _success=true; } }
-    virtual void apply(osg::Matrixd& value)     { if (_lse->getValue(_index, value)) { _success=true; } }
-    virtual void apply(osg::BoundingBoxf& value) { if (_lse->getValue(_index, value)) { _success=true; } }
-    virtual void apply(osg::BoundingBoxd& value) { if (_lse->getValue(_index, value)) { _success=true; } }
-    virtual void apply(osg::BoundingSpheref& value) { if (_lse->getValue(_index, value)) { _success=true; } }
-    virtual void apply(osg::BoundingSphered& value) { if (_lse->getValue(_index, value)) { _success=true; } }
+    virtual void apply(bool& value)
+    {
+        if (lua_isboolean(_lua, _index))
+        {
+            value = (lua_toboolean(_lua, _index)!=0);
+            _success=true;
+            _numberToPop = 1;
+        }
+    }
+    virtual void apply(char& value)
+    {
+        if (lua_isnumber(_lua, _index))
+        {
+            value = lua_tonumber(_lua, _index)!=0;
+            _success=true;
+            _numberToPop = 1;
+        }
+    }
+    virtual void apply(unsigned char& value)
+    {
+        if (lua_isnumber(_lua, _index))
+        {
+            value = lua_tonumber(_lua, _index)!=0;
+            _success=true;
+            _numberToPop = 1;
+        }
+    }
+    virtual void apply(short& value)
+    {
+        if (lua_isnumber(_lua, _index))
+        {
+            value = lua_tonumber(_lua, _index)!=0;
+            _success=true;
+            _numberToPop = 1;
+        }
+    }
+    virtual void apply(unsigned short& value)
+    {
+        if (lua_isnumber(_lua, _index))
+        {
+            value = lua_tonumber(_lua, _index)!=0;
+            _success=true;
+            _numberToPop = 1;
+        }
+    }
+    virtual void apply(int& value)
+    {
+        if (lua_isnumber(_lua, _index))
+        {
+            value = lua_tonumber(_lua, _index)!=0;
+            _success=true;
+            _numberToPop = 1;
+        }
+    }
+    virtual void apply(unsigned int& value)
+    {
+        if (lua_isnumber(_lua, _index))
+        {
+            value = lua_tonumber(_lua, _index)!=0;
+            _success=true;
+            _numberToPop = 1;
+        }
+    }
+    virtual void apply(float& value)
+    {
+        if (lua_isnumber(_lua, _index))
+        {
+            value = lua_tonumber(_lua, _index)!=0;
+            _success=true;
+            _numberToPop = 1;
+        }
+    }
+    virtual void apply(double& value)
+    {
+        if (lua_isnumber(_lua, _index))
+        {
+            value = lua_tonumber(_lua, _index)!=0;
+            _success=true;
+            _numberToPop = 1;
+        }
+    }
+    virtual void apply(std::string& value)
+    {
+        if (lua_isstring(_lua, _index))
+        {
+            value = std::string(lua_tostring(_lua, _index), lua_rawlen(_lua, _index));
+            _numberToPop = 1;
+        }
+    }
+    virtual void apply(osg::Vec2f& value)
+    {
+        if (_lse->getValue(_index, value))
+        {
+            _success=true;
+            _numberToPop = 2;
+        }
+    }
+    virtual void apply(osg::Vec3f& value)
+    {
+        if (_lse->getValue(_index, value))
+        {
+            _success=true;
+            _numberToPop = 2;
+        }
+    }
+    virtual void apply(osg::Vec4f& value)
+    {
+        if (_lse->getValue(_index, value))
+        {
+            _success=true;
+            _numberToPop = 4;
+        }
+    }
+    virtual void apply(osg::Vec2d& value)
+    {
+        if (_lse->getValue(_index, value))
+        {
+            _success=true;
+            _numberToPop = 2;
+        }
+    }
+    virtual void apply(osg::Vec3d& value)
+    {
+        if (_lse->getValue(_index, value))
+        {
+            _success=true;
+            _numberToPop = 3;
+        }
+    }
+    virtual void apply(osg::Vec4d& value)
+    {
+        if (_lse->getValue(_index, value))
+        {
+            _success=true;
+            _numberToPop = 4;
+        }
+    }
+    virtual void apply(osg::Quat& value)
+    {
+        if (_lse->getValue(_index, value))
+        {
+            _success=true;
+            _numberToPop = 4;
+        }
+    }
+    virtual void apply(osg::Plane& value)
+    {
+        if (_lse->getValue(_index, value))
+        {
+            _success=true;
+            _numberToPop = 4;
+        }
+    }
+    virtual void apply(osg::Matrixf& value)
+    {
+        if (_lse->getValue(_index, value))
+        {
+            _success = true;
+            _numberToPop = 16;
+        }
+    }
+    virtual void apply(osg::Matrixd& value)
+    {
+        if (_lse->getValue(_index, value))
+        {
+            _success = true;
+            _numberToPop = 16;
+        }
+    }
+    virtual void apply(osg::BoundingBoxf& value)
+    {
+        if (_lse->getValue(_index, value))
+        {
+            _success=true;
+        }
+    }
+    virtual void apply(osg::BoundingBoxd& value)
+    {
+        if (_lse->getValue(_index, value))
+        {
+            _success=true;
+        }
+    }
+    virtual void apply(osg::BoundingSpheref& value)
+    {
+        if (_lse->getValue(_index, value))
+        {
+            _success=true;
+        }
+    }
+    virtual void apply(osg::BoundingSphered& value)
+    {
+        if (_lse->getValue(_index, value))
+        {
+            _success=true;
+        }
+    }
 };
 
 int LuaScriptEngine::pushPropertyToStack(osg::Object* object, const std::string& propertyName) const
@@ -2225,243 +2781,295 @@ int LuaScriptEngine::pushPropertyToStack(osg::Object* object, const std::string&
 
     switch(type)
     {
-        case(osgDB::BaseSerializer::RW_BOOL):
+    case(osgDB::BaseSerializer::RW_BOOL):
+    {
+        bool value;
+        if (_ci.getProperty(object, propertyName, value))
         {
-            bool value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                lua_pushboolean(_lua, value ? 1 : 0);
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_STRING):
-        {
-            std::string value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                lua_pushstring(_lua, value.c_str());
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_GLENUM):
-        {
-            GLenum value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                std::string enumString = lookUpGLenumString(value);
-                lua_pushstring(_lua, enumString.c_str());
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_ENUM):
-        {
-            int value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                osgDB::BaseSerializer* serializer = _ci.getSerializer(object, propertyName, type);
-                osgDB::IntLookup* lookup = serializer ? serializer->getIntLookup() : 0;
-                if (lookup)
-                {
-                    std::string enumString = lookup->getString(value);
-                    lua_pushstring(_lua, enumString.c_str());
-                }
-                else
-                {
-                    lua_pushinteger(_lua, value);
-                }
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_SHORT):
-        {
-            short value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                lua_pushinteger(_lua, value);
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_USHORT):
-        {
-            unsigned short value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                lua_pushinteger(_lua, value);
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_INT):
-        {
-            int value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                lua_pushinteger(_lua, value);
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_UINT):
-        {
-            unsigned int value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                lua_pushinteger(_lua, value);
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_FLOAT):
-        {
-            float value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                lua_pushnumber(_lua, value);
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_DOUBLE):
-        {
-            double value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                lua_pushnumber(_lua, value);
-                return 1;
-            }
-            break;
-        }
-
-        case(osgDB::BaseSerializer::RW_VEC2B): if (getPropertyAndPushValue<osg::Vec2b>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3B): if (getPropertyAndPushValue<osg::Vec3b>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4B): if (getPropertyAndPushValue<osg::Vec4b>(object, propertyName)) return 1; break;
-
-        case(osgDB::BaseSerializer::RW_VEC2UB): if (getPropertyAndPushValue<osg::Vec2ub>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3UB): if (getPropertyAndPushValue<osg::Vec3ub>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4UB): if (getPropertyAndPushValue<osg::Vec4ub>(object, propertyName)) return 1; break;
-
-        case(osgDB::BaseSerializer::RW_VEC2S): if (getPropertyAndPushValue<osg::Vec2s>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3S): if (getPropertyAndPushValue<osg::Vec3s>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4S): if (getPropertyAndPushValue<osg::Vec4s>(object, propertyName)) return 1; break;
-
-        case(osgDB::BaseSerializer::RW_VEC2US): if (getPropertyAndPushValue<osg::Vec2us>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3US): if (getPropertyAndPushValue<osg::Vec3us>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4US): if (getPropertyAndPushValue<osg::Vec4us>(object, propertyName)) return 1; break;
-
-        case(osgDB::BaseSerializer::RW_VEC2I): if (getPropertyAndPushValue<osg::Vec2i>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3I): if (getPropertyAndPushValue<osg::Vec3i>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4I): if (getPropertyAndPushValue<osg::Vec4i>(object, propertyName)) return 1; break;
-
-        case(osgDB::BaseSerializer::RW_VEC2UI): if (getPropertyAndPushValue<osg::Vec2ui>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3UI): if (getPropertyAndPushValue<osg::Vec3ui>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4UI): if (getPropertyAndPushValue<osg::Vec4ui>(object, propertyName)) return 1; break;
-
-        case(osgDB::BaseSerializer::RW_VEC2F): if (getPropertyAndPushValue<osg::Vec2f>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3F): if (getPropertyAndPushValue<osg::Vec3f>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4F): if (getPropertyAndPushValue<osg::Vec4f>(object, propertyName)) return 1; break;
-
-        case(osgDB::BaseSerializer::RW_VEC2D): if (getPropertyAndPushValue<osg::Vec2d>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3D): if (getPropertyAndPushValue<osg::Vec3d>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4D): if (getPropertyAndPushValue<osg::Vec4d>(object, propertyName)) return 1; break;
-
-        case(osgDB::BaseSerializer::RW_QUAT): if (getPropertyAndPushValue<osg::Quat>(object, propertyName)) return 1; break;
-        case(osgDB::BaseSerializer::RW_PLANE): if (getPropertyAndPushValue<osg::Plane>(object, propertyName)) return 1; break;
-
-        #ifdef OSG_USE_FLOAT_MATRIX
-        case(osgDB::BaseSerializer::RW_MATRIX):
-#endif
-        case(osgDB::BaseSerializer::RW_MATRIXF):
-        {
-            osg::Matrixf value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                pushValue(value);
-                return 1;
-            }
-            break;
-        }
-#ifndef OSG_USE_FLOAT_MATRIX
-        case(osgDB::BaseSerializer::RW_MATRIX):
-#endif
-        case(osgDB::BaseSerializer::RW_MATRIXD):
-        {
-            osg::Matrixd value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                pushValue(value);
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_BOUNDINGBOXF):
-        {
-            osg::BoundingBoxf value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                pushValue(value);
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_BOUNDINGBOXD):
-        {
-            osg::BoundingBoxd value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                pushValue(value);
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_BOUNDINGSPHEREF):
-        {
-            osg::BoundingSpheref value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                pushValue(value);
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_BOUNDINGSPHERED):
-        {
-            osg::BoundingSphered value;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                pushValue(value);
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_LIST):
-        {
-            OSG_NOTICE<<"Need to implement RW_LIST support"<<std::endl;
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_IMAGE):
-        case(osgDB::BaseSerializer::RW_OBJECT):
-        {
-            osg::Object* value = 0;
-            if (_ci.getProperty(object, propertyName, value))
-            {
-                pushObject(value);
-                return 1;
-            }
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_VECTOR):
-        case(osgDB::BaseSerializer::RW_MAP):
-        {
-            pushContainer(object, propertyName);
+            lua_pushboolean(_lua, value ? 1 : 0);
             return 1;
         }
-        default:
-            break;
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_STRING):
+    {
+        std::string value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            lua_pushstring(_lua, value.c_str());
+            return 1;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_GLENUM):
+    {
+        GLenum value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            std::string enumString = lookUpGLenumString(value);
+            lua_pushstring(_lua, enumString.c_str());
+            return 1;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_ENUM):
+    {
+        int value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            osgDB::BaseSerializer* serializer = _ci.getSerializer(object, propertyName, type);
+            osgDB::IntLookup* lookup = serializer ? serializer->getIntLookup() : 0;
+            if (lookup)
+            {
+                std::string enumString = lookup->getString(value);
+                lua_pushstring(_lua, enumString.c_str());
+            }
+            else
+            {
+                lua_pushinteger(_lua, value);
+            }
+            return 1;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_SHORT):
+    {
+        short value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            lua_pushinteger(_lua, value);
+            return 1;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_USHORT):
+    {
+        unsigned short value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            lua_pushinteger(_lua, value);
+            return 1;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_INT):
+    {
+        int value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            lua_pushinteger(_lua, value);
+            return 1;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_UINT):
+    {
+        unsigned int value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            lua_pushinteger(_lua, value);
+            return 1;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_FLOAT):
+    {
+        float value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            lua_pushnumber(_lua, value);
+            return 1;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_DOUBLE):
+    {
+        double value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            lua_pushnumber(_lua, value);
+            return 1;
+        }
+        break;
+    }
+
+    case(osgDB::BaseSerializer::RW_VEC2B):
+        if (getPropertyAndPushValue<osg::Vec2b>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3B):
+        if (getPropertyAndPushValue<osg::Vec3b>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4B):
+        if (getPropertyAndPushValue<osg::Vec4b>(object, propertyName)) return 1;
+        break;
+
+    case(osgDB::BaseSerializer::RW_VEC2UB):
+        if (getPropertyAndPushValue<osg::Vec2ub>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3UB):
+        if (getPropertyAndPushValue<osg::Vec3ub>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4UB):
+        if (getPropertyAndPushValue<osg::Vec4ub>(object, propertyName)) return 1;
+        break;
+
+    case(osgDB::BaseSerializer::RW_VEC2S):
+        if (getPropertyAndPushValue<osg::Vec2s>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3S):
+        if (getPropertyAndPushValue<osg::Vec3s>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4S):
+        if (getPropertyAndPushValue<osg::Vec4s>(object, propertyName)) return 1;
+        break;
+
+    case(osgDB::BaseSerializer::RW_VEC2US):
+        if (getPropertyAndPushValue<osg::Vec2us>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3US):
+        if (getPropertyAndPushValue<osg::Vec3us>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4US):
+        if (getPropertyAndPushValue<osg::Vec4us>(object, propertyName)) return 1;
+        break;
+
+    case(osgDB::BaseSerializer::RW_VEC2I):
+        if (getPropertyAndPushValue<osg::Vec2i>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3I):
+        if (getPropertyAndPushValue<osg::Vec3i>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4I):
+        if (getPropertyAndPushValue<osg::Vec4i>(object, propertyName)) return 1;
+        break;
+
+    case(osgDB::BaseSerializer::RW_VEC2UI):
+        if (getPropertyAndPushValue<osg::Vec2ui>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3UI):
+        if (getPropertyAndPushValue<osg::Vec3ui>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4UI):
+        if (getPropertyAndPushValue<osg::Vec4ui>(object, propertyName)) return 1;
+        break;
+
+    case(osgDB::BaseSerializer::RW_VEC2F):
+        if (getPropertyAndPushValue<osg::Vec2f>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3F):
+        if (getPropertyAndPushValue<osg::Vec3f>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4F):
+        if (getPropertyAndPushValue<osg::Vec4f>(object, propertyName)) return 1;
+        break;
+
+    case(osgDB::BaseSerializer::RW_VEC2D):
+        if (getPropertyAndPushValue<osg::Vec2d>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3D):
+        if (getPropertyAndPushValue<osg::Vec3d>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4D):
+        if (getPropertyAndPushValue<osg::Vec4d>(object, propertyName)) return 1;
+        break;
+
+    case(osgDB::BaseSerializer::RW_QUAT):
+        if (getPropertyAndPushValue<osg::Quat>(object, propertyName)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_PLANE):
+        if (getPropertyAndPushValue<osg::Plane>(object, propertyName)) return 1;
+        break;
+
+#ifdef OSG_USE_FLOAT_MATRIX
+    case(osgDB::BaseSerializer::RW_MATRIX):
+#endif
+    case(osgDB::BaseSerializer::RW_MATRIXF):
+    {
+        osg::Matrixf value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            pushValue(value);
+            return 1;
+        }
+        break;
+    }
+#ifndef OSG_USE_FLOAT_MATRIX
+    case(osgDB::BaseSerializer::RW_MATRIX):
+#endif
+    case(osgDB::BaseSerializer::RW_MATRIXD):
+    {
+        osg::Matrixd value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            pushValue(value);
+            return 1;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGBOXF):
+    {
+        osg::BoundingBoxf value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            pushValue(value);
+            return 1;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGBOXD):
+    {
+        osg::BoundingBoxd value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            pushValue(value);
+            return 1;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGSPHEREF):
+    {
+        osg::BoundingSpheref value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            pushValue(value);
+            return 1;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGSPHERED):
+    {
+        osg::BoundingSphered value;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            pushValue(value);
+            return 1;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_LIST):
+    {
+        OSG_NOTICE<<"Need to implement RW_LIST support"<<std::endl;
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_IMAGE):
+    case(osgDB::BaseSerializer::RW_OBJECT):
+    {
+        osg::Object* value = 0;
+        if (_ci.getProperty(object, propertyName, value))
+        {
+            pushObject(value);
+            return 1;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_VECTOR):
+    case(osgDB::BaseSerializer::RW_MAP):
+    {
+        pushContainer(object, propertyName);
+        return 1;
+    }
+    default:
+        break;
     }
 
     OSG_NOTICE<<"LuaScriptEngine::pushPropertyToStack("<<object<<", "<<propertyName<<") property of type = "<<_ci.getTypeName(type)<<" error, not supported."<<std::endl;
@@ -2519,230 +3127,282 @@ int LuaScriptEngine::pushDataToStack(SerializerScratchPad* ssp) const
 {
     switch(ssp->dataType)
     {
-        case(osgDB::BaseSerializer::RW_BOOL):
+    case(osgDB::BaseSerializer::RW_BOOL):
+    {
+        bool value;
+        if (ssp->get(value))
         {
-            bool value;
-            if (ssp->get(value))
-            {
-                lua_pushboolean(_lua, value ? 1 : 0);
-                return 1;
-            }
-            break;
+            lua_pushboolean(_lua, value ? 1 : 0);
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_STRING):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_STRING):
+    {
+        std::string value;
+        if (ssp->get(value))
         {
-            std::string value;
-            if (ssp->get(value))
-            {
-                lua_pushstring(_lua, value.c_str());
-                return 1;
-            }
-            break;
+            lua_pushstring(_lua, value.c_str());
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_GLENUM):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_GLENUM):
+    {
+        GLenum value;
+        if (ssp->get(value))
         {
-            GLenum value;
-            if (ssp->get(value))
-            {
-                std::string enumString = lookUpGLenumString(value);
-                lua_pushstring(_lua, enumString.c_str());
-                return 1;
-            }
-            break;
+            std::string enumString = lookUpGLenumString(value);
+            lua_pushstring(_lua, enumString.c_str());
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_ENUM):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_ENUM):
+    {
+        int value;
+        if (ssp->get(value))
         {
-            int value;
-            if (ssp->get(value))
-            {
-                lua_pushinteger(_lua, value);
-                return 1;
-            }
-            break;
+            lua_pushinteger(_lua, value);
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_INT):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_INT):
+    {
+        int value;
+        if (ssp->get(value))
         {
-            int value;
-            if (ssp->get(value))
-            {
-                lua_pushinteger(_lua, value);
-                return 1;
-            }
-            break;
+            lua_pushinteger(_lua, value);
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_UINT):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_UINT):
+    {
+        unsigned int value;
+        if (ssp->get(value))
         {
-            unsigned int value;
-            if (ssp->get(value))
-            {
-                lua_pushinteger(_lua, value);
-                return 1;
-            }
-            break;
+            lua_pushinteger(_lua, value);
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_SHORT):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_SHORT):
+    {
+        short value;
+        if (ssp->get(value))
         {
-            short value;
-            if (ssp->get(value))
-            {
-                lua_pushinteger(_lua, value);
-                return 1;
-            }
-            break;
+            lua_pushinteger(_lua, value);
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_USHORT):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_USHORT):
+    {
+        unsigned short value;
+        if (ssp->get(value))
         {
-            unsigned short value;
-            if (ssp->get(value))
-            {
-                lua_pushinteger(_lua, value);
-                return 1;
-            }
-            break;
+            lua_pushinteger(_lua, value);
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_FLOAT):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_FLOAT):
+    {
+        float value;
+        if (ssp->get(value))
         {
-            float value;
-            if (ssp->get(value))
-            {
-                lua_pushnumber(_lua, value);
-                return 1;
-            }
-            break;
+            lua_pushnumber(_lua, value);
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_DOUBLE):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_DOUBLE):
+    {
+        double value;
+        if (ssp->get(value))
         {
-            double value;
-            if (ssp->get(value))
-            {
-                lua_pushnumber(_lua, value);
-                return 1;
-            }
-            break;
+            lua_pushnumber(_lua, value);
+            return 1;
         }
+        break;
+    }
 
-        case(osgDB::BaseSerializer::RW_VEC2B): if (pushValueToStack<osg::Vec2b>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3B): if (pushValueToStack<osg::Vec3b>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4B): if (pushValueToStack<osg::Vec4b>(ssp)) return 1; break;
+    case(osgDB::BaseSerializer::RW_VEC2B):
+        if (pushValueToStack<osg::Vec2b>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3B):
+        if (pushValueToStack<osg::Vec3b>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4B):
+        if (pushValueToStack<osg::Vec4b>(ssp)) return 1;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2UB): if (pushValueToStack<osg::Vec2ub>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3UB): if (pushValueToStack<osg::Vec3ub>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4UB): if (pushValueToStack<osg::Vec4ub>(ssp)) return 1; break;
+    case(osgDB::BaseSerializer::RW_VEC2UB):
+        if (pushValueToStack<osg::Vec2ub>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3UB):
+        if (pushValueToStack<osg::Vec3ub>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4UB):
+        if (pushValueToStack<osg::Vec4ub>(ssp)) return 1;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2S): if (pushValueToStack<osg::Vec2s>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3S): if (pushValueToStack<osg::Vec3s>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4S): if (pushValueToStack<osg::Vec4s>(ssp)) return 1; break;
+    case(osgDB::BaseSerializer::RW_VEC2S):
+        if (pushValueToStack<osg::Vec2s>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3S):
+        if (pushValueToStack<osg::Vec3s>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4S):
+        if (pushValueToStack<osg::Vec4s>(ssp)) return 1;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2US): if (pushValueToStack<osg::Vec2us>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3US): if (pushValueToStack<osg::Vec3us>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4US): if (pushValueToStack<osg::Vec4us>(ssp)) return 1; break;
+    case(osgDB::BaseSerializer::RW_VEC2US):
+        if (pushValueToStack<osg::Vec2us>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3US):
+        if (pushValueToStack<osg::Vec3us>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4US):
+        if (pushValueToStack<osg::Vec4us>(ssp)) return 1;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2I): if (pushValueToStack<osg::Vec2i>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3I): if (pushValueToStack<osg::Vec3i>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4I): if (pushValueToStack<osg::Vec4i>(ssp)) return 1; break;
+    case(osgDB::BaseSerializer::RW_VEC2I):
+        if (pushValueToStack<osg::Vec2i>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3I):
+        if (pushValueToStack<osg::Vec3i>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4I):
+        if (pushValueToStack<osg::Vec4i>(ssp)) return 1;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2UI): if (pushValueToStack<osg::Vec2ui>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3UI): if (pushValueToStack<osg::Vec3ui>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4UI): if (pushValueToStack<osg::Vec4ui>(ssp)) return 1; break;
+    case(osgDB::BaseSerializer::RW_VEC2UI):
+        if (pushValueToStack<osg::Vec2ui>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3UI):
+        if (pushValueToStack<osg::Vec3ui>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4UI):
+        if (pushValueToStack<osg::Vec4ui>(ssp)) return 1;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2F): if (pushValueToStack<osg::Vec2f>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3F): if (pushValueToStack<osg::Vec3f>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4F): if (pushValueToStack<osg::Vec4f>(ssp)) return 1; break;
+    case(osgDB::BaseSerializer::RW_VEC2F):
+        if (pushValueToStack<osg::Vec2f>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3F):
+        if (pushValueToStack<osg::Vec3f>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4F):
+        if (pushValueToStack<osg::Vec4f>(ssp)) return 1;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2D): if (pushValueToStack<osg::Vec2d>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC3D): if (pushValueToStack<osg::Vec3d>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_VEC4D): if (pushValueToStack<osg::Vec4d>(ssp)) return 1; break;
+    case(osgDB::BaseSerializer::RW_VEC2D):
+        if (pushValueToStack<osg::Vec2d>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3D):
+        if (pushValueToStack<osg::Vec3d>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4D):
+        if (pushValueToStack<osg::Vec4d>(ssp)) return 1;
+        break;
 
-        case(osgDB::BaseSerializer::RW_QUAT): if (pushValueToStack<osg::Quat>(ssp)) return 1; break;
-        case(osgDB::BaseSerializer::RW_PLANE): if (pushValueToStack<osg::Plane>(ssp)) return 1; break;
+    case(osgDB::BaseSerializer::RW_QUAT):
+        if (pushValueToStack<osg::Quat>(ssp)) return 1;
+        break;
+    case(osgDB::BaseSerializer::RW_PLANE):
+        if (pushValueToStack<osg::Plane>(ssp)) return 1;
+        break;
 
 #ifdef OSG_USE_FLOAT_MATRIX
-        case(osgDB::BaseSerializer::RW_MATRIX):
+    case(osgDB::BaseSerializer::RW_MATRIX):
 #endif
-        case(osgDB::BaseSerializer::RW_MATRIXF):
+    case(osgDB::BaseSerializer::RW_MATRIXF):
+    {
+        osg::Matrixf value;
+        if (ssp->get(value))
         {
-            osg::Matrixf value;
-            if (ssp->get(value))
-            {
-                pushValue(value);
-                return 1;
-            }
-            break;
+            pushValue(value);
+            return 1;
         }
+        break;
+    }
 #ifndef OSG_USE_FLOAT_MATRIX
-        case(osgDB::BaseSerializer::RW_MATRIX):
+    case(osgDB::BaseSerializer::RW_MATRIX):
 #endif
-        case(osgDB::BaseSerializer::RW_MATRIXD):
+    case(osgDB::BaseSerializer::RW_MATRIXD):
+    {
+        osg::Matrixd value;
+        if (ssp->get(value))
         {
-            osg::Matrixd value;
-            if (ssp->get(value))
-            {
-                pushValue(value);
-                return 1;
-            }
-            break;
+            pushValue(value);
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_BOUNDINGBOXF):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGBOXF):
+    {
+        osg::BoundingBoxf value;
+        if (ssp->get(value))
         {
-            osg::BoundingBoxf value;
-            if (ssp->get(value))
-            {
-                pushValue(value);
-                return 1;
-            }
-            break;
+            pushValue(value);
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_BOUNDINGBOXD):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGBOXD):
+    {
+        osg::BoundingBoxd value;
+        if (ssp->get(value))
         {
-            osg::BoundingBoxd value;
-            if (ssp->get(value))
-            {
-                pushValue(value);
-                return 1;
-            }
-            break;
+            pushValue(value);
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_BOUNDINGSPHEREF):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGSPHEREF):
+    {
+        osg::BoundingSpheref value;
+        if (ssp->get(value))
         {
-            osg::BoundingSpheref value;
-            if (ssp->get(value))
-            {
-                pushValue(value);
-                return 1;
-            }
-            break;
+            pushValue(value);
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_BOUNDINGSPHERED):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGSPHERED):
+    {
+        osg::BoundingSphered value;
+        if (ssp->get(value))
         {
-            osg::BoundingSphered value;
-            if (ssp->get(value))
-            {
-                pushValue(value);
-                return 1;
-            }
-            break;
+            pushValue(value);
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_IMAGE):
-        case(osgDB::BaseSerializer::RW_OBJECT):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_IMAGE):
+    case(osgDB::BaseSerializer::RW_OBJECT):
+    {
+        osg::Object* value = 0;
+        if (ssp->get(value))
         {
-            osg::Object* value = 0;
-            if (ssp->get(value))
-            {
-                pushObject(value);
-                return 1;
-            }
-            break;
+            pushObject(value);
+            return 1;
         }
-        case(osgDB::BaseSerializer::RW_LIST):
-        {
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_VECTOR):
-        {
-            break;
-        }
-        default:
-            break;
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_LIST):
+    {
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_VECTOR):
+    {
+        break;
+    }
+    default:
+        break;
     }
 
     OSG_NOTICE<<"LuaScriptEngine::pushDataToStack() property of type = "<<_ci.getTypeName(ssp->dataType)<<" error, not supported."<<std::endl;
@@ -2751,265 +3411,317 @@ int LuaScriptEngine::pushDataToStack(SerializerScratchPad* ssp) const
 
 int LuaScriptEngine::getDataFromStack(SerializerScratchPad* ssp, osgDB::BaseSerializer::Type type, int pos) const
 {
-    pos = getAbsolutePos(pos);
+    int abs_pos =  getAbsolutePos(pos);
 
     if (type==osgDB::BaseSerializer::RW_UNDEFINED) type = LuaScriptEngine::getType(pos);
 
     switch(type)
     {
-        case(osgDB::BaseSerializer::RW_BOOL):
+    case(osgDB::BaseSerializer::RW_BOOL):
+    {
+        if (lua_isboolean(_lua, abs_pos))
         {
-            if (lua_isboolean(_lua, pos))
-            {
-                ssp->set(static_cast<bool>(lua_toboolean(_lua, pos)!=0));
-                return 0;
-            }
-            else if (lua_isnumber(_lua, pos))
-            {
-                ssp->set(static_cast<bool>(lua_tonumber(_lua, pos)!=0));
-                return 0;
-            }
-            break;
+            ssp->set(static_cast<bool>(lua_toboolean(_lua, abs_pos) != 0));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_STRING):
+        else if (lua_isnumber(_lua, abs_pos))
         {
-            if (lua_isstring(_lua, pos))
-            {
-                ssp->set(std::string(lua_tostring(_lua, pos)));
-                return 0;
-            }
-            break;
+            ssp->set(static_cast<bool>(lua_tonumber(_lua, abs_pos) != 0));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_GLENUM):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_STRING):
+    {
+        if (lua_isstring(_lua, abs_pos))
         {
-            if (lua_isnumber(_lua, pos))
-            {
-                ssp->set(static_cast<GLenum>(lua_tonumber(_lua, pos)));
-                return 0;
-            }
-            else if (lua_isstring(_lua, pos))
-            {
-                const char* enumString = lua_tostring(_lua, pos);
-                GLenum value = lookUpGLenumValue(enumString); //getValue("GL",enumString);
-
-                ssp->set(value);
-                return 0;
-            }
-            OSG_NOTICE<<"LuaScriptEngine::getDataFromStack() osgDB::BaseSerializer::RW_GLENUM Failed"<<std::endl;
-            break;
+            ssp->set(std::string(lua_tostring(_lua, abs_pos)));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_ENUM):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_GLENUM):
+    {
+        if (lua_isnumber(_lua, abs_pos))
         {
-            if (lua_isnumber(_lua, pos))
-            {
-                ssp->set(static_cast<int>(lua_tonumber(_lua, pos)));
-                return 0;
-            }
-            else if (lua_isstring(_lua, pos))
-            {
-                OSG_NOTICE<<"LuaScriptEngine::getDataFromStack() osgDB::BaseSerializer::RW_ENUM Failed to convert string"<<std::endl;
-                return 0;
-            }
-            break;
+            ssp->set(static_cast<GLenum>(lua_tonumber(_lua, abs_pos)));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_SHORT):
+        else if (lua_isstring(_lua, abs_pos))
         {
-            if (lua_isnumber(_lua, pos))
-            {
-                ssp->set(static_cast<short>(lua_tonumber(_lua, pos)));
-                return 0;
-            }
-            break;
+            const char* enumString = lua_tostring(_lua, abs_pos);
+            GLenum value = lookUpGLenumValue(enumString); //getValue("GL",enumString);
+
+            ssp->set(value);
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_USHORT):
+        OSG_NOTICE<<"LuaScriptEngine::getDataFromStack() osgDB::BaseSerializer::RW_GLENUM Failed"<<std::endl;
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_ENUM):
+    {
+        if (lua_isnumber(_lua, abs_pos))
         {
-            if (lua_isnumber(_lua, pos))
-            {
-                ssp->set(static_cast<unsigned short>(lua_tonumber(_lua, pos)));
-                return 0;
-            }
-            break;
+            ssp->set(static_cast<int>(lua_tonumber(_lua, abs_pos)));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_INT):
+        else if (lua_isstring(_lua, abs_pos))
         {
-            if (lua_isnumber(_lua, pos))
-            {
-                ssp->set(static_cast<int>(lua_tonumber(_lua, pos)));
-                return 0;
-            }
-            break;
+            OSG_NOTICE<<"LuaScriptEngine::getDataFromStack() osgDB::BaseSerializer::RW_ENUM Failed to convert string"<<std::endl;
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_UINT):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_SHORT):
+    {
+        if (lua_isnumber(_lua, abs_pos))
         {
-            if (lua_isnumber(_lua, pos))
-            {
-                ssp->set(static_cast<unsigned int>(lua_tonumber(_lua, pos)));
-                return 0;
-            }
-            break;
+            ssp->set(static_cast<short>(lua_tonumber(_lua, abs_pos)));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_FLOAT):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_USHORT):
+    {
+        if (lua_isnumber(_lua, abs_pos))
         {
-            if (lua_isnumber(_lua, pos))
-            {
-                ssp->set(static_cast<float>(lua_tonumber(_lua, pos)));
-                return 0;
-            }
-            break;
+            ssp->set(static_cast<unsigned short>(lua_tonumber(_lua, abs_pos)));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_DOUBLE):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_INT):
+    {
+        if (lua_isnumber(_lua, abs_pos))
         {
-            if (lua_isnumber(_lua, pos))
-            {
-                ssp->set(static_cast<double>(lua_tonumber(_lua, pos)));
-                return 0;
-            }
-            break;
+            ssp->set(static_cast<int>(lua_tonumber(_lua, abs_pos)));
+            return 0;
         }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_UINT):
+    {
+        if (lua_isnumber(_lua, abs_pos))
+        {
+            ssp->set(static_cast<unsigned int>(lua_tonumber(_lua, abs_pos)));
+            return 0;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_FLOAT):
+    {
+        if (lua_isnumber(_lua, abs_pos))
+        {
+            ssp->set(static_cast<float>(lua_tonumber(_lua, abs_pos)));
+            return 0;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_DOUBLE):
+    {
+        if (lua_isnumber(_lua, abs_pos))
+        {
+            ssp->set(static_cast<double>(lua_tonumber(_lua, abs_pos)));
+            return 0;
+        }
+        break;
+    }
 
-        case(osgDB::BaseSerializer::RW_VEC2B): if (getDataFromStack<osg::Vec2b>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC3B): if (getDataFromStack<osg::Vec3b>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC4B): if (getDataFromStack<osg::Vec4b>(ssp, pos)) return 0; break;
+    case(osgDB::BaseSerializer::RW_VEC2B) :
+        if (getDataFromStack<osg::Vec2b>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3B) :
+        if (getDataFromStack<osg::Vec3b>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4B) :
+        if (getDataFromStack<osg::Vec4b>(ssp, pos)) return 0;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2UB): if (getDataFromStack<osg::Vec2ub>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC3UB): if (getDataFromStack<osg::Vec3ub>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC4UB): if (getDataFromStack<osg::Vec4ub>(ssp, pos)) return 0; break;
+    case(osgDB::BaseSerializer::RW_VEC2UB):
+        if (getDataFromStack<osg::Vec2ub>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3UB):
+        if (getDataFromStack<osg::Vec3ub>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4UB):
+        if (getDataFromStack<osg::Vec4ub>(ssp, pos)) return 0;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2S): if (getDataFromStack<osg::Vec2s>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC3S): if (getDataFromStack<osg::Vec3s>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC4S): if (getDataFromStack<osg::Vec4s>(ssp, pos)) return 0; break;
+    case(osgDB::BaseSerializer::RW_VEC2S):
+        if (getDataFromStack<osg::Vec2s>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3S):
+        if (getDataFromStack<osg::Vec3s>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4S):
+        if (getDataFromStack<osg::Vec4s>(ssp, pos)) return 0;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2US): if (getDataFromStack<osg::Vec2us>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC3US): if (getDataFromStack<osg::Vec3us>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC4US): if (getDataFromStack<osg::Vec4us>(ssp, pos)) return 0; break;
+    case(osgDB::BaseSerializer::RW_VEC2US):
+        if (getDataFromStack<osg::Vec2us>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3US):
+        if (getDataFromStack<osg::Vec3us>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4US):
+        if (getDataFromStack<osg::Vec4us>(ssp, pos)) return 0;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2I): if (getDataFromStack<osg::Vec2i>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC3I): if (getDataFromStack<osg::Vec3i>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC4I): if (getDataFromStack<osg::Vec4i>(ssp, pos)) return 0; break;
+    case(osgDB::BaseSerializer::RW_VEC2I):
+        if (getDataFromStack<osg::Vec2i>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3I):
+        if (getDataFromStack<osg::Vec3i>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4I):
+        if (getDataFromStack<osg::Vec4i>(ssp, pos)) return 0;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2UI): if (getDataFromStack<osg::Vec2ui>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC3UI): if (getDataFromStack<osg::Vec3ui>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC4UI): if (getDataFromStack<osg::Vec4ui>(ssp, pos)) return 0; break;
+    case(osgDB::BaseSerializer::RW_VEC2UI):
+        if (getDataFromStack<osg::Vec2ui>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3UI):
+        if (getDataFromStack<osg::Vec3ui>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4UI):
+        if (getDataFromStack<osg::Vec4ui>(ssp, pos)) return 0;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2F): if (getDataFromStack<osg::Vec2f>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC3F): if (getDataFromStack<osg::Vec3f>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC4F): if (getDataFromStack<osg::Vec4f>(ssp, pos)) return 0; break;
+    case(osgDB::BaseSerializer::RW_VEC2F):
+        if (getDataFromStack<osg::Vec2f>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3F):
+        if (getDataFromStack<osg::Vec3f>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4F):
+        if (getDataFromStack<osg::Vec4f>(ssp, pos)) return 0;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2D): if (getDataFromStack<osg::Vec2d>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC3D): if (getDataFromStack<osg::Vec3d>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC4D): if (getDataFromStack<osg::Vec4d>(ssp, pos)) return 0; break;
+    case(osgDB::BaseSerializer::RW_VEC2D):
+        if (getDataFromStack<osg::Vec2d>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3D):
+        if (getDataFromStack<osg::Vec3d>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4D):
+        if (getDataFromStack<osg::Vec4d>(ssp, pos)) return 0;
+        break;
 
-        case(osgDB::BaseSerializer::RW_QUAT): if (getDataFromStack<osg::Quat>(ssp, pos)) return 0; break;
-        case(osgDB::BaseSerializer::RW_PLANE): if (getDataFromStack<osg::Plane>(ssp, pos)) return 0; break;
+    case(osgDB::BaseSerializer::RW_QUAT):
+        if (getDataFromStack<osg::Quat>(ssp, pos)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_PLANE):
+        if (getDataFromStack<osg::Plane>(ssp, pos)) return 0;
+        break;
 
-        #ifdef OSG_USE_FLOAT_MATRIX
-        case(osgDB::BaseSerializer::RW_MATRIX):
+#ifdef OSG_USE_FLOAT_MATRIX
+    case(osgDB::BaseSerializer::RW_MATRIX):
 #endif
-        case(osgDB::BaseSerializer::RW_MATRIXF):
+    case(osgDB::BaseSerializer::RW_MATRIXF):
+    {
+        osg::Matrixd value;
+        if (getValue(pos, value))
         {
-            osg::Matrixd value;
-            if (getValue(pos, value))
-            {
-                ssp->set(value);
-                return 0;
-            }
-            break;
+            ssp->set(value);
+            return 0;
         }
+        break;
+    }
 #ifndef OSG_USE_FLOAT_MATRIX
-        case(osgDB::BaseSerializer::RW_MATRIX):
+    case(osgDB::BaseSerializer::RW_MATRIX):
 #endif
-        case(osgDB::BaseSerializer::RW_MATRIXD):
+    case(osgDB::BaseSerializer::RW_MATRIXD):
+    {
+        osg::Matrixd value;
+        if (getValue(pos, value))
         {
-            osg::Matrixd value;
-            if (getValue(pos, value))
-            {
-                ssp->set(value);
-                return 0;
-            }
-            break;
+            ssp->set(value);
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_BOUNDINGBOXF):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGBOXF):
+    {
+        osg::BoundingBoxf value;
+        if (getValue(pos, value))
         {
-            osg::BoundingBoxf value;
-            if (getValue(pos, value))
-            {
-                ssp->set(value);
-                return 0;
-            }
-            break;
+            ssp->set(value);
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_BOUNDINGBOXD):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGBOXD):
+    {
+        osg::BoundingBoxd value;
+        if (getValue(pos, value))
         {
-            osg::BoundingBoxd value;
-            if (getValue(pos, value))
-            {
-                ssp->set(value);
-                return 0;
-            }
-            break;
+            ssp->set(value);
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_BOUNDINGSPHEREF):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGSPHEREF):
+    {
+        osg::BoundingSpheref value;
+        if (getValue(pos, value))
         {
-            osg::BoundingSpheref value;
-            if (getValue(pos, value))
-            {
-                ssp->set(value);
-                return 0;
-            }
-            break;
+            ssp->set(value);
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_BOUNDINGSPHERED):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGSPHERED):
+    {
+        osg::BoundingSphered value;
+        if (getValue(pos, value))
         {
-            osg::BoundingSphered value;
-            if (getValue(pos, value))
-            {
-                ssp->set(value);
-                return 0;
-            }
-            break;
+            ssp->set(value);
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_LIST):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_LIST):
+    {
+        OSG_NOTICE<<"Need to implement RW_LIST support"<<std::endl;
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_IMAGE):
+    case(osgDB::BaseSerializer::RW_OBJECT):
+    {
+        if (lua_istable(_lua, abs_pos))
         {
-            OSG_NOTICE<<"Need to implement RW_LIST support"<<std::endl;
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_IMAGE):
-        case(osgDB::BaseSerializer::RW_OBJECT):
-        {
-            if (lua_istable(_lua, pos))
-            {
-                osg::Object* value = 0;
-                lua_pushstring(_lua, "object_ptr");
-                lua_rawget(_lua, pos);
-                if (lua_type(_lua, -1)==LUA_TUSERDATA) value = *const_cast<osg::Object**>(reinterpret_cast<const osg::Object**>(lua_touserdata(_lua,-1)));
-                lua_pop(_lua, 1);
+            osg::Object* value = 0;
+            lua_pushstring(_lua, "object_ptr");
+            lua_rawget(_lua, abs_pos);
+            if (lua_type(_lua, -1)==LUA_TUSERDATA) value = *const_cast<osg::Object**>(reinterpret_cast<const osg::Object**>(lua_touserdata(_lua,-1)));
+            lua_pop(_lua, 1);
 
-                if (value)
-                {
-                    ssp->set(value);
-                    return 0;
-                }
-                else
-                {
-                    OSG_NOTICE<<"Error: lua type '"<<lua_typename(_lua,lua_type(_lua, pos))<<"' cannot be assigned." <<std::endl;
-                }
-            }
-            else if (lua_isnil(_lua, pos))
+            if (value)
             {
-                OSG_NOTICE<<"Assigning property object (nil) to to object"<<std::endl;
-                osg::Object* value = 0;
                 ssp->set(value);
                 return 0;
             }
             else
             {
-                OSG_NOTICE<<"Error: lua type '"<<lua_typename(_lua,lua_type(_lua, pos))<<"' cannot be assigned."<<std::endl;
-                return 0;
+                OSG_NOTICE << "Error: lua type '" << lua_typename(_lua, lua_type(_lua, abs_pos)) << "' cannot be assigned." << std::endl;
             }
-            break;
         }
-        default:
-            break;
+        else if (lua_isnil(_lua, abs_pos))
+        {
+            OSG_NOTICE<<"Assigning property object (nil) to to object"<<std::endl;
+            osg::Object* value = 0;
+            ssp->set(value);
+            return 0;
+        }
+        else
+        {
+            OSG_NOTICE << "Error: lua type '" << lua_typename(_lua, lua_type(_lua, abs_pos)) << "' cannot be assigned." << std::endl;
+            return 0;
+        }
+        break;
+    }
+    default:
+        break;
     }
     OSG_NOTICE<<"LuaScriptEngine::getDataFromStack() property of type = "<<_ci.getTypeName(type)<<" not matched"<<std::endl;
     return 0;
@@ -3051,255 +3763,283 @@ int LuaScriptEngine::setPropertyFromStack(osg::Object* object, const std::string
 {
     switch(type)
     {
-        case(osgDB::BaseSerializer::RW_BOOL):
+    case(osgDB::BaseSerializer::RW_BOOL):
+    {
+        if (lua_isboolean(_lua, -1))
         {
-            if (lua_isboolean(_lua, -1))
-            {
-                _ci.setProperty(object, propertyName, static_cast<bool>(lua_toboolean(_lua, -1)!=0));
-                return 0;
-            }
-            else if (lua_isnumber(_lua, -1))
-            {
-                _ci.setProperty(object, propertyName, static_cast<bool>(lua_tonumber(_lua, -1)!=0));
-                return 0;
-            }
-            break;
+            _ci.setProperty(object, propertyName, static_cast<bool>(lua_toboolean(_lua, -1)!=0));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_STRING):
+        else if (lua_isnumber(_lua, -1))
         {
-            if (lua_isstring(_lua, -1))
-            {
-                _ci.setProperty(object, propertyName, std::string(lua_tostring(_lua, -1)));
-                return 0;
-            }
-            break;
+            _ci.setProperty(object, propertyName, static_cast<bool>(lua_tonumber(_lua, -1)!=0));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_GLENUM):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_STRING):
+    {
+        if (lua_isstring(_lua, -1))
         {
-            if (lua_isnumber(_lua, -1))
-            {
-                _ci.setProperty(object, propertyName, static_cast<GLenum>(lua_tonumber(_lua, -1)));
-                return 0;
-            }
-            else if (lua_isstring(_lua, -1))
-            {
-                const char* enumString = lua_tostring(_lua, -1);
-                GLenum value = lookUpGLenumValue(enumString); //getValue("GL",enumString);
+            _ci.setProperty(object, propertyName, std::string(lua_tostring(_lua, -1)));
+            return 0;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_GLENUM):
+    {
+        if (lua_isnumber(_lua, -1))
+        {
+            _ci.setProperty(object, propertyName, static_cast<GLenum>(lua_tonumber(_lua, -1)));
+            return 0;
+        }
+        else if (lua_isstring(_lua, -1))
+        {
+            const char* enumString = lua_tostring(_lua, -1);
+            GLenum value = lookUpGLenumValue(enumString); //getValue("GL",enumString);
 
+            _ci.setProperty(object, propertyName, value);
+            return 0;
+        }
+        OSG_NOTICE<<"LuaScriptEngine::setPropertyFromStack("<<propertyName<<") osgDB::BaseSerializer::RW_GLENUM Failed"<<std::endl;
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_ENUM):
+    {
+        if (lua_isnumber(_lua, -1))
+        {
+            _ci.setProperty(object, propertyName, static_cast<int>(lua_tonumber(_lua, -1)));
+            return 0;
+        }
+        else if (lua_isstring(_lua, -1))
+        {
+            const char* enumString = lua_tostring(_lua, -1);
+            osgDB::BaseSerializer* serializer = _ci.getSerializer(object, propertyName, type);
+            osgDB::IntLookup* lookup = serializer ? serializer->getIntLookup() : 0;
+            if (lookup)
+            {
+                int value = lookup->getValue(enumString);
                 _ci.setProperty(object, propertyName, value);
-                return 0;
             }
-            OSG_NOTICE<<"LuaScriptEngine::setPropertyFromStack("<<propertyName<<") osgDB::BaseSerializer::RW_GLENUM Failed"<<std::endl;
-            break;
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_ENUM):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_SHORT):
+    {
+        if (lua_isnumber(_lua, -1))
         {
-            if (lua_isnumber(_lua, -1))
-            {
-                _ci.setProperty(object, propertyName, static_cast<int>(lua_tonumber(_lua, -1)));
-                return 0;
-            }
-            else if (lua_isstring(_lua, -1))
-            {
-                const char* enumString = lua_tostring(_lua, -1);
-                osgDB::BaseSerializer* serializer = _ci.getSerializer(object, propertyName, type);
-                osgDB::IntLookup* lookup = serializer ? serializer->getIntLookup() : 0;
-                if (lookup)
-                {
-                    int value = lookup->getValue(enumString);
-                    _ci.setProperty(object, propertyName, value);
-                }
-                return 0;
-            }
-            break;
+            _ci.setProperty(object, propertyName, static_cast<short>(lua_tonumber(_lua, -1)));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_SHORT):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_USHORT):
+    {
+        if (lua_isnumber(_lua, -1))
         {
-            if (lua_isnumber(_lua, -1))
-            {
-                _ci.setProperty(object, propertyName, static_cast<short>(lua_tonumber(_lua, -1)));
-                return 0;
-            }
-            break;
+            _ci.setProperty(object, propertyName, static_cast<unsigned short>(lua_tonumber(_lua, -1)));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_USHORT):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_INT):
+    {
+        if (lua_isnumber(_lua, -1))
         {
-            if (lua_isnumber(_lua, -1))
-            {
-                _ci.setProperty(object, propertyName, static_cast<unsigned short>(lua_tonumber(_lua, -1)));
-                return 0;
-            }
-            break;
+            _ci.setProperty(object, propertyName, static_cast<int>(lua_tonumber(_lua, -1)));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_INT):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_UINT):
+    {
+        if (lua_isnumber(_lua, -1))
         {
-            if (lua_isnumber(_lua, -1))
-            {
-                _ci.setProperty(object, propertyName, static_cast<int>(lua_tonumber(_lua, -1)));
-                return 0;
-            }
-            break;
+            _ci.setProperty(object, propertyName, static_cast<unsigned int>(lua_tonumber(_lua, -1)));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_UINT):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_FLOAT):
+    {
+        if (lua_isnumber(_lua, -1))
         {
-            if (lua_isnumber(_lua, -1))
-            {
-                _ci.setProperty(object, propertyName, static_cast<unsigned int>(lua_tonumber(_lua, -1)));
-                return 0;
-            }
-            break;
+            _ci.setProperty(object, propertyName, static_cast<float>(lua_tonumber(_lua, -1)));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_FLOAT):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_DOUBLE):
+    {
+        if (lua_isnumber(_lua, -1))
         {
-            if (lua_isnumber(_lua, -1))
-            {
-                _ci.setProperty(object, propertyName, static_cast<float>(lua_tonumber(_lua, -1)));
-                return 0;
-            }
-            break;
+            _ci.setProperty(object, propertyName, static_cast<double>(lua_tonumber(_lua, -1)));
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_DOUBLE):
-        {
-            if (lua_isnumber(_lua, -1))
-            {
-                _ci.setProperty(object, propertyName, static_cast<double>(lua_tonumber(_lua, -1)));
-                return 0;
-            }
-            break;
-        }
+        break;
+    }
 
-        case(osgDB::BaseSerializer::RW_VEC2B): if (getValueAndSetProperty<osg::Vec2b>(object, propertyName)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC3B): if (getValueAndSetProperty<osg::Vec3b>(object, propertyName)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC4B): if (getValueAndSetProperty<osg::Vec4b>(object, propertyName)) return 0; break;
+    case(osgDB::BaseSerializer::RW_VEC2B):
+        if (getValueAndSetProperty<osg::Vec2b>(object, propertyName)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3B):
+        if (getValueAndSetProperty<osg::Vec3b>(object, propertyName)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4B):
+        if (getValueAndSetProperty<osg::Vec4b>(object, propertyName)) return 0;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2UB): if (getValueAndSetProperty<osg::Vec2ub>(object, propertyName)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC3UB): if (getValueAndSetProperty<osg::Vec3ub>(object, propertyName)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC4UB): if (getValueAndSetProperty<osg::Vec4ub>(object, propertyName)) return 0; break;
+    case(osgDB::BaseSerializer::RW_VEC2UB):
+        if (getValueAndSetProperty<osg::Vec2ub>(object, propertyName)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3UB):
+        if (getValueAndSetProperty<osg::Vec3ub>(object, propertyName)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4UB):
+        if (getValueAndSetProperty<osg::Vec4ub>(object, propertyName)) return 0;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2F): if (getValueAndSetProperty<osg::Vec2f>(object, propertyName)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC3F): if (getValueAndSetProperty<osg::Vec3f>(object, propertyName)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC4F): if (getValueAndSetProperty<osg::Vec4f>(object, propertyName)) return 0; break;
+    case(osgDB::BaseSerializer::RW_VEC2F):
+        if (getValueAndSetProperty<osg::Vec2f>(object, propertyName)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3F):
+        if (getValueAndSetProperty<osg::Vec3f>(object, propertyName)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4F):
+        if (getValueAndSetProperty<osg::Vec4f>(object, propertyName)) return 0;
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2D): if (getValueAndSetProperty<osg::Vec2d>(object, propertyName)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC3D): if (getValueAndSetProperty<osg::Vec3d>(object, propertyName)) return 0; break;
-        case(osgDB::BaseSerializer::RW_VEC4D): if (getValueAndSetProperty<osg::Vec4d>(object, propertyName)) return 0; break;
+    case(osgDB::BaseSerializer::RW_VEC2D):
+        if (getValueAndSetProperty<osg::Vec2d>(object, propertyName)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3D):
+        if (getValueAndSetProperty<osg::Vec3d>(object, propertyName)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4D):
+        if (getValueAndSetProperty<osg::Vec4d>(object, propertyName)) return 0;
+        break;
 
-        case(osgDB::BaseSerializer::RW_QUAT): if (getValueAndSetProperty<osg::Quat>(object, propertyName)) return 0; break;
-        case(osgDB::BaseSerializer::RW_PLANE): if (getValueAndSetProperty<osg::Plane>(object, propertyName)) return 0; break;
+    case(osgDB::BaseSerializer::RW_QUAT):
+        if (getValueAndSetProperty<osg::Quat>(object, propertyName)) return 0;
+        break;
+    case(osgDB::BaseSerializer::RW_PLANE):
+        if (getValueAndSetProperty<osg::Plane>(object, propertyName)) return 0;
+        break;
 
 #ifdef OSG_USE_FLOAT_MATRIX
-        case(osgDB::BaseSerializer::RW_MATRIX):
+    case(osgDB::BaseSerializer::RW_MATRIX):
 #endif
-        case(osgDB::BaseSerializer::RW_MATRIXF):
+    case(osgDB::BaseSerializer::RW_MATRIXF):
+    {
+        osg::Matrixd value;
+        if (getValue(-1, value))
         {
-            osg::Matrixd value;
-            if (getValue(-1, value))
-            {
-                _ci.setProperty(object, propertyName, value);
-                return 0;
-            }
-            break;
+            _ci.setProperty(object, propertyName, value);
+            return 0;
         }
+        break;
+    }
 #ifndef OSG_USE_FLOAT_MATRIX
-        case(osgDB::BaseSerializer::RW_MATRIX):
+    case(osgDB::BaseSerializer::RW_MATRIX):
 #endif
-        case(osgDB::BaseSerializer::RW_MATRIXD):
+    case(osgDB::BaseSerializer::RW_MATRIXD):
+    {
+        osg::Matrixd value;
+        if (getValue(-1, value))
         {
-            osg::Matrixd value;
-            if (getValue(-1, value))
-            {
-                _ci.setProperty(object, propertyName, value);
-                return 0;
-            }
-            break;
+            _ci.setProperty(object, propertyName, value);
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_BOUNDINGBOXF):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGBOXF):
+    {
+        osg::BoundingBoxf value;
+        if (getValue(-1, value))
         {
-            osg::BoundingBoxf value;
-            if (getValue(-1, value))
-            {
-                _ci.setProperty(object, propertyName, value);
-                return 0;
-            }
-            break;
+            _ci.setProperty(object, propertyName, value);
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_BOUNDINGBOXD):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGBOXD):
+    {
+        osg::BoundingBoxd value;
+        if (getValue(-1, value))
         {
-            osg::BoundingBoxd value;
-            if (getValue(-1, value))
-            {
-                _ci.setProperty(object, propertyName, value);
-                return 0;
-            }
-            break;
+            _ci.setProperty(object, propertyName, value);
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_BOUNDINGSPHEREF):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGSPHEREF):
+    {
+        osg::BoundingSpheref value;
+        if (getValue(-1, value))
         {
-            osg::BoundingSpheref value;
-            if (getValue(-1, value))
-            {
-                _ci.setProperty(object, propertyName, value);
-                return 0;
-            }
-            break;
+            _ci.setProperty(object, propertyName, value);
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_BOUNDINGSPHERED):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGSPHERED):
+    {
+        osg::BoundingSphered value;
+        if (getValue(-1, value))
         {
-            osg::BoundingSphered value;
-            if (getValue(-1, value))
-            {
-                _ci.setProperty(object, propertyName, value);
-                return 0;
-            }
-            break;
+            _ci.setProperty(object, propertyName, value);
+            return 0;
         }
-        case(osgDB::BaseSerializer::RW_IMAGE):
-        case(osgDB::BaseSerializer::RW_OBJECT):
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_IMAGE):
+    case(osgDB::BaseSerializer::RW_OBJECT):
+    {
+        if (lua_istable(_lua, -1))
         {
-            if (lua_istable(_lua, -1))
-            {
-                osg::Object* value = 0;
-                lua_pushstring(_lua, "object_ptr");
-                lua_rawget(_lua, -2);
-                if (lua_type(_lua, -1)==LUA_TUSERDATA) value = *const_cast<osg::Object**>(reinterpret_cast<const osg::Object**>(lua_touserdata(_lua,-1)));
-                lua_pop(_lua, 1);
+            osg::Object* value = 0;
+            lua_pushstring(_lua, "object_ptr");
+            lua_rawget(_lua, -2);
+            if (lua_type(_lua, -1)==LUA_TUSERDATA) value = *const_cast<osg::Object**>(reinterpret_cast<const osg::Object**>(lua_touserdata(_lua,-1)));
+            lua_pop(_lua, 1);
 
-                if (value)
-                {
-                    _ci.setProperty(object, propertyName, value);
-                    return 0;
-                }
-                else
-                {
-                    OSG_NOTICE<<"Error: lua type '"<<lua_typename(_lua,lua_type(_lua, -1))<<"' cannot be assigned to "<<object->className()<<"::"<<propertyName<<std::endl;
-                }
-            }
-            else if (lua_type(_lua,-1)==LUA_TFUNCTION)
+            if (value)
             {
-                int ref = luaL_ref(_lua, LUA_REGISTRYINDEX);
-                osg::ref_ptr<LuaCallbackObject> lco = new LuaCallbackObject(propertyName, this, ref);
-                osg::Object* value = lco.get();
-                _ci.setProperty(object, propertyName, value);
-
-                return 0;
-            }
-            else if (lua_isnil(_lua, -1))
-            {
-                OSG_NOTICE<<"Assigning property object (nil) to to object "<<object->className()<<"::"<<propertyName<<std::endl;
-                osg::Object* value = 0;
                 _ci.setProperty(object, propertyName, value);
                 return 0;
             }
             else
             {
                 OSG_NOTICE<<"Error: lua type '"<<lua_typename(_lua,lua_type(_lua, -1))<<"' cannot be assigned to "<<object->className()<<"::"<<propertyName<<std::endl;
-                return 0;
             }
-            break;
         }
-        case(osgDB::BaseSerializer::RW_LIST):
-        default:
-            break;
+        else if (lua_type(_lua,-1)==LUA_TFUNCTION)
+        {
+            int ref = luaL_ref(_lua, LUA_REGISTRYINDEX);
+            osg::ref_ptr<LuaCallbackObject> lco = new LuaCallbackObject(propertyName, this, ref);
+            osg::Object* value = lco.get();
+            _ci.setProperty(object, propertyName, value);
+
+            return 0;
+        }
+        else if (lua_isnil(_lua, -1))
+        {
+            OSG_NOTICE<<"Assigning property object (nil) to to object "<<object->className()<<"::"<<propertyName<<std::endl;
+            osg::Object* value = 0;
+            _ci.setProperty(object, propertyName, value);
+            return 0;
+        }
+        else
+        {
+            OSG_NOTICE<<"Error: lua type '"<<lua_typename(_lua,lua_type(_lua, -1))<<"' cannot be assigned to "<<object->className()<<"::"<<propertyName<<std::endl;
+            return 0;
+        }
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_LIST):
+    default:
+        break;
     }
     OSG_NOTICE<<"LuaScriptEngine::setPropertyFromStack("<<object<<", "<<propertyName<<") property of type = "<<_ci.getTypeName(type)<<" not implemented"<<std::endl;
     return 0;
@@ -3312,7 +4052,11 @@ bool LuaScriptEngine::getfields(int pos, const char* f1, const char* f2, int typ
     int abs_pos = getAbsolutePos(pos);
     lua_getfield(_lua, abs_pos, f1);
     lua_getfield(_lua, abs_pos, f2);
-    if (lua_type(_lua, -2)!=type || lua_type(_lua, -1)!=type) { lua_pop(_lua, 2); return false; }
+    if (lua_type(_lua, -2)!=type || lua_type(_lua, -1)!=type)
+    {
+        lua_pop(_lua, 2);
+        return false;
+    }
 
     return true;
 }
@@ -3324,7 +4068,11 @@ bool LuaScriptEngine::getfields(int pos, const char* f1, const char* f2, const c
     lua_getfield(_lua, abs_pos, f2);
     lua_getfield(_lua, abs_pos, f3);
     if (lua_type(_lua, -3)!=type || lua_type(_lua, -2)!=type ||
-        lua_type(_lua, -1)!=type) { lua_pop(_lua, 3); return false; }
+            lua_type(_lua, -1)!=type)
+    {
+        lua_pop(_lua, 3);
+        return false;
+    }
 
     return true;
 }
@@ -3337,7 +4085,11 @@ bool LuaScriptEngine::getfields(int pos, const char* f1, const char* f2, const c
     lua_getfield(_lua, abs_pos, f3);
     lua_getfield(_lua, abs_pos, f4);
     if (lua_type(_lua, -4)!=type || lua_type(_lua, -3)!=type ||
-        lua_type(_lua, -2)!=type || lua_type(_lua, -1)!=type) { lua_pop(_lua, 4); return false; }
+            lua_type(_lua, -2)!=type || lua_type(_lua, -1)!=type)
+    {
+        lua_pop(_lua, 4);
+        return false;
+    }
 
     return true;
 }
@@ -3352,20 +4104,29 @@ bool LuaScriptEngine::getfields(int pos, const char* f1, const char* f2, const c
     lua_getfield(_lua, abs_pos, f5);
     lua_getfield(_lua, abs_pos, f6);
     if (lua_type(_lua, -6)!=type || lua_type(_lua, -5)!=type ||
-        lua_type(_lua, -4)!=type || lua_type(_lua, -3)!=type ||
-        lua_type(_lua, -2)!=type || lua_type(_lua, -1)!=type) { lua_pop(_lua, 6); return false; }
+            lua_type(_lua, -4)!=type || lua_type(_lua, -3)!=type ||
+            lua_type(_lua, -2)!=type || lua_type(_lua, -1)!=type)
+    {
+        lua_pop(_lua, 6);
+        return false;
+    }
 
     return true;
 }
 
 bool LuaScriptEngine::getelements(int pos, int numElements, int type) const
 {
+    int i = 0;
     int abs_pos = getAbsolutePos(pos);
-    for(int i=0; i<numElements; ++i)
+    for( i=0; i<numElements; ++i)
     {
-        lua_pushinteger(_lua, i);
+        lua_pushinteger(_lua, i+1);
         lua_gettable(_lua, abs_pos);
-        if (lua_type(_lua, -1)!=type) { lua_pop(_lua, i+1); return false; }
+        if (lua_type(_lua, -1)!=type)
+        {
+            lua_pop(_lua, i+1);
+            return false;
+        }
     }
     return true;
 }
@@ -3376,67 +4137,71 @@ osgDB::BaseSerializer::Type LuaScriptEngine::getType(int pos) const
     int abs_pos = getAbsolutePos(pos);
     switch(lua_type(_lua, abs_pos))
     {
-        case(LUA_TNIL): return osgDB::BaseSerializer::RW_UNDEFINED;
-        case(LUA_TNUMBER): return osgDB::BaseSerializer::RW_DOUBLE;
-        case(LUA_TBOOLEAN): return osgDB::BaseSerializer::RW_BOOL;
-        case(LUA_TSTRING): return osgDB::BaseSerializer::RW_STRING;
-        case(LUA_TTABLE):
+    case(LUA_TNIL):
+        return osgDB::BaseSerializer::RW_UNDEFINED;
+    case(LUA_TNUMBER):
+        return osgDB::BaseSerializer::RW_DOUBLE;
+    case(LUA_TBOOLEAN):
+        return osgDB::BaseSerializer::RW_BOOL;
+    case(LUA_TSTRING):
+        return osgDB::BaseSerializer::RW_STRING;
+    case(LUA_TTABLE):
+    {
+        lua_pushstring(_lua, "object_ptr");
+        lua_rawget(_lua, abs_pos);
+        bool isObject = (lua_type(_lua, -1)==LUA_TUSERDATA);
+        lua_pop(_lua, 1);
+
+        if (isObject)
         {
-            lua_pushstring(_lua, "object_ptr");
-            lua_rawget(_lua, abs_pos);
-            bool isObject = (lua_type(_lua, -1)==LUA_TUSERDATA);
-            lua_pop(_lua, 1);
-
-            if (isObject)
-            {
-                return osgDB::BaseSerializer::RW_OBJECT;
-            }
-
-
-            int n = lua_gettop(_lua);    /* number of arguments */
-            lua_pushnil(_lua);
-
-            int numStringKeys = 0;
-            int numNumberKeys = 0;
-            int numNumberFields = 0;
-
-            while (lua_next(_lua, n) != 0)
-            {
-                if (lua_type(_lua, -2)==LUA_TSTRING) ++numStringKeys;
-                else if (lua_type(_lua, -2)==LUA_TNUMBER) ++numNumberKeys;
-
-                if (lua_type(_lua, -1)==LUA_TNUMBER) ++numNumberFields;
-
-                lua_pop(_lua, 1); // remove value, leave key for next iteration
-            }
-
-            if ((numStringKeys==2 || numNumberKeys==2) && (numNumberFields==2))
-            {
-                return osgDB::BaseSerializer::RW_VEC2D;
-            }
-            else if ((numStringKeys==3 || numNumberKeys==3) && (numNumberFields==3))
-            {
-                return osgDB::BaseSerializer::RW_VEC3D;
-            }
-            else if ((numStringKeys==4 || numNumberKeys==4) && (numNumberFields==4))
-            {
-                return osgDB::BaseSerializer::RW_VEC4D;
-            }
-            else if ((numNumberKeys==16) && (numNumberFields==16))
-            {
-                return osgDB::BaseSerializer::RW_MATRIXD;
-            }
-            else if ((numNumberKeys==6) && (numNumberFields==6))
-            {
-                return osgDB::BaseSerializer::RW_BOUNDINGBOXD;
-            }
-            // not supported
-            OSG_NOTICE<<"Warning: LuaScriptEngine::getType() Lua table configuration not supported."<<std::endl;
-            break;
+            return osgDB::BaseSerializer::RW_OBJECT;
         }
-        default:
-            OSG_NOTICE<<"Warning: LuaScriptEngine::getType() Lua type "<<lua_typename(_lua, lua_type(_lua, abs_pos))<<" not supported."<<std::endl;
-            break;
+
+
+        int n = lua_gettop(_lua);    /* number of arguments */
+        lua_pushnil(_lua);
+
+        int numStringKeys = 0;
+        int numNumberKeys = 0;
+        int numNumberFields = 0;
+
+        while (lua_next(_lua, n) != 0)
+        {
+            if (lua_type(_lua, -2)==LUA_TSTRING) ++numStringKeys;
+            else if (lua_type(_lua, -2)==LUA_TNUMBER) ++numNumberKeys;
+
+            if (lua_type(_lua, -1)==LUA_TNUMBER) ++numNumberFields;
+
+            lua_pop(_lua, 1); // remove value, leave key for next iteration
+        }
+
+        if ((numStringKeys==2 || numNumberKeys==2) && (numNumberFields==2))
+        {
+            return osgDB::BaseSerializer::RW_VEC2D;
+        }
+        else if ((numStringKeys==3 || numNumberKeys==3) && (numNumberFields==3))
+        {
+            return osgDB::BaseSerializer::RW_VEC3D;
+        }
+        else if ((numStringKeys==4 || numNumberKeys==4) && (numNumberFields==4))
+        {
+            return osgDB::BaseSerializer::RW_VEC4D;
+        }
+        else if ((numNumberKeys==16) && (numNumberFields==16))
+        {
+            return osgDB::BaseSerializer::RW_MATRIXD;
+        }
+        else if ((numNumberKeys==6) && (numNumberFields==6))
+        {
+            return osgDB::BaseSerializer::RW_BOUNDINGBOXD;
+        }
+        // not supported
+        OSG_NOTICE<<"Warning: LuaScriptEngine::getType() Lua table configuration not supported."<<std::endl;
+        break;
+    }
+    default:
+        OSG_NOTICE<<"Warning: LuaScriptEngine::getType() Lua type "<<lua_typename(_lua, lua_type(_lua, abs_pos))<<" not supported."<<std::endl;
+        break;
 
     }
     return osgDB::BaseSerializer::RW_UNDEFINED;
@@ -3448,9 +4213,9 @@ bool LuaScriptEngine::getvec2(int pos) const
     if (lua_istable(_lua, abs_pos))
     {
         if (getfields(abs_pos, "x", "y", LUA_TNUMBER) ||
-            getfields(abs_pos, "s", "t", LUA_TNUMBER) ||
-            getfields(abs_pos, "luminance", "alpha", LUA_TNUMBER) ||
-            getelements(abs_pos, 2, LUA_TNUMBER))
+                getfields(abs_pos, "s", "t", LUA_TNUMBER) ||
+                getfields(abs_pos, "luminance", "alpha", LUA_TNUMBER) ||
+                getelements(abs_pos, 2, LUA_TNUMBER))
         {
             return true;
         }
@@ -3464,10 +4229,10 @@ bool LuaScriptEngine::getvec3(int pos) const
     if (lua_istable(_lua, abs_pos))
     {
         if (getfields(abs_pos, "x", "y", "z", LUA_TNUMBER) ||
-            getfields(abs_pos, "r", "g", "b", LUA_TNUMBER) ||
-            getfields(abs_pos, "red", "green", "blue", LUA_TNUMBER) ||
-            getfields(abs_pos, "s", "t", "r", LUA_TNUMBER) ||
-            getelements(abs_pos, 3, LUA_TNUMBER))
+                getfields(abs_pos, "r", "g", "b", LUA_TNUMBER) ||
+                getfields(abs_pos, "red", "green", "blue", LUA_TNUMBER) ||
+                getfields(abs_pos, "s", "t", "r", LUA_TNUMBER) ||
+                getelements(abs_pos, 3, LUA_TNUMBER))
         {
             return true;
         }
@@ -3480,10 +4245,10 @@ bool LuaScriptEngine::getvec4(int pos) const
     if (lua_istable(_lua, abs_pos))
     {
         if (getfields(abs_pos, "x", "y", "z", "w", LUA_TNUMBER) ||
-            getfields(abs_pos, "r", "g", "b", "a", LUA_TNUMBER) ||
-            getfields(abs_pos, "red", "green", "blue", "alpha", LUA_TNUMBER) ||
-            getfields(abs_pos, "s", "t", "r", "q", LUA_TNUMBER) ||
-            getelements(abs_pos, 4, LUA_TNUMBER))
+                getfields(abs_pos, "r", "g", "b", "a", LUA_TNUMBER) ||
+                getfields(abs_pos, "red", "green", "blue", "alpha", LUA_TNUMBER) ||
+                getfields(abs_pos, "s", "t", "r", "q", LUA_TNUMBER) ||
+                getelements(abs_pos, 4, LUA_TNUMBER))
         {
             return true;
         }
@@ -3510,7 +4275,7 @@ bool LuaScriptEngine::getboundingbox(int pos) const
     if (lua_istable(_lua, abs_pos))
     {
         if (getfields(abs_pos, "xMin", "yMin", "zMin", "xMax", "yMax", "zMax", LUA_TNUMBER) ||
-            getelements(abs_pos, 6, LUA_TNUMBER))
+                getelements(abs_pos, 6, LUA_TNUMBER))
         {
             return true;
         }
@@ -3524,7 +4289,7 @@ bool LuaScriptEngine::getboundingsphere(int pos) const
     if (lua_istable(_lua, abs_pos))
     {
         if (getfields(abs_pos, "x", "y", "z", "radius", LUA_TNUMBER) ||
-            getelements(abs_pos, 4, LUA_TNUMBER))
+                getelements(abs_pos, 4, LUA_TNUMBER))
         {
             return true;
         }
@@ -3543,6 +4308,7 @@ bool LuaScriptEngine::getValue(int pos, osg::Matrixf& value) const
             value(r,c) = lua_tonumber(_lua, -16+(r*4+c));
         }
     }
+    lua_pop(_lua, 16);
     return true;
 }
 
@@ -3557,6 +4323,7 @@ bool LuaScriptEngine::getValue(int pos, osg::Matrixd& value) const
             value(r,c) = lua_tonumber(_lua, -16+(r*4+c));
         }
     }
+    lua_pop(_lua, 16);
     return true;
 }
 
@@ -3595,13 +4362,17 @@ bool LuaScriptEngine::getValue(int pos, osg::BoundingSphered& value) const
 void LuaScriptEngine::pushValue(const osg::Matrixf& value) const
 {
     lua_newtable(_lua);
-    lua_newtable(_lua); luaL_getmetatable(_lua, "LuaScriptEngine.Table"); lua_setmetatable(_lua, -2);
+    lua_newtable(_lua);
+    luaL_getmetatable(_lua, "LuaScriptEngine.Table");
+    lua_setmetatable(_lua, -2);
 
     for(unsigned int r=0; r<4; ++r)
     {
         for(unsigned int c=0; c<4; ++c)
         {
-            lua_pushnumber(_lua, r*4+c); lua_pushinteger(_lua, (lua_Integer) value(r,c)); lua_settable(_lua, -3);
+            lua_pushinteger(_lua,1+ r * 4 + c);
+            lua_pushnumber(_lua, (lua_Integer)value(r, c));
+            lua_settable(_lua, -3);
         }
     }
 }
@@ -3609,13 +4380,17 @@ void LuaScriptEngine::pushValue(const osg::Matrixf& value) const
 void LuaScriptEngine::pushValue(const osg::Matrixd& value) const
 {
     lua_newtable(_lua);
-    lua_newtable(_lua); luaL_getmetatable(_lua, "LuaScriptEngine.Table"); lua_setmetatable(_lua, -2);
+    lua_newtable(_lua);
+    luaL_getmetatable(_lua, "LuaScriptEngine.Table");
+    lua_setmetatable(_lua, -2);
 
     for(unsigned int r=0; r<4; ++r)
     {
         for(unsigned int c=0; c<4; ++c)
         {
-            lua_pushinteger(_lua, r*4+c); lua_pushnumber(_lua, value(r,c)); lua_settable(_lua, -3);
+            lua_pushinteger(_lua,1+ r*4+c);
+            lua_pushnumber(_lua, value(r,c));
+            lua_settable(_lua, -3);
         }
     }
 }
@@ -3623,45 +4398,93 @@ void LuaScriptEngine::pushValue(const osg::Matrixd& value) const
 void LuaScriptEngine::pushValue(const osg::BoundingBoxf& value) const
 {
     lua_newtable(_lua);
-    lua_newtable(_lua); luaL_getmetatable(_lua, "LuaScriptEngine.Table"); lua_setmetatable(_lua, -2);
-    lua_pushstring(_lua, "xMin"); lua_pushnumber(_lua, value.xMin()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "yMin"); lua_pushnumber(_lua, value.yMin()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "zMin"); lua_pushnumber(_lua, value.zMin()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "xMax"); lua_pushnumber(_lua, value.xMax()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "yMax"); lua_pushnumber(_lua, value.yMax()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "zMax"); lua_pushnumber(_lua, value.zMax()); lua_settable(_lua, -3);
+    lua_newtable(_lua);
+    luaL_getmetatable(_lua, "LuaScriptEngine.Table");
+    lua_setmetatable(_lua, -2);
+    lua_pushstring(_lua, "xMin");
+    lua_pushnumber(_lua, value.xMin());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "yMin");
+    lua_pushnumber(_lua, value.yMin());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "zMin");
+    lua_pushnumber(_lua, value.zMin());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "xMax");
+    lua_pushnumber(_lua, value.xMax());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "yMax");
+    lua_pushnumber(_lua, value.yMax());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "zMax");
+    lua_pushnumber(_lua, value.zMax());
+    lua_settable(_lua, -3);
 }
 
 void LuaScriptEngine::pushValue(const osg::BoundingBoxd& value) const
 {
     lua_newtable(_lua);
-    lua_newtable(_lua); luaL_getmetatable(_lua, "LuaScriptEngine.Table"); lua_setmetatable(_lua, -2);
-    lua_pushstring(_lua, "xMin"); lua_pushnumber(_lua, value.xMin()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "yMin"); lua_pushnumber(_lua, value.yMin()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "zMin"); lua_pushnumber(_lua, value.zMin()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "xMax"); lua_pushnumber(_lua, value.xMax()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "yMax"); lua_pushnumber(_lua, value.yMax()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "zMax"); lua_pushnumber(_lua, value.zMax()); lua_settable(_lua, -3);
+    lua_newtable(_lua);
+    luaL_getmetatable(_lua, "LuaScriptEngine.Table");
+    lua_setmetatable(_lua, -2);
+    lua_pushstring(_lua, "xMin");
+    lua_pushnumber(_lua, value.xMin());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "yMin");
+    lua_pushnumber(_lua, value.yMin());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "zMin");
+    lua_pushnumber(_lua, value.zMin());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "xMax");
+    lua_pushnumber(_lua, value.xMax());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "yMax");
+    lua_pushnumber(_lua, value.yMax());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "zMax");
+    lua_pushnumber(_lua, value.zMax());
+    lua_settable(_lua, -3);
 }
 
 void LuaScriptEngine::pushValue(const osg::BoundingSpheref& value) const
 {
     lua_newtable(_lua);
-    lua_newtable(_lua); luaL_getmetatable(_lua, "LuaScriptEngine.Table"); lua_setmetatable(_lua, -2);
-    lua_pushstring(_lua, "x"); lua_pushnumber(_lua, value.center().x()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "y"); lua_pushnumber(_lua, value.center().y()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "z"); lua_pushnumber(_lua, value.center().z()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "radius"); lua_pushnumber(_lua, value.radius()); lua_settable(_lua, -3);
+    lua_newtable(_lua);
+    luaL_getmetatable(_lua, "LuaScriptEngine.Table");
+    lua_setmetatable(_lua, -2);
+    lua_pushstring(_lua, "x");
+    lua_pushnumber(_lua, value.center().x());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "y");
+    lua_pushnumber(_lua, value.center().y());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "z");
+    lua_pushnumber(_lua, value.center().z());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "radius");
+    lua_pushnumber(_lua, value.radius());
+    lua_settable(_lua, -3);
 }
 
 void LuaScriptEngine::pushValue(const osg::BoundingSphered& value) const
 {
     lua_newtable(_lua);
-    lua_newtable(_lua); luaL_getmetatable(_lua, "LuaScriptEngine.Table"); lua_setmetatable(_lua, -2);
-    lua_pushstring(_lua, "x"); lua_pushnumber(_lua, value.center().x()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "y"); lua_pushnumber(_lua, value.center().y()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "z"); lua_pushnumber(_lua, value.center().z()); lua_settable(_lua, -3);
-    lua_pushstring(_lua, "radius"); lua_pushnumber(_lua, value.radius()); lua_settable(_lua, -3);
+    lua_newtable(_lua);
+    luaL_getmetatable(_lua, "LuaScriptEngine.Table");
+    lua_setmetatable(_lua, -2);
+    lua_pushstring(_lua, "x");
+    lua_pushnumber(_lua, value.center().x());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "y");
+    lua_pushnumber(_lua, value.center().y());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "z");
+    lua_pushnumber(_lua, value.center().z());
+    lua_settable(_lua, -3);
+    lua_pushstring(_lua, "radius");
+    lua_pushnumber(_lua, value.radius());
+    lua_settable(_lua, -3);
 }
 
 bool LuaScriptEngine::pushParameter(osg::Object* object) const
@@ -3704,144 +4527,196 @@ osg::Object* LuaScriptEngine::popParameterObject() const
     osgDB::BaseSerializer::Type type = getType(-1);
     switch(type)
     {
-        case(osgDB::BaseSerializer::RW_BOOL):
+    case(osgDB::BaseSerializer::RW_BOOL):
+    {
+        if (lua_isboolean(_lua, -1)) object = new osg::BoolValueObject("", lua_toboolean(_lua, -1)!=0);
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_STRING):
+    {
+        if (lua_isstring(_lua, -1)) object = new osg::StringValueObject("", lua_tostring(_lua, -1));
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_GLENUM):
+    case(osgDB::BaseSerializer::RW_ENUM):
+        if (lua_isstring(_lua, -1))
         {
-            if (lua_isboolean(_lua, -1)) object = new osg::BoolValueObject("", lua_toboolean(_lua, -1)!=0);
-            break;
+            object = new osg::StringValueObject("", lua_tostring(_lua, -1));
         }
-        case(osgDB::BaseSerializer::RW_STRING):
+        else if (lua_isnumber(_lua, -1))
         {
-            if (lua_isstring(_lua, -1)) object = new osg::StringValueObject("", lua_tostring(_lua, -1));
-            break;
+            object = new osg::IntValueObject("", static_cast<int>(lua_tonumber(_lua, -1)));
         }
-        case(osgDB::BaseSerializer::RW_GLENUM):
-        case(osgDB::BaseSerializer::RW_ENUM):
-            if (lua_isstring(_lua, -1))
-            {
-                object = new osg::StringValueObject("", lua_tostring(_lua, -1));
-            }
-            else if (lua_isnumber(_lua, -1))
-            {
-                object = new osg::IntValueObject("", static_cast<int>(lua_tonumber(_lua, -1)));
-            }
-            break;
-        case(osgDB::BaseSerializer::RW_INT):
-        {
-            if (lua_isnumber(_lua, -1)) object = new osg::IntValueObject("", static_cast<int>(lua_tonumber(_lua, -1)));
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_UINT):
-        {
-            if (lua_isnumber(_lua, -1)) object = new osg::UIntValueObject("", static_cast<unsigned int>(lua_tonumber(_lua, -1)));
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_FLOAT):
-        {
-            if (lua_isnumber(_lua, -1)) object = new osg::FloatValueObject("", static_cast<float>(lua_tonumber(_lua, -1)));
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_DOUBLE):
-        {
-            if (lua_isnumber(_lua, -1)) object = new osg::DoubleValueObject("", static_cast<double>(lua_tonumber(_lua, -1)));
-            break;
-        }
+        break;
+    case(osgDB::BaseSerializer::RW_INT):
+    {
+        if (lua_isnumber(_lua, -1)) object = new osg::IntValueObject("", static_cast<int>(lua_tonumber(_lua, -1)));
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_UINT):
+    {
+        if (lua_isnumber(_lua, -1)) object = new osg::UIntValueObject("", static_cast<unsigned int>(lua_tonumber(_lua, -1)));
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_FLOAT):
+    {
+        if (lua_isnumber(_lua, -1)) object = new osg::FloatValueObject("", static_cast<float>(lua_tonumber(_lua, -1)));
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_DOUBLE):
+    {
+        if (lua_isnumber(_lua, -1)) object = new osg::DoubleValueObject("", static_cast<double>(lua_tonumber(_lua, -1)));
+        break;
+    }
 
-        case(osgDB::BaseSerializer::RW_VEC2B): object = getValueObject<osg::Vec2b>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC3B): object = getValueObject<osg::Vec3b>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC4B): object = getValueObject<osg::Vec4b>(-1); break;
+    case(osgDB::BaseSerializer::RW_VEC2B):
+        object = getValueObject<osg::Vec2b>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3B):
+        object = getValueObject<osg::Vec3b>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4B):
+        object = getValueObject<osg::Vec4b>(-1);
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2UB): object = getValueObject<osg::Vec2ub>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC3UB): object = getValueObject<osg::Vec3ub>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC4UB): object = getValueObject<osg::Vec4ub>(-1); break;
+    case(osgDB::BaseSerializer::RW_VEC2UB):
+        object = getValueObject<osg::Vec2ub>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3UB):
+        object = getValueObject<osg::Vec3ub>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4UB):
+        object = getValueObject<osg::Vec4ub>(-1);
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2S): object = getValueObject<osg::Vec2s>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC3S): object = getValueObject<osg::Vec3s>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC4S): object = getValueObject<osg::Vec4s>(-1); break;
+    case(osgDB::BaseSerializer::RW_VEC2S):
+        object = getValueObject<osg::Vec2s>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3S):
+        object = getValueObject<osg::Vec3s>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4S):
+        object = getValueObject<osg::Vec4s>(-1);
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2US): object = getValueObject<osg::Vec2us>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC3US): object = getValueObject<osg::Vec3us>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC4US): object = getValueObject<osg::Vec4us>(-1); break;
+    case(osgDB::BaseSerializer::RW_VEC2US):
+        object = getValueObject<osg::Vec2us>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3US):
+        object = getValueObject<osg::Vec3us>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4US):
+        object = getValueObject<osg::Vec4us>(-1);
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2I): object = getValueObject<osg::Vec2i>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC3I): object = getValueObject<osg::Vec3i>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC4I): object = getValueObject<osg::Vec4i>(-1); break;
+    case(osgDB::BaseSerializer::RW_VEC2I):
+        object = getValueObject<osg::Vec2i>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3I):
+        object = getValueObject<osg::Vec3i>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4I):
+        object = getValueObject<osg::Vec4i>(-1);
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2UI): object = getValueObject<osg::Vec2ui>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC3UI): object = getValueObject<osg::Vec3ui>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC4UI): object = getValueObject<osg::Vec4ui>(-1); break;
+    case(osgDB::BaseSerializer::RW_VEC2UI):
+        object = getValueObject<osg::Vec2ui>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3UI):
+        object = getValueObject<osg::Vec3ui>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4UI):
+        object = getValueObject<osg::Vec4ui>(-1);
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2F): object = getValueObject<osg::Vec2f>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC3F): object = getValueObject<osg::Vec3f>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC4F): object = getValueObject<osg::Vec4f>(-1); break;
+    case(osgDB::BaseSerializer::RW_VEC2F):
+        object = getValueObject<osg::Vec2f>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3F):
+        object = getValueObject<osg::Vec3f>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4F):
+        object = getValueObject<osg::Vec4f>(-1);
+        break;
 
-        case(osgDB::BaseSerializer::RW_VEC2D): object = getValueObject<osg::Vec2d>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC3D): object = getValueObject<osg::Vec3d>(-1); break;
-        case(osgDB::BaseSerializer::RW_VEC4D): object = getValueObject<osg::Vec4d>(-1); break;
+    case(osgDB::BaseSerializer::RW_VEC2D):
+        object = getValueObject<osg::Vec2d>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC3D):
+        object = getValueObject<osg::Vec3d>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_VEC4D):
+        object = getValueObject<osg::Vec4d>(-1);
+        break;
 
-        case(osgDB::BaseSerializer::RW_QUAT): object = getValueObject<osg::Quat>(-1); break;
-        case(osgDB::BaseSerializer::RW_PLANE): object = getValueObject<osg::Plane>(-1); break;
+    case(osgDB::BaseSerializer::RW_QUAT):
+        object = getValueObject<osg::Quat>(-1);
+        break;
+    case(osgDB::BaseSerializer::RW_PLANE):
+        object = getValueObject<osg::Plane>(-1);
+        break;
 
 #ifdef OSG_USE_FLOAT_MATRIX
-        case(osgDB::BaseSerializer::RW_MATRIX):
+    case(osgDB::BaseSerializer::RW_MATRIX):
 #endif
-        case(osgDB::BaseSerializer::RW_MATRIXF):
-        {
-            osg::Matrixf value;
-            if (getValue(-1, value)) object = new osg::MatrixfValueObject("", value);
-            break;
-        }
+    case(osgDB::BaseSerializer::RW_MATRIXF):
+    {
+        osg::Matrixf value;
+        if (getValue(-1, value)) object = new osg::MatrixfValueObject("", value);
+        break;
+    }
 
 #ifndef OSG_USE_FLOAT_MATRIX
-        case(osgDB::BaseSerializer::RW_MATRIX):
+    case(osgDB::BaseSerializer::RW_MATRIX):
 #endif
-        case(osgDB::BaseSerializer::RW_MATRIXD):
+    case(osgDB::BaseSerializer::RW_MATRIXD):
+    {
+        osg::Matrixd value;
+        if (getValue(-1, value)) object = new osg::MatrixdValueObject("", value);
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGBOXF):
+    {
+        osg::BoundingBoxf value;
+        if (getValue(-1, value)) object = new osg::BoundingBoxfValueObject("", value);
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGBOXD):
+    {
+        osg::BoundingBoxd value;
+        if (getValue(-1, value)) object = new osg::BoundingBoxdValueObject("", value);
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGSPHEREF):
+    {
+        osg::BoundingSpheref value;
+        if (getValue(-1, value)) object = new osg::BoundingSpherefValueObject("", value);
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_BOUNDINGSPHERED):
+    {
+        osg::BoundingSphered value;
+        if (getValue(-1, value)) object = new osg::BoundingSpheredValueObject("", value);
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_LIST):
+    {
+        OSG_NOTICE<<"Need to implement RW_LIST support"<<std::endl;
+        break;
+    }
+    case(osgDB::BaseSerializer::RW_IMAGE):
+    case(osgDB::BaseSerializer::RW_OBJECT):
+    {
+        lua_pushstring(_lua, "object_ptr");
+        lua_rawget(_lua, -2);
+        if (lua_type(_lua, -1)==LUA_TUSERDATA)
         {
-            osg::Matrixd value;
-            if (getValue(-1, value)) object = new osg::MatrixdValueObject("", value);
-            break;
+            object = *const_cast<osg::Object**>(reinterpret_cast<const osg::Object**>(lua_touserdata(_lua,-1)));
         }
-        case(osgDB::BaseSerializer::RW_BOUNDINGBOXF):
-        {
-            osg::BoundingBoxf value;
-            if (getValue(-1, value)) object = new osg::BoundingBoxfValueObject("", value);
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_BOUNDINGBOXD):
-        {
-            osg::BoundingBoxd value;
-            if (getValue(-1, value)) object = new osg::BoundingBoxdValueObject("", value);
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_BOUNDINGSPHEREF):
-        {
-            osg::BoundingSpheref value;
-            if (getValue(-1, value)) object = new osg::BoundingSpherefValueObject("", value);
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_BOUNDINGSPHERED):
-        {
-            osg::BoundingSphered value;
-            if (getValue(-1, value)) object = new osg::BoundingSpheredValueObject("", value);
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_LIST):
-        {
-            OSG_NOTICE<<"Need to implement RW_LIST support"<<std::endl;
-            break;
-        }
-        case(osgDB::BaseSerializer::RW_IMAGE):
-        case(osgDB::BaseSerializer::RW_OBJECT):
-        {
-            lua_pushstring(_lua, "object_ptr");
-            lua_rawget(_lua, -2);
-            if (lua_type(_lua, -1)==LUA_TUSERDATA)
-            {
-                object = *const_cast<osg::Object**>(reinterpret_cast<const osg::Object**>(lua_touserdata(_lua,-1)));
-            }
-            lua_pop(_lua, 1);
-        }
-        default:
-            break;
+        lua_pop(_lua, 1);
+    }
+    default:
+        break;
     }
 
     lua_pop(_lua, 1);
@@ -3873,7 +4748,9 @@ void LuaScriptEngine::pushContainer(osg::Object* object, const std::string& prop
             object->ref();
         }
 
-        lua_pushstring(_lua, "containerPropertyName"); lua_pushstring(_lua, propertyName.c_str()); lua_settable(_lua, -3);
+        lua_pushstring(_lua, "containerPropertyName");
+        lua_pushstring(_lua, propertyName.c_str());
+        lua_settable(_lua, -3);
 
         osgDB::BaseSerializer::Type type;
         osgDB::BaseSerializer* bs = _ci.getSerializer(object, propertyName, type);
@@ -3945,16 +4822,24 @@ void LuaScriptEngine::pushObject(osg::Object* object) const
             object->ref();
         }
 
-        lua_pushstring(_lua, "libraryName"); lua_pushstring(_lua, object->libraryName()); lua_settable(_lua, -3);
-        lua_pushstring(_lua, "className"); lua_pushstring(_lua, object->className()); lua_settable(_lua, -3);
-        lua_pushstring(_lua, "compoundClassName"); lua_pushstring(_lua, object->getCompoundClassName().c_str()); lua_settable(_lua, -3);
+        lua_pushstring(_lua, "libraryName");
+        lua_pushstring(_lua, object->libraryName());
+        lua_settable(_lua, -3);
+        lua_pushstring(_lua, "className");
+        lua_pushstring(_lua, object->className());
+        lua_settable(_lua, -3);
+        lua_pushstring(_lua, "compoundClassName");
+        lua_pushstring(_lua, object->getCompoundClassName().c_str());
+        lua_settable(_lua, -3);
 
         // check to see if Object "is a" vector
         osgDB::BaseSerializer::Type type;
         osgDB::BaseSerializer* vs = _ci.getSerializer(object, "vector", type);
         if (vs)
         {
-            lua_pushstring(_lua, "containerPropertyName"); lua_pushstring(_lua, "vector"); lua_settable(_lua, -3);
+            lua_pushstring(_lua, "containerPropertyName");
+            lua_pushstring(_lua, "vector");
+            lua_settable(_lua, -3);
 
             assignClosure("size", getContainerSize);
             assignClosure("clear", callVectorClear);
@@ -4042,10 +4927,16 @@ void LuaScriptEngine::pushAndCastObject(const std::string& compoundClassName, os
         std::string libraryName = (seperator==std::string::npos) ? object->libraryName() : compoundClassName.substr(0, seperator);
         std::string className = (seperator==std::string::npos) ? object->className() : compoundClassName.substr(seperator+2,std::string::npos);
 
-        lua_pushstring(_lua, "libraryName"); lua_pushstring(_lua, libraryName.c_str()); lua_settable(_lua, -3);
-        lua_pushstring(_lua, "className"); lua_pushstring(_lua, className.c_str()); lua_settable(_lua, -3);
+        lua_pushstring(_lua, "libraryName");
+        lua_pushstring(_lua, libraryName.c_str());
+        lua_settable(_lua, -3);
+        lua_pushstring(_lua, "className");
+        lua_pushstring(_lua, className.c_str());
+        lua_settable(_lua, -3);
 
-        lua_pushstring(_lua, "compoundClassName"); lua_pushstring(_lua, compoundClassName.c_str()); lua_settable(_lua, -3);
+        lua_pushstring(_lua, "compoundClassName");
+        lua_pushstring(_lua, compoundClassName.c_str());
+        lua_settable(_lua, -3);
 
         luaL_getmetatable(_lua, "LuaScriptEngine.Object");
         lua_setmetatable(_lua, -2);
@@ -4076,8 +4967,8 @@ void LuaScriptEngine::addPaths(const osgDB::FilePathList& paths)
 
 
     for(osgDB::FilePathList::const_iterator itr = paths.begin();
-        itr != paths.end();
-        ++itr)
+            itr != paths.end();
+            ++itr)
     {
         OSG_NOTICE<<"  Appending path ["<<*itr<<"]"<<std::endl;
 
