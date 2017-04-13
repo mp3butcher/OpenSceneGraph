@@ -207,7 +207,7 @@ class BindlessTexture: public osg::Texture2D
 public:
     typedef osg::ref_ptr<BindlessBuffer> BufferRef;
     typedef std::vector<osg::ref_ptr<osg::Image> > TextureList;
-    typedef std::vector<GLuint64EXT> HandleList;
+    typedef std::vector<GLuint64> HandleList;
     typedef osg::ref_ptr< osg::Texture::TextureObject> TextureObjectRef;
     typedef std::vector<TextureObjectRef> TextureObjectList;
     typedef osg::buffered_object<TextureObjectList>  TextureObjectBuffer;
@@ -589,6 +589,8 @@ int main(int argc, char** argv)
     
     // add model to viewer.
     viewer.setSceneData( CreateScene() );
+
+    viewer.realize();
     
     viewer.getCamera()->getGraphicsContext()->getState()->setUseModelViewAndProjectionUniforms(true);
 
