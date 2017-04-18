@@ -154,8 +154,8 @@ std::string fragShader =
 ///or UBO, and provides the storage for the texture handles
 class BindlessBuffer: public osg::Referenced{
 public:
-    typedef osg::ref_ptr<osg::UniformBufferObject>  UniBufferObjRef;
-    typedef osg::ref_ptr<osg::UniformBufferBinding> UniBufferBindingRef;
+    typedef osg::ref_ptr<osg::UniformBufferObject>  UniformBufferObjectRef;
+    typedef osg::ref_ptr<osg::UniformBufferBinding> UniformBufferBindingRef;
     typedef osg::ref_ptr<osg::UInt64Array> HandleArrayRef;
     typedef osg::ref_ptr<BindlessBuffer>  BindlessBufferRef;
     static BindlessBufferRef Make(size_t count){
@@ -185,14 +185,14 @@ public:
             _handles = rhs._handles;
         }
     }
-    UniBufferObjRef& Object(){return _sbbo;}
-    UniBufferBindingRef& Binding(){return _ssbb;}
+    UniformBufferObjectRef& Object(){return _sbbo;}
+    UniformBufferBindingRef& Binding(){return _ssbb;}
     HandleArrayRef& Handles(){return _handles;}
     int count(){return _count;}
 private:
     int _count;
-    UniBufferObjRef _sbbo;
-    UniBufferBindingRef _ssbb;
+    UniformBufferObjectRef _sbbo;
+    UniformBufferBindingRef _ssbb;
     HandleArrayRef _handles;
      
     BindlessBuffer():osg::Referenced(),_count(0){
@@ -206,14 +206,14 @@ class BindlessTexture: public osg::Texture2D
 {
 public:
     typedef osg::ref_ptr<BindlessBuffer> BufferRef;
-    typedef std::vector<osg::ref_ptr<osg::Image> > TextureList;
+    typedef std::vector<osg::ref_ptr<osg::Image> > ImageList;
     typedef std::vector<GLuint64> HandleList;
     typedef osg::ref_ptr< osg::Texture::TextureObject> TextureObjectRef;
     typedef std::vector<TextureObjectRef> TextureObjectList;
     typedef osg::buffered_object<TextureObjectList>  TextureObjectBuffer;
 
     BindlessTexture(); 
-    BindlessTexture(BufferRef, TextureList);
+    BindlessTexture(BufferRef, ImageList);
     BindlessTexture(const BindlessTexture& rhs, const osg::CopyOp& copy =osg::CopyOp::SHALLOW_COPY);
     void releaseGLObjects(osg::State* state) const;
     void resizeGLObjectBuffers(unsigned maxSize);
@@ -224,7 +224,7 @@ public:
 protected:
     void applyOnce(osg::State &state) const;
     mutable osg::buffered_object<HandleList> _handles;
-    mutable TextureList _textureList;
+    mutable ImageList _ImageList;
     mutable osg::ref_ptr<BindlessBuffer> _buffer;
     mutable std::vector<bool> _isBound;
     mutable TextureObjectBuffer _textureBufferList;
@@ -248,9 +248,9 @@ BindlessTexture::BindlessTexture(const BindlessTexture& rhs, const osg::CopyOp& 
         _handles[i] = rhs._handles[i];
 }
 
-BindlessTexture::BindlessTexture(BufferRef ref,TextureList textureList) :
-    osg::Texture2D( textureList[0] ),
-    _textureList(textureList),
+BindlessTexture::BindlessTexture(BufferRef ref,ImageList ImageList) :
+    osg::Texture2D( ImageList[0] ),
+    _ImageList(ImageList),
     _buffer(ref),
     _bindlessIndex(0)
 {
@@ -275,16 +275,16 @@ void BindlessTexture::applyOnce(osg::State& state) const
     osg::GLExtensions* extensions = osg::GLExtensions::Get( contextID, true );
 
     osg::ref_ptr<osg::Image> image = _image;
-    if (_handles[contextID].size() <  _textureList.size())
-        _handles[contextID].resize( _textureList.size(),0);
-    if (_textureBufferList[contextID].size() < _textureList.size())
-        _textureBufferList[contextID].resize( _textureList.size());
-    int txtcount  = _textureList.size();
+    if (_handles[contextID].size() <  _ImageList.size())
+        _handles[contextID].resize( _ImageList.size(),0);
+    if (_textureBufferList[contextID].size() < _ImageList.size())
+        _textureBufferList[contextID].resize( _ImageList.size());
+    int txtcount  = _ImageList.size();
     if (_buffer->count() < txtcount)
         txtcount = _buffer->count();
     //for each actual texture we have, bind it, get the texture hande, assign the value to our UBO
     for (int i = 0; i <txtcount; i++){
-        image = _textureList[i];
+        image = _ImageList[i];
         if (_image.valid()) 
             computeInternalFormatWithImage(*image);
         else 
@@ -354,7 +354,7 @@ BindlessTexture::resizeGLObjectBuffers(unsigned int maxSize)
     osg::Texture2D::resizeGLObjectBuffers( maxSize );
 
     unsigned int handleSize = _handles.size();
-    unsigned int txtSize = _textureList.size();
+    unsigned int txtSize = _ImageList.size();
     if ( handleSize < maxSize ) {
         _isBound.resize(maxSize,false);
     }
@@ -373,7 +373,7 @@ typedef osg::ref_ptr<osg::Image> ImageRef;
 ///pattern with random color and size
 ///
 void createImageArray(osg::StateSet* attachPnt){
-    BindlessTexture::TextureList images;
+    BindlessTexture::ImageList images;
     images.resize(TextureCount);
     BindlessBuffer::BindlessBufferRef buffer = BindlessBuffer::Make(TextureCount);
     srand (time(NULL));

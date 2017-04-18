@@ -815,7 +815,23 @@ GLExtensions::GLExtensions(unsigned int in_contextID):
     setGLExtensionFuncPtr(glProgramString, "glProgramStringARB", validContext);
     setGLExtensionFuncPtr(glProgramLocalParameter4fv, "glProgramLocalParameter4fvARB", validContext);
 
+    // Sample Extensions (OpenGL>=3.3)
+    setGLExtensionFuncPtr(glSamplerParameteri, "glSamplerParameteri", "glSamplerParameteriARB", validContext);
+    setGLExtensionFuncPtr(glSamplerParameterf, "glSamplerParameterf", "glSamplerParameterfARB", validContext);
+    setGLExtensionFuncPtr(glSamplerParameteriv, "glSamplerParameteriv", "glSamplerParameterivARB", validContext);
+    setGLExtensionFuncPtr(glSamplerParameterfv, "glSamplerParameterfv", "glSamplerParameterfvARB", validContext);
+    setGLExtensionFuncPtr(glSamplerParameterIiv, "glSamplerParameterIiv", "glSamplerParameterIivARB", validContext);
+    setGLExtensionFuncPtr(glSamplerParameterIuiv, "glSamplerParameterIuiv", "glSamplerParameterIuivARB", validContext);
 
+    setGLExtensionFuncPtr(glGetSamplerParameteriv, "glGetSamplerParameteriv", "glGetSamplerParameterivARB", validContext);
+    setGLExtensionFuncPtr(glGetSamplerParameterfv, "glGetSamplerParameterfv", "glGetSamplerParameterfvARB", validContext);
+    setGLExtensionFuncPtr(glGetSamplerParameterIiv, "glGetSamplerParameterIiv", "glGetSamplerParameterIivARB", validContext);
+    setGLExtensionFuncPtr(glGetSamplerParameterIuiv, "glGetSamplerParameterIuiv", "glGetSamplerParameterIuivARB", validContext);
+
+    setGLExtensionFuncPtr(glGenSamplers, "glGenSamplers", "glGenSamplersARB", validContext);
+    setGLExtensionFuncPtr(glDeleteSamplers, "glDeleteSamplers", "glDeleteSamplersARB", validContext);
+    setGLExtensionFuncPtr(glBindSampler, "glBindSampler", "glBindSamplerARB", validContext);
+    setGLExtensionFuncPtr(glIsSampler, "glIsSampler", "glIsSamplerARB", validContext);
 
     // Texture extensions
     const char* renderer = validContext ? (const char*) glGetString(GL_RENDERER) : 0;

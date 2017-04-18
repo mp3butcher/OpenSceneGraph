@@ -479,6 +479,23 @@ class OSG_EXPORT GLExtensions : public osg::Referenced
         void (GL_APIENTRY * glProgramString) (GLenum target, GLenum format, GLsizei len, const void *string);
         void (GL_APIENTRY * glProgramLocalParameter4fv) (GLenum target, GLuint index, const GLfloat *params);
 
+        // Sample Extensions (OpenGL>=3.3)
+        void (GL_APIENTRY * glSamplerParameteri)(GLuint sampler, GLenum param, GLint value);
+        void (GL_APIENTRY * glSamplerParameterf)(GLuint sampler, GLenum param, GLfloat value);
+        void (GL_APIENTRY * glSamplerParameteriv)(GLuint sampler, GLenum param, GLint *value);
+        void (GL_APIENTRY * glSamplerParameterfv)(GLuint sampler, GLenum param, GLfloat *value);
+        void (GL_APIENTRY * glSamplerParameterIiv)(GLuint sampler, GLenum param, GLint *value);
+        void (GL_APIENTRY * glSamplerParameterIuiv)(GLuint sampler, GLenum param, GLuint *value);
+
+        void (GL_APIENTRY * glGetSamplerParameteriv)(GLuint sampler, GLenum param, GLint *value);
+        void (GL_APIENTRY * glGetSamplerParameterfv)(GLuint sampler, GLenum param, GLfloat *value);
+        void (GL_APIENTRY * glGetSamplerParameterIiv)(GLuint sampler, GLenum param, GLint *value);
+        void (GL_APIENTRY * glGetSamplerParameterIuiv)(GLuint sampler, GLenum param, GLuint *value);
+
+        void (GL_APIENTRY * glGenSamplers)(GLsizei size,GLuint * samplers);
+        void (GL_APIENTRY * glDeleteSamplers)(GLsizei size,const GLuint * samplers);
+        void (GL_APIENTRY * glBindSampler)(GLuint id);
+        GLboolean (GL_APIENTRY * glIsSampler)(GLuint id);
 
         // Texture Extensions
         bool isMultiTexturingSupported;
