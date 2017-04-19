@@ -494,7 +494,7 @@ class OSG_EXPORT GLExtensions : public osg::Referenced
 
         void (GL_APIENTRY * glGenSamplers)(GLsizei size,GLuint * samplers);
         void (GL_APIENTRY * glDeleteSamplers)(GLsizei size,const GLuint * samplers);
-        void (GL_APIENTRY * glBindSampler)(GLuint id);
+        void (GL_APIENTRY * glBindSampler)(GLuint tu, GLuint sampler);
         GLboolean (GL_APIENTRY * glIsSampler)(GLuint id);
 
         // Texture Extensions

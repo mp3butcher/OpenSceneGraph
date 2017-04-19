@@ -8,7 +8,12 @@ Sampler::Sampler():StateAttribute(),
     _wrap_t(Texture::CLAMP),
     _wrap_r(Texture::CLAMP),
     _min_filter(Texture::LINEAR_MIPMAP_LINEAR), // trilinear
-    _mag_filter(Texture::LINEAR){
+    _mag_filter(Texture::LINEAR),
+    _maxAnisotropy(1.0f),
+    _minlod(0.0f),
+    _maxlod(-1.0f),
+    _lodbias(0.0f)
+{
         _PCdirtyflags.setAllElementsTo(true);
         _PCsampler.setAllElementsTo(0);
 }
@@ -17,7 +22,12 @@ Sampler::Sampler(const Sampler& sampler,const CopyOp &copyop ):StateAttribute(sa
     _wrap_t(sampler._wrap_t),
     _wrap_r(sampler._wrap_r),
     _min_filter(sampler._min_filter),
-    _mag_filter(sampler._mag_filter){
+    _mag_filter(sampler._mag_filter),
+    _maxAnisotropy(sampler._maxAnisotropy),
+    _minlod(sampler._minlod),
+    _maxlod(sampler._maxlod),
+    _lodbias(sampler._lodbias)
+{
         _PCdirtyflags.setAllElementsTo(true);
         _PCsampler.setAllElementsTo(0);
 }
@@ -67,6 +77,18 @@ Texture::FilterMode Sampler::getFilter(Texture::FilterParameter which) const
         default : OSG_WARN<<"Error: invalid 'which' passed Sampler::getFilter(which)"<< std::endl; return _min_filter;
     }
 }
+void Sampler::setMaxAnisotropy(float anis)
+{
+    if (_maxAnisotropy!=anis)
+    {
+        _maxAnisotropy = anis;
+        _PCdirtyflags.setAllElementsTo(true);
+    }
+}
+
+void Sampler::setMinLOD(float func) { _minlod = func; _PCdirtyflags.setAllElementsTo(true);}
+void Sampler::setMaxLOD(float func) { _maxlod = func; _PCdirtyflags.setAllElementsTo(true);}
+void Sampler::setLODBias(float func) { _lodbias = func; _PCdirtyflags.setAllElementsTo(true);}
 
 /** getOrCreate Sampler Object and setup embedded Texture Parameters */
 void Sampler::setShadowCompareFunc(Texture::ShadowCompareFunc func) { _shadow_compare_func = func; _PCdirtyflags.setAllElementsTo(true);}
@@ -85,9 +107,6 @@ void Sampler::compileGLObjects(State& state) const{
             extensions->glGenSamplers(1,&_PCsampler[contextID]);
             samplerobject = _PCsampler[contextID];
         }
-
-       //extensions->glBindSampler(_PCsampler[contextID]);
-        ///apply tex param
 
         Texture::WrapMode ws = _wrap_s, wt = _wrap_t, wr = _wrap_r;
 
@@ -129,13 +148,8 @@ void Sampler::compileGLObjects(State& state) const{
             if (wr == Texture::CLAMP) wr = Texture::CLAMP_TO_EDGE;
         #endif
 
-
-
         extensions->glSamplerParameteri( samplerobject, GL_TEXTURE_WRAP_S, ws );
-
-
         extensions->glSamplerParameteri( samplerobject, GL_TEXTURE_WRAP_T, wt );
-
         extensions->glSamplerParameteri( samplerobject, GL_TEXTURE_WRAP_R, wr );
 
 
@@ -156,11 +170,22 @@ void Sampler::compileGLObjects(State& state) const{
 
         }
 
-
         extensions->glSamplerParameteri(samplerobject, GL_TEXTURE_COMPARE_MODE_ARB, _shadow_texture_mode);
         extensions->glSamplerParameteri(samplerobject, GL_TEXTURE_COMPARE_FUNC_ARB, _shadow_compare_func);
 
+        if (extensions->isTextureFilterAnisotropicSupported )
+        {
+            // note, GL_TEXTURE_MAX_ANISOTROPY_EXT will either be defined
+            // by gl.h (or via glext.h) or by include/osg/Texture.
+         extensions->glSamplerParameterf(samplerobject, GL_TEXTURE_MAX_ANISOTROPY_EXT, _maxAnisotropy);
+        }
 
+        if( _maxlod - _minlod > 0){ // if range is valid
+            extensions->glSamplerParameterf(samplerobject, GL_TEXTURE_MIN_LOD, _minlod);
+            extensions->glSamplerParameterf(samplerobject, GL_TEXTURE_MAX_LOD, _maxlod);
+        }
+
+        extensions->glSamplerParameterf(samplerobject, GL_TEXTURE_LOD_BIAS, _lodbias);
         _PCdirtyflags[contextID]=false;
     }
 }
@@ -168,7 +193,7 @@ void Sampler::compileGLObjects(State& state) const{
 /** bind SamplerObject **/
 void Sampler::apply(State&state) const{
     unsigned int contextID=state.getContextID();
-    state.get<GLExtensions>()->glBindSampler(_PCsampler[contextID]);
+    state.get<GLExtensions>()->glBindSampler( state.getActiveTextureUnit(), _PCsampler[contextID] );
 }
 
 void Sampler::releaseGLObjects(State* state) const{
@@ -186,6 +211,9 @@ int Sampler::compare(const StateAttribute& sa) const{
     COMPARE_StateAttribute_Parameter(_mag_filter)
     COMPARE_StateAttribute_Parameter(_shadow_compare_func)
     COMPARE_StateAttribute_Parameter(_shadow_texture_mode)
-    COMPARE_StateAttribute_Parameter(_borderColor)
+    COMPARE_StateAttribute_Parameter(_maxAnisotropy)
+    COMPARE_StateAttribute_Parameter(_minlod)
+    COMPARE_StateAttribute_Parameter(_maxlod)
+    COMPARE_StateAttribute_Parameter(_lodbias)
     return 0; // passed all the above comparison macros, must be equal.
 }

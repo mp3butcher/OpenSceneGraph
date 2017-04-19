@@ -1,12 +1,29 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2006 Robert Osfield
+ * Copyright (C) 2016 Julien Valentin
+ *
+ * This library is open source and may be redistributed and/or modified under
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * OpenSceneGraph Public License for more details.
+*/
+
+
 #include <osg/Texture>
 
 namespace osg{
+/**  OpenGL Sampler
+ *   OpenGL 3.3 required
+ *   https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_sampler_objects.txt
+ *   State Attribute controllig sampling instead of Texture
+ *           Textures UseSamplerEnable properties should be set to true
+ *           in order not to (possibly) interfere
+*/
 
-/*************************************************************/
-/** State Attribute controllig sampling instead of Texture  **/
-/** Textures UseSamplerEnable properties should be set to   **/
-/** true in order not to (possibly) interfere               **/
-/*************************************************************/
 
 class OSG_EXPORT Sampler : public osg::StateAttribute
 {
@@ -18,8 +35,11 @@ class OSG_EXPORT Sampler : public osg::StateAttribute
 
         META_StateAttribute(osg,Sampler,SAMPLER)
 
+        virtual bool isTextureAttribute() const { return true; }
+
         /** Sets the texture wrap mode. */
         void setWrap(Texture::WrapParameter which, Texture::WrapMode wrap);
+
         /** Gets the texture wrap mode. */
         Texture::WrapMode getWrap(Texture::WrapParameter which) const;
 
@@ -45,6 +65,31 @@ class OSG_EXPORT Sampler : public osg::StateAttribute
         /** Gets the border color. */
         const Vec4d& getBorderColor() const { return _borderColor; }
 
+        /** Sets the maximum anisotropy value, default value is 1.0 for no
+          * anisotropic filtering. If hardware does not support anisotropic
+          * filtering, use normal filtering (equivalent to a max anisotropy
+          * value of 1.0. Valid range is 1.0f upwards.  The maximum value
+          * depends on the graphics system. */
+          void setMaxAnisotropy(float anis);
+
+          /** Gets the maximum anisotropy value. */
+          inline float getMaxAnisotropy() const { return _maxAnisotropy; }
+
+        void setMinLOD(float anis);
+
+        /** Gets the maximum anisotropy value. */
+        inline float getMinLOD() const { return _minlod; }
+
+        void setMaxLOD(float anis);
+
+        /** Gets the maximum anisotropy value. */
+        inline float getMaxLOD() const { return _maxlod; }
+
+        void setLODBias(float anis);
+
+        /** Gets the maximum anisotropy value. */
+        inline float getLODBias() const { return _lodbias; }
+
         virtual void apply(State& state) const;
 
         virtual void compileGLObjects(State&) const;
@@ -53,7 +98,9 @@ class OSG_EXPORT Sampler : public osg::StateAttribute
         virtual void releaseGLObjects(State* state=0) const;
 
         virtual int compare(const StateAttribute& sa) const;
+
     protected:
+
         Texture::WrapMode _wrap_s;
         Texture::WrapMode _wrap_t;
         Texture::WrapMode _wrap_r;
@@ -63,6 +110,7 @@ class OSG_EXPORT Sampler : public osg::StateAttribute
 
         Texture::FilterMode      _min_filter;
         Texture::FilterMode      _mag_filter;
+        float _maxAnisotropy, _minlod, _maxlod, _lodbias;
 
         mutable buffered_value<GLuint> _PCsampler;
         mutable buffered_value<uint8_t>   _PCdirtyflags;
