@@ -7,6 +7,8 @@ Sampler::Sampler():StateAttribute(),
     _wrap_s(Texture::CLAMP),
     _wrap_t(Texture::CLAMP),
     _wrap_r(Texture::CLAMP),
+    _shadow_compare_func(Texture::LEQUAL),
+    _shadow_texture_mode(Texture::NONE),
     _min_filter(Texture::LINEAR_MIPMAP_LINEAR), // trilinear
     _mag_filter(Texture::LINEAR),
     _maxAnisotropy(1.0f),
@@ -21,6 +23,8 @@ Sampler::Sampler(const Sampler& sampler,const CopyOp &copyop ):StateAttribute(sa
     _wrap_s(sampler._wrap_s),
     _wrap_t(sampler._wrap_t),
     _wrap_r(sampler._wrap_r),
+    _shadow_compare_func(sampler._shadow_compare_func),
+    _shadow_texture_mode(sampler._shadow_texture_mode),
     _min_filter(sampler._min_filter),
     _mag_filter(sampler._mag_filter),
     _maxAnisotropy(sampler._maxAnisotropy),
@@ -156,9 +160,7 @@ void Sampler::compileGLObjects(State& state) const{
         extensions->glSamplerParameteri( samplerobject, GL_TEXTURE_MIN_FILTER, _min_filter);
         extensions->glSamplerParameteri( samplerobject, GL_TEXTURE_MAG_FILTER, _mag_filter);
 
-
-
-        if (extensions->isTextureBorderClampSupported)
+       if (extensions->isTextureBorderClampSupported)
         {
 
             #ifndef GL_TEXTURE_BORDER_COLOR
@@ -170,8 +172,8 @@ void Sampler::compileGLObjects(State& state) const{
 
         }
 
-        extensions->glSamplerParameteri(samplerobject, GL_TEXTURE_COMPARE_MODE_ARB, _shadow_texture_mode);
-        extensions->glSamplerParameteri(samplerobject, GL_TEXTURE_COMPARE_FUNC_ARB, _shadow_compare_func);
+        extensions->glSamplerParameteri(samplerobject, GL_TEXTURE_COMPARE_MODE, _shadow_texture_mode);
+        extensions->glSamplerParameteri(samplerobject, GL_TEXTURE_COMPARE_FUNC, _shadow_compare_func);
 
         if (extensions->isTextureFilterAnisotropicSupported )
         {
@@ -193,6 +195,7 @@ void Sampler::compileGLObjects(State& state) const{
 /** bind SamplerObject **/
 void Sampler::apply(State&state) const{
     unsigned int contextID=state.getContextID();
+    if(  _PCdirtyflags[contextID])compileGLObjects(state);
     state.get<GLExtensions>()->glBindSampler( state.getActiveTextureUnit(), _PCsampler[contextID] );
 }
 

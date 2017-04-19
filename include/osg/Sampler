@@ -104,8 +104,8 @@ class OSG_EXPORT Sampler : public osg::StateAttribute
         Texture::WrapMode _wrap_s;
         Texture::WrapMode _wrap_t;
         Texture::WrapMode _wrap_r;
-        Texture::ShadowTextureMode _shadow_texture_mode;
         Texture::ShadowCompareFunc _shadow_compare_func;
+        Texture::ShadowTextureMode _shadow_texture_mode;
         Vec4d _borderColor;
 
         Texture::FilterMode      _min_filter;

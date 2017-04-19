@@ -1222,6 +1222,7 @@ osg::ref_ptr<Texture::TextureObject> Texture::generateTextureObject(const Textur
 // Texture class implementation
 //
 Texture::Texture():
+            _useSampler(false),
             _wrap_s(CLAMP),
             _wrap_t(CLAMP),
             _wrap_r(CLAMP),
@@ -1243,13 +1244,13 @@ Texture::Texture():
             _use_shadow_comparison(false),
             _shadow_compare_func(LEQUAL),
             _shadow_texture_mode(LUMINANCE),
-            _shadow_ambient(0),
-            _useSampler(false)
+            _shadow_ambient(0)
 {
 }
 
 Texture::Texture(const Texture& text,const CopyOp& copyop):
             StateAttribute(text,copyop),
+            _useSampler(text._useSampler),
             _wrap_s(text._wrap_s),
             _wrap_t(text._wrap_t),
             _wrap_r(text._wrap_r),
@@ -1271,8 +1272,7 @@ Texture::Texture(const Texture& text,const CopyOp& copyop):
             _use_shadow_comparison(text._use_shadow_comparison),
             _shadow_compare_func(text._shadow_compare_func),
             _shadow_texture_mode(text._shadow_texture_mode),
-            _shadow_ambient(text._shadow_ambient),
-            _useSampler(text._useSampler)
+            _shadow_ambient(text._shadow_ambient)
 {
 }
 
