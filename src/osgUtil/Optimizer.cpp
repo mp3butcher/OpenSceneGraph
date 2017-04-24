@@ -2572,30 +2572,30 @@ void Optimizer::SpatializeGroupsVisitor::apply(osg::Geode& geode)
     traverse(geode);
 }
 
-bool Optimizer::SpatializeGroupsVisitor::divide(unsigned int maxNumTreesPerCell)
+bool Optimizer::SpatializeGroupsVisitor::divide()
 {
     bool divided = false;
     for(GroupsToDivideList::iterator itr=_groupsToDivideList.begin();
         itr!=_groupsToDivideList.end();
         ++itr)
     {
-        if (divide(*itr,maxNumTreesPerCell)) divided = true;
+        if (divide(*itr,0)) divided = true;
     }
 
     for(GeodesToDivideList::iterator geode_itr=_geodesToDivideList.begin();
         geode_itr!=_geodesToDivideList.end();
         ++geode_itr)
     {
-        if (divide(*geode_itr,maxNumTreesPerCell)) divided = true;
+        if (divide(*geode_itr,0)) divided = true;
     }
 
     return divided;
 }
 
-bool Optimizer::SpatializeGroupsVisitor::divide(osg::Group* group, unsigned int maxNumTreesPerCell)
+bool Optimizer::SpatializeGroupsVisitor::divide(osg::Group* group, unsigned int curDepth)
 {
-    if (group->getNumChildren()<=maxNumTreesPerCell) return false;
-
+    if (group->getNumChildren()<=_maxNumTreesPerCell) return false;
+    if(curDepth>_maxDepth)return false;
     // create the original box.
     osg::BoundingBox bb;
     for(unsigned int i=0;i<group->getNumChildren();++i)
@@ -2729,7 +2729,7 @@ bool Optimizer::SpatializeGroupsVisitor::divide(osg::Group* group, unsigned int 
             else
             {
                 group->addChild(bb_group);
-                if (bb_group->getNumChildren()>maxNumTreesPerCell)
+                if (bb_group->getNumChildren()>_maxNumTreesPerCell)
                 {
                     groupsToDivideList.push_back(bb_group);
                 }
@@ -2751,17 +2751,18 @@ bool Optimizer::SpatializeGroupsVisitor::divide(osg::Group* group, unsigned int 
         gitr!=groupsToDivideList.end();
         ++gitr)
     {
-        divide(gitr->get(),maxNumTreesPerCell);
+        divide(gitr->get(),curDepth+1);
     }
 
     return (numChildrenOnEntry<group->getNumChildren());
 
 }
 
-bool Optimizer::SpatializeGroupsVisitor::divide(osg::Geode* geode, unsigned int maxNumTreesPerCell)
+bool Optimizer::SpatializeGroupsVisitor::divide(osg::Geode* geode, unsigned int curDepth)
 {
 
-    if (geode->getNumDrawables()<=maxNumTreesPerCell) return false;
+    if (geode->getNumDrawables()<=_maxNumTreesPerCell) return false;
+    if(curDepth>_maxDepth)return false;
 
     // create the original box.
     osg::BoundingBox bb;
@@ -2802,7 +2803,7 @@ bool Optimizer::SpatializeGroupsVisitor::divide(osg::Geode* geode, unsigned int 
         group->addChild(newGeode);
     }
 
-    divide(group.get(), maxNumTreesPerCell);
+    divide(group.get(), curDepth+1);
 
     // keep reference around to prevent it being deleted.
     osg::ref_ptr<osg::Geode> keepRefGeode = geode;

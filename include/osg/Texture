@@ -414,7 +414,6 @@ namespace osg {
 class TextureObjectSet;
 class TextureObjectManager;
 
-
 /** Texture pure virtual base class that encapsulates OpenGL texture
   * functionality common to the various types of OSG textures.
 */
@@ -458,6 +457,7 @@ class OSG_EXPORT Texture : public osg::StateAttribute
         virtual int getTextureHeight() const { return 0; }
         virtual int getTextureDepth() const { return 0; }
 
+
         enum WrapParameter {
             WRAP_S,
             WRAP_T,
@@ -484,12 +484,17 @@ class OSG_EXPORT Texture : public osg::StateAttribute
         void setBorderColor(const Vec4d& color) { _borderColor = color; dirtyTextureParameters(); }
 
         /** Gets the border color. */
-        const Vec4d& getBorderColor() const { return _borderColor; }
+        inline const Vec4d& getBorderColor() const { return _borderColor; }
 
         /** Sets the border width. */
         void setBorderWidth(GLint width) { _borderWidth = width; dirtyTextureParameters(); }
 
-        GLint getBorderWidth() const { return _borderWidth; }
+        inline GLint getBorderWidth() const { return _borderWidth; }
+
+        /** Enable The use of a external osg::Sampler in order to control sampling **/
+        inline void setUseSamplerEnable(bool b){ _useSampler = b;}
+
+        inline bool isUseSamplerEnable()const{ return _useSampler;}
 
         enum FilterParameter {
             MIN_FILTER,
@@ -729,6 +734,7 @@ class OSG_EXPORT Texture : public osg::StateAttribute
         ShadowCompareFunc getShadowCompareFunc() const { return _shadow_compare_func; }
 
         enum ShadowTextureMode {
+            NONE = GL_NONE,
             LUMINANCE = GL_LUMINANCE,
             INTENSITY = GL_INTENSITY,
             ALPHA = GL_ALPHA
@@ -863,6 +869,7 @@ class OSG_EXPORT Texture : public osg::StateAttribute
         mutable TexParameterDirtyList _texParametersDirtyList;
         mutable TexParameterDirtyList _texMipmapGenerationDirtyList;
 
+        bool _useSampler;
         WrapMode _wrap_s;
         WrapMode _wrap_t;
         WrapMode _wrap_r;

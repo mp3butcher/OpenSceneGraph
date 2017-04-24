@@ -1222,6 +1222,7 @@ osg::ref_ptr<Texture::TextureObject> Texture::generateTextureObject(const Textur
 // Texture class implementation
 //
 Texture::Texture():
+            _useSampler(false),
             _wrap_s(CLAMP),
             _wrap_t(CLAMP),
             _wrap_r(CLAMP),
@@ -1249,6 +1250,7 @@ Texture::Texture():
 
 Texture::Texture(const Texture& text,const CopyOp& copyop):
             StateAttribute(text,copyop),
+            _useSampler(text._useSampler),
             _wrap_s(text._wrap_s),
             _wrap_t(text._wrap_t),
             _wrap_r(text._wrap_r),
@@ -1311,6 +1313,8 @@ int Texture::compareTexture(const Texture& rhs) const
     COMPARE_StateAttribute_Parameter(_resizeNonPowerOfTwoHint)
 
     COMPARE_StateAttribute_Parameter(_internalFormatType);
+
+    COMPARE_StateAttribute_Parameter(_useSampler);
 
     return 0;
 }
@@ -1861,153 +1865,154 @@ void Texture::applyTexParameters(GLenum target, State& state) const
 {
     // get the contextID (user defined ID of 0 upwards) for the
     // current OpenGL context.
-    const unsigned int contextID = state.getContextID();
-    const GLExtensions* extensions = state.get<GLExtensions>();
+     if(!_useSampler){
+        const unsigned int contextID = state.getContextID();
+        const GLExtensions* extensions = state.get<GLExtensions>();
 
-    TextureObject* to = getTextureObject(contextID);
-    if (to)
-    {
-        extensions->debugObjectLabel(GL_TEXTURE, to->id(), getName());
-    }
-
-
-    WrapMode ws = _wrap_s, wt = _wrap_t, wr = _wrap_r;
-
-    // GL_IBM_texture_mirrored_repeat, fall-back REPEAT
-    if (!extensions->isTextureMirroredRepeatSupported)
-    {
-        if (ws == MIRROR)
-            ws = REPEAT;
-        if (wt == MIRROR)
-            wt = REPEAT;
-        if (wr == MIRROR)
-            wr = REPEAT;
-    }
-
-    // GL_EXT_texture_edge_clamp, fall-back CLAMP
-    if (!extensions->isTextureEdgeClampSupported)
-    {
-        if (ws == CLAMP_TO_EDGE)
-            ws = CLAMP;
-        if (wt == CLAMP_TO_EDGE)
-            wt = CLAMP;
-        if (wr == CLAMP_TO_EDGE)
-            wr = CLAMP;
-    }
-
-    if(!extensions->isTextureBorderClampSupported)
-    {
-        if(ws == CLAMP_TO_BORDER)
-            ws = CLAMP;
-        if(wt == CLAMP_TO_BORDER)
-            wt = CLAMP;
-        if(wr == CLAMP_TO_BORDER)
-            wr = CLAMP;
-    }
-
-    #if defined(OSG_GLES1_AVAILABLE) || defined(OSG_GLES2_AVAILABLE) || defined(OSG_GL3_AVAILABLE)
-        if (ws == CLAMP) ws = CLAMP_TO_EDGE;
-        if (wt == CLAMP) wt = CLAMP_TO_EDGE;
-        if (wr == CLAMP) wr = CLAMP_TO_EDGE;
-    #endif
-
-    const Image * image = getImage(0);
-    if( image &&
-        image->isMipmap() &&
-        extensions->isTextureMaxLevelSupported &&
-        int( image->getNumMipmapLevels() ) <
-            Image::computeNumberOfMipmapLevels( image->s(), image->t(), image->r() ) )
-            glTexParameteri( target, GL_TEXTURE_MAX_LEVEL, image->getNumMipmapLevels() - 1 );
+        TextureObject* to = getTextureObject(contextID);
+        if (to)
+        {
+            extensions->debugObjectLabel(GL_TEXTURE, to->id(), getName());
+        }
 
 
-    glTexParameteri( target, GL_TEXTURE_WRAP_S, ws );
+        WrapMode ws = _wrap_s, wt = _wrap_t, wr = _wrap_r;
 
-    if (target!=GL_TEXTURE_1D) glTexParameteri( target, GL_TEXTURE_WRAP_T, wt );
+        // GL_IBM_texture_mirrored_repeat, fall-back REPEAT
+        if (!extensions->isTextureMirroredRepeatSupported)
+        {
+            if (ws == MIRROR)
+                ws = REPEAT;
+            if (wt == MIRROR)
+                wt = REPEAT;
+            if (wr == MIRROR)
+                wr = REPEAT;
+        }
 
-    if (target==GL_TEXTURE_3D) glTexParameteri( target, GL_TEXTURE_WRAP_R, wr );
+        // GL_EXT_texture_edge_clamp, fall-back CLAMP
+        if (!extensions->isTextureEdgeClampSupported)
+        {
+            if (ws == CLAMP_TO_EDGE)
+                ws = CLAMP;
+            if (wt == CLAMP_TO_EDGE)
+                wt = CLAMP;
+            if (wr == CLAMP_TO_EDGE)
+                wr = CLAMP;
+        }
 
+        if(!extensions->isTextureBorderClampSupported)
+        {
+            if(ws == CLAMP_TO_BORDER)
+                ws = CLAMP;
+            if(wt == CLAMP_TO_BORDER)
+                wt = CLAMP;
+            if(wr == CLAMP_TO_BORDER)
+                wr = CLAMP;
+        }
 
-    glTexParameteri( target, GL_TEXTURE_MIN_FILTER, _min_filter);
-    glTexParameteri( target, GL_TEXTURE_MAG_FILTER, _mag_filter);
-
-    // Art: I think anisotropic filtering is not supported by the integer textures
-    if (extensions->isTextureFilterAnisotropicSupported &&
-        _internalFormatType != SIGNED_INTEGER && _internalFormatType != UNSIGNED_INTEGER)
-    {
-        // note, GL_TEXTURE_MAX_ANISOTROPY_EXT will either be defined
-        // by gl.h (or via glext.h) or by include/osg/Texture.
-        glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, _maxAnisotropy);
-    }
-
-    if (extensions->isTextureSwizzleSupported)
-    {
-        // note, GL_TEXTURE_SWIZZLE_RGBA will either be defined
-        // by gl.h (or via glext.h) or by include/osg/Texture.
-        glTexParameteriv(target, GL_TEXTURE_SWIZZLE_RGBA, _swizzle.ptr());
-    }
-
-    if (extensions->isTextureBorderClampSupported)
-    {
-
-        #ifndef GL_TEXTURE_BORDER_COLOR
-            #define GL_TEXTURE_BORDER_COLOR     0x1004
+        #if defined(OSG_GLES1_AVAILABLE) || defined(OSG_GLES2_AVAILABLE) || defined(OSG_GL3_AVAILABLE)
+            if (ws == CLAMP) ws = CLAMP_TO_EDGE;
+            if (wt == CLAMP) wt = CLAMP_TO_EDGE;
+            if (wr == CLAMP) wr = CLAMP_TO_EDGE;
         #endif
 
+        const Image * image = getImage(0);
+        if( image &&
+            image->isMipmap() &&
+            extensions->isTextureMaxLevelSupported &&
+            int( image->getNumMipmapLevels() ) <
+                Image::computeNumberOfMipmapLevels( image->s(), image->t(), image->r() ) )
+                glTexParameteri( target, GL_TEXTURE_MAX_LEVEL, image->getNumMipmapLevels() - 1 );
 
-        if (_internalFormatType == SIGNED_INTEGER)
+
+        glTexParameteri( target, GL_TEXTURE_WRAP_S, ws );
+
+        if (target!=GL_TEXTURE_1D) glTexParameteri( target, GL_TEXTURE_WRAP_T, wt );
+
+        if (target==GL_TEXTURE_3D) glTexParameteri( target, GL_TEXTURE_WRAP_R, wr );
+
+
+        glTexParameteri( target, GL_TEXTURE_MIN_FILTER, _min_filter);
+        glTexParameteri( target, GL_TEXTURE_MAG_FILTER, _mag_filter);
+
+        // Art: I think anisotropic filtering is not supported by the integer textures
+        if (extensions->isTextureFilterAnisotropicSupported &&
+            _internalFormatType != SIGNED_INTEGER && _internalFormatType != UNSIGNED_INTEGER)
         {
-            GLint color[4] = {(GLint)_borderColor.r(), (GLint)_borderColor.g(), (GLint)_borderColor.b(), (GLint)_borderColor.a()};
-            extensions->glTexParameterIiv(target, GL_TEXTURE_BORDER_COLOR, color);
-        }else if (_internalFormatType == UNSIGNED_INTEGER)
-        {
-            GLuint color[4] = {(GLuint)_borderColor.r(), (GLuint)_borderColor.g(), (GLuint)_borderColor.b(), (GLuint)_borderColor.a()};
-            extensions->glTexParameterIuiv(target, GL_TEXTURE_BORDER_COLOR, color);
-        }else{
-            GLfloat color[4] = {(GLfloat)_borderColor.r(), (GLfloat)_borderColor.g(), (GLfloat)_borderColor.b(), (GLfloat)_borderColor.a()};
-            glTexParameterfv(target, GL_TEXTURE_BORDER_COLOR, color);
+            // note, GL_TEXTURE_MAX_ANISOTROPY_EXT will either be defined
+            // by gl.h (or via glext.h) or by include/osg/Texture.
+            glTexParameterf(target, GL_TEXTURE_MAX_ANISOTROPY_EXT, _maxAnisotropy);
         }
-    }
 
-    // integer textures are not supported by the shadow
-    // GL_TEXTURE_1D_ARRAY_EXT could be included in the check below but its not yet implemented in OSG
-    if (extensions->isShadowSupported &&
-        (target == GL_TEXTURE_2D || target == GL_TEXTURE_1D || target == GL_TEXTURE_RECTANGLE || target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_2D_ARRAY_EXT ) &&
-        _internalFormatType != SIGNED_INTEGER && _internalFormatType != UNSIGNED_INTEGER)
-    {
-        if (_use_shadow_comparison)
+        if (extensions->isTextureSwizzleSupported)
         {
-            glTexParameteri(target, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_R_TO_TEXTURE_ARB);
-            glTexParameteri(target, GL_TEXTURE_COMPARE_FUNC_ARB, _shadow_compare_func);
-            #if defined(OSG_GL1_AVAILABLE) || defined(OSG_GL2_AVAILABLE)
-                glTexParameteri(target, GL_DEPTH_TEXTURE_MODE_ARB, _shadow_texture_mode);
+            // note, GL_TEXTURE_SWIZZLE_RGBA will either be defined
+            // by gl.h (or via glext.h) or by include/osg/Texture.
+            glTexParameteriv(target, GL_TEXTURE_SWIZZLE_RGBA, _swizzle.ptr());
+        }
+
+        if (extensions->isTextureBorderClampSupported)
+        {
+
+            #ifndef GL_TEXTURE_BORDER_COLOR
+                #define GL_TEXTURE_BORDER_COLOR     0x1004
             #endif
 
-            // if ambient value is 0 - it is default behaviour of GL_ARB_shadow
-            // no need for GL_ARB_shadow_ambient in this case
-            if (extensions->isShadowAmbientSupported && _shadow_ambient > 0)
+
+            if (_internalFormatType == SIGNED_INTEGER)
             {
-                glTexParameterf(target, TEXTURE_COMPARE_FAIL_VALUE_ARB, _shadow_ambient);
+                GLint color[4] = {(GLint)_borderColor.r(), (GLint)_borderColor.g(), (GLint)_borderColor.b(), (GLint)_borderColor.a()};
+                extensions->glTexParameterIiv(target, GL_TEXTURE_BORDER_COLOR, color);
+            }else if (_internalFormatType == UNSIGNED_INTEGER)
+            {
+                GLuint color[4] = {(GLuint)_borderColor.r(), (GLuint)_borderColor.g(), (GLuint)_borderColor.b(), (GLuint)_borderColor.a()};
+                extensions->glTexParameterIuiv(target, GL_TEXTURE_BORDER_COLOR, color);
+            }else{
+                GLfloat color[4] = {(GLfloat)_borderColor.r(), (GLfloat)_borderColor.g(), (GLfloat)_borderColor.b(), (GLfloat)_borderColor.a()};
+                glTexParameterfv(target, GL_TEXTURE_BORDER_COLOR, color);
             }
         }
-        else
+
+        // integer textures are not supported by the shadow
+        // GL_TEXTURE_1D_ARRAY_EXT could be included in the check below but its not yet implemented in OSG
+        if (extensions->isShadowSupported &&
+            (target == GL_TEXTURE_2D || target == GL_TEXTURE_1D || target == GL_TEXTURE_RECTANGLE || target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_2D_ARRAY_EXT ) &&
+            _internalFormatType != SIGNED_INTEGER && _internalFormatType != UNSIGNED_INTEGER)
         {
-            glTexParameteri(target, GL_TEXTURE_COMPARE_MODE_ARB, GL_NONE);
+            if (_use_shadow_comparison)
+            {
+                glTexParameteri(target, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_R_TO_TEXTURE_ARB);
+                glTexParameteri(target, GL_TEXTURE_COMPARE_FUNC_ARB, _shadow_compare_func);
+                #if defined(OSG_GL1_AVAILABLE) || defined(OSG_GL2_AVAILABLE)
+                    glTexParameteri(target, GL_DEPTH_TEXTURE_MODE_ARB, _shadow_texture_mode);
+                #endif
+
+                // if ambient value is 0 - it is default behaviour of GL_ARB_shadow
+                // no need for GL_ARB_shadow_ambient in this case
+                if (extensions->isShadowAmbientSupported && _shadow_ambient > 0)
+                {
+                    glTexParameterf(target, TEXTURE_COMPARE_FAIL_VALUE_ARB, _shadow_ambient);
+                }
+            }
+            else
+            {
+                glTexParameteri(target, GL_TEXTURE_COMPARE_MODE_ARB, GL_NONE);
+            }
+        }
+
+        // Apply image load/store attributes
+        if (extensions->isBindImageTextureSupported() && _imageAttachment.access!=0)
+        {
+            TextureObject* tobj = getTextureObject(contextID);
+            if (tobj)
+            {
+                extensions->glBindImageTexture(
+                    _imageAttachment.unit, tobj->id(), _imageAttachment.level,
+                    _imageAttachment.layered, _imageAttachment.layer, _imageAttachment.access,
+                    _imageAttachment.format!=0 ? _imageAttachment.format : _internalFormat);
+            }
         }
     }
-
-    // Apply image load/store attributes
-    if (extensions->isBindImageTextureSupported() && _imageAttachment.access!=0)
-    {
-        TextureObject* tobj = getTextureObject(contextID);
-        if (tobj)
-        {
-            extensions->glBindImageTexture(
-                _imageAttachment.unit, tobj->id(), _imageAttachment.level,
-                _imageAttachment.layered, _imageAttachment.layer, _imageAttachment.access,
-                _imageAttachment.format!=0 ? _imageAttachment.format : _internalFormat);
-        }
-    }
-
     getTextureParameterDirty(state.getContextID()) = false;
 
 }
@@ -2811,5 +2816,4 @@ void Texture::releaseGLObjects(State* state) const
         }
     }
 }
-
 }

@@ -560,15 +560,27 @@ class OSGUTIL_EXPORT Optimizer
             public:
 
                 SpatializeGroupsVisitor(Optimizer* optimizer=0):
-                    BaseOptimizerVisitor(optimizer, SPATIALIZE_GROUPS) {}
+                    BaseOptimizerVisitor(optimizer, SPATIALIZE_GROUPS),_maxNumTreesPerCell(8),_maxDepth(100){}
 
                 virtual void apply(osg::Group& group);
                 virtual void apply(osg::Geode& geode);
 
-                bool divide(unsigned int maxNumTreesPerCell=8);
+                ///launch subdivision
+                bool divide();
 
-                bool divide(osg::Group* group, unsigned int maxNumTreesPerCell);
-                bool divide(osg::Geode* geode, unsigned int maxNumTreesPerCell);
+                /// max children per level
+                void setMaxNumTreesPerCell(unsigned int u){_maxNumTreesPerCell=u;}
+                const unsigned int &getMaxNumTreesPerCell()const {return _maxNumTreesPerCell;}
+
+                /// max depth recursion
+                void setMaxDepth(unsigned int u){_maxDepth=u;}
+                const unsigned int &getMaxDepth()const{return _maxDepth;}
+            protected:
+                bool divide(osg::Group* group, unsigned int curDepth);
+                bool divide(osg::Geode* geode, unsigned int curDepth);
+
+
+                unsigned int _maxNumTreesPerCell, _maxDepth;
 
                 typedef std::set<osg::Group*> GroupsToDivideList;
                 GroupsToDivideList _groupsToDivideList;

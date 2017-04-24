@@ -143,7 +143,7 @@ State::State():
     _timestampBits = 0;
 
     _vas = 0;
-	_current_bound_vao = 0;///MY PERHAPS MAXINT...
+    _current_bound_vao = 0;///MY PERHAPS MAXINT...
 }
 
 State::~State()
