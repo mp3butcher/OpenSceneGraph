@@ -35,7 +35,7 @@ META_Object(osg,DrawArraysIndirectCommand)
 DrawArraysIndirectCommand();
 DrawArraysIndirectCommand(const DrawArraysIndirectCommand& copy,const CopyOp& copyop=CopyOp::SHALLOW_COPY);
   virtual const GLvoid*   getDataPointer() const { return empty()?0:&front(); }
-  virtual unsigned int    getTotalDataSize() const { return static_cast<unsigned int>(size()); }
+  virtual unsigned int    getTotalDataSize() const { return 4u*static_cast<unsigned int>(size()); }
 };
 
 class OSG_EXPORT DrawArraysIndirect : public PrimitiveSet
@@ -68,7 +68,7 @@ class OSG_EXPORT DrawArraysIndirect : public PrimitiveSet
         void setIndirectOffset( void * i){ _indirect = i; }
         void * getIndirectOffset()const{ return _indirect; }
 
-        virtual void draw(State& state, bool useVertexBufferObjects, bool bindElementBuffer=true) const;
+        virtual void draw(State& state, bool useVertexBufferObjects) const;
 
         virtual void accept(PrimitiveFunctor& functor) const;
         virtual void accept(PrimitiveIndexFunctor& functor) const;
@@ -108,7 +108,7 @@ META_Object(osg,DrawElementsIndirectCommand)
 DrawElementsIndirectCommand();
 DrawElementsIndirectCommand(const DrawElementsIndirectCommand& copy,const CopyOp& copyop=CopyOp::SHALLOW_COPY);
   virtual const GLvoid*   getDataPointer() const { return empty()?0:&front(); }
-  virtual unsigned int    getTotalDataSize() const { return static_cast<unsigned int>(size()); }
+  virtual unsigned int    getTotalDataSize() const { return 4u*static_cast<unsigned int>(size()); }
 
 
 
@@ -176,7 +176,7 @@ class OSG_EXPORT DrawElementsIndirectUByte : public DrawElementsIndirect, public
         virtual unsigned int    getTotalDataSize() const { return static_cast<unsigned int>(size()); }
         virtual bool            supportsBufferObject() const { return false; }
 
-        virtual void draw(State& state, bool useVertexBufferObjects, bool bindElementBuffer=true) const;
+        virtual void draw(State& state, bool useVertexBufferObjects) const;
 
         virtual void accept(PrimitiveFunctor& functor) const;
         virtual void accept(PrimitiveIndexFunctor& functor) const;
@@ -244,7 +244,7 @@ class OSG_EXPORT DrawElementsIndirectUShort : public DrawElementsIndirect, publi
         virtual unsigned int    getTotalDataSize() const { return 2u*static_cast<unsigned int>(size()); }
         virtual bool            supportsBufferObject() const { return false; }
 
-        virtual void draw(State& state, bool useVertexBufferObjects, bool bindElementBuffer=true) const;
+        virtual void draw(State& state, bool useVertexBufferObjects) const;
 
         virtual void accept(PrimitiveFunctor& functor) const;
         virtual void accept(PrimitiveIndexFunctor& functor) const;
@@ -311,7 +311,7 @@ class OSG_EXPORT DrawElementsIndirectUInt : public DrawElementsIndirect, public 
         virtual unsigned int    getTotalDataSize() const { return 4u*static_cast<unsigned int>(size()); }
         virtual bool            supportsBufferObject() const { return false; }
 
-        virtual void draw(State& state, bool useVertexBufferObjects, bool bindElementBuffer=true) const;
+        virtual void draw(State& state, bool useVertexBufferObjects) const;
 
         virtual void accept(PrimitiveFunctor& functor) const;
         virtual void accept(PrimitiveIndexFunctor& functor) const;
@@ -356,7 +356,7 @@ public:
     virtual const char* className() const { return "MultiDrawArraysIndirect"; }
 
 
-    virtual void draw(State& state, bool useVertexBufferObjects, bool bindElementBuffer=true) const;
+    virtual void draw(State& state, bool useVertexBufferObjects) const;
 
     virtual void accept(PrimitiveFunctor& functor) const;
     virtual void accept(PrimitiveIndexFunctor& functor) const;

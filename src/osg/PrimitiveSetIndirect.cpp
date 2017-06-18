@@ -24,7 +24,7 @@ using namespace osg;
         GLBufferObject* glBufferObject = _indirectCommand->getBufferObject()->getOrCreateGLBufferObject(state.getContextID());\
         if (glBufferObject && glBufferObject->isDirty())\
         {\
-            OSG_WARN<<"Compiling IndirectDraw buffer in draw...Should not happens if GPU production would had happened earlier ..."<<glBufferObject<<std::endl;\
+            OSG_WARN<<"Compiling IndirectDraw buffer in draw...Should not happens if GPU draw call production would happened earlier ..."<<glBufferObject<<std::endl;\
             glBufferObject->compileBuffer();\
         }\
         state.get<GLExtensions>()->glBindBuffer(GL_DRAW_INDIRECT_BUFFER,glBufferObject->getGLObjectID());\
@@ -38,9 +38,15 @@ using namespace osg;
 //
 // DrawArrayIndirect
 //
-void DrawArraysIndirect::draw(State& state, bool, bool) const
+
+DrawArraysIndirectCommand::DrawArraysIndirectCommand():BufferData(){}
+DrawArraysIndirectCommand::DrawArraysIndirectCommand(const DrawArraysIndirectCommand& copy,const CopyOp& copyop/*=CopyOp::SHALLOW_COPY*/)
+:BufferData(copy, copyop){
+}
+void DrawArraysIndirect::draw(State& state, bool) const
 {
 BINDINDIRECTCOMMAND
+
 #if defined(OSG_GLES1_AVAILABLE) || defined(OSG_GLES2_AVAILABLE)
     GLenum mode = _mode;
     if (_mode==GL_QUADS)
@@ -85,7 +91,7 @@ DrawElementsIndirectUByte::~DrawElementsIndirectUByte()
     releaseGLObjects();
 }
 
-void DrawElementsIndirectUByte::draw(State& state, bool useVertexBufferObjects, bool bindElementBuffer) const
+void DrawElementsIndirectUByte::draw(State& state, bool useVertexBufferObjects) const
 {
 BINDINDIRECTCOMMAND
     GLenum mode = _mode;
@@ -97,7 +103,8 @@ BINDINDIRECTCOMMAND
     if (useVertexBufferObjects)
     {
         GLBufferObject* ebo = getOrCreateGLBufferObject(state.getContextID());
-        if(bindElementBuffer)state.bindElementBufferObject(ebo);
+        //if(bindElementBuffer)
+        state.bindElementBufferObject(ebo);
         if (ebo)
         {
             //if (_numInstances>=1) state.glDrawElementsIndirectInstanced(mode, size(), GL_UNSIGNED_BYTE, (const GLvoid *)(ebo->getOffset(getBufferIndex())), _numInstances);
@@ -147,7 +154,7 @@ DrawElementsIndirectUShort::~DrawElementsIndirectUShort()
     releaseGLObjects();
 }
 
-void DrawElementsIndirectUShort::draw(State& state, bool useVertexBufferObjects, bool bindElementBuffer) const
+void DrawElementsIndirectUShort::draw(State& state, bool useVertexBufferObjects) const
 {
 BINDINDIRECTCOMMAND
     GLenum mode = _mode;
@@ -159,7 +166,8 @@ BINDINDIRECTCOMMAND
     if (useVertexBufferObjects)
     {
         GLBufferObject* ebo = getOrCreateGLBufferObject(state.getContextID());
-        if(bindElementBuffer)state.bindElementBufferObject(ebo);
+        //if(bindElementBuffer)
+        state.bindElementBufferObject(ebo);
         if (ebo)
         {
            // if (_numInstances>=1) state.glDrawElementsIndirectInstanced(mode, size(), GL_UNSIGNED_SHORT, (const GLvoid *)(ebo->getOffset(getBufferIndex())), _numInstances);
@@ -207,7 +215,7 @@ DrawElementsIndirectUInt::~DrawElementsIndirectUInt()
     releaseGLObjects();
 }
 
-void DrawElementsIndirectUInt::draw(State& state, bool useVertexBufferObjects, bool bindElementBuffer) const
+void DrawElementsIndirectUInt::draw(State& state, bool useVertexBufferObjects) const
 {
 BINDINDIRECTCOMMAND
     GLenum mode = _mode;
@@ -219,7 +227,8 @@ BINDINDIRECTCOMMAND
     if (useVertexBufferObjects)
     {
         GLBufferObject* ebo = getOrCreateGLBufferObject(state.getContextID());
-        if(bindElementBuffer)state.bindElementBufferObject(ebo);
+        //if(bindElementBuffer)
+        state.bindElementBufferObject(ebo);
         if (ebo)
         {
              //if (_numInstances>=1) state.glDrawElementsIndirectInstanced(mode, size(), GL_UNSIGNED_INT, (const GLvoid *)(ebo->getOffset(getBufferIndex())), _numInstances);
@@ -263,7 +272,7 @@ void DrawElementsIndirectUInt::offsetIndices(int offset)
 // MultiDrawArrays
 //
 #ifdef OSG_HAS_MULTIDRAWARRAYS
-void MultiDrawArraysIndirect::draw(osg::State& state, bool, bool) const
+void MultiDrawArraysIndirect::draw(osg::State& state, bool) const
 {
 BINDINDIRECTCOMMAND
     // OSG_NOTICE<<"osg::MultiDrawArraysIndirect::draw"<<std::endl;
