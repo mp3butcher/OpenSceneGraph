@@ -1,5 +1,17 @@
 #include <osg/Sampler>
-#include <osg/Texture>
+#include <osg/Texture3D>
+
+#ifndef GL_TEXTURE_MIN_LOD
+#define GL_TEXTURE_MIN_LOD 0x813A
+#endif
+
+#ifndef GL_TEXTURE_MAX_LOD
+#define GL_TEXTURE_MAX_LOD 0x813B
+#endif
+
+#ifndef GL_TEXTURE_WRAP_R
+#define GL_TEXTURE_WRAP_R 0x2804
+#endif
 
 using namespace osg;
 
