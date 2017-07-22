@@ -67,7 +67,7 @@ void Statistics::drawArrays(GLenum mode,GLint,GLsizei count)
     _primitives_count[mode] += _calculate_primitives_number_by_mode(mode, count);
 }
 
-void Statistics::drawElements(GLenum mode,GLsizei count,const GLubyte*)
+void Statistics::drawElements(GLenum mode,GLsizei count,const GLubyte*, const GLuint)
 {
     PrimitivePair& prim = _primitiveCount[mode];
     ++prim.first;
@@ -75,7 +75,7 @@ void Statistics::drawElements(GLenum mode,GLsizei count,const GLubyte*)
     _primitives_count[mode] += _calculate_primitives_number_by_mode(mode, count);
 }
 
-void Statistics::drawElements(GLenum mode,GLsizei count,const GLushort*)
+void Statistics::drawElements(GLenum mode,GLsizei count,const GLushort*, const GLuint)
 {
     PrimitivePair& prim = _primitiveCount[mode];
     ++prim.first;
@@ -83,7 +83,7 @@ void Statistics::drawElements(GLenum mode,GLsizei count,const GLushort*)
     _primitives_count[mode] += _calculate_primitives_number_by_mode(mode, count);
 }
 
-void Statistics::drawElements(GLenum mode,GLsizei count,const GLuint*)
+void Statistics::drawElements(GLenum mode,GLsizei count,const GLuint*, const GLuint)
 {
     PrimitivePair& prim = _primitiveCount[mode];
     ++prim.first;

@@ -143,7 +143,7 @@ State::State():
     _timestampBits = 0;
 
     _vas = 0;
-    _current_bound_vao = 0;///MY PERHAPS MAXINT...
+    _currentDIBO = 0;
 }
 
 State::~State()
@@ -203,10 +203,10 @@ void State::initializeExtensionProcs()
     OSG_NOTICE<<"_forceVertexBufferObject = "<<_forceVertexBufferObject<<std::endl;
 
 
-    // Set up up global VertexArrayState object
-    _globalVertexArrayState = new VertexArrayState(this);
-    _globalVertexArrayState->assignAllDispatchers();
-    // if (_useVertexArrayObject) _globalVertexArrayState->generateVertexArrayObject();
+    // Set up up global PerContextVertexArrayState object
+    _globalPerContextVertexArrayState = new PerContextVertexArrayState(this);
+    _globalPerContextVertexArrayState->assignAllDispatchers();
+    // if (_useVertexArrayObject) _globalPerContextVertexArrayState->generateVertexArrayObject();
 
     setCurrentToGlobalVertexArrayState();
 

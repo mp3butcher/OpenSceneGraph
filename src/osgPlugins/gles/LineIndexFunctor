@@ -90,7 +90,7 @@ public:
     }
 
     template<typename I>
-    void drawElements(GLenum mode, GLsizei count, const I* indices)
+    inline void drawElements(GLenum mode, GLsizei count, const I* indices, const GLuint basevertex = 0)
     {
         if (indices == 0 || count == 0) return;
 
@@ -100,7 +100,7 @@ public:
             {
                 const I* iptr = indices;
                 for(GLsizei i = 0 ; i < count ; i += 2, iptr += 2) {
-                    line(*iptr, *(iptr+1));
+                    line(*iptr+basevertex, *(iptr+1)+basevertex);
                 }
             }
             break;
@@ -108,7 +108,7 @@ public:
             {
                 const I* iptr = indices;
                 for(GLsizei i = 0 ; i < count - 1 ; i += 1, iptr += 1) {
-                    line(*iptr, *(iptr+1));
+                    line(*iptr+basevertex, *(iptr+1)+basevertex);
                 }
             }
             break;
@@ -117,9 +117,9 @@ public:
                 const I* iptr = indices;
                 I first = *iptr;
                 for(GLsizei i = 0 ; i < count - 1 ; i += 1, iptr += 1) {
-                    line(*iptr, *(iptr+1));
+                    line(*iptr+basevertex, *(iptr+1)+basevertex);
                 }
-                line(*iptr, first);
+                line(*iptr+basevertex, first+basevertex);
             }
             break;
             default: // not a line
@@ -127,16 +127,16 @@ public:
         }
     }
 
-    virtual void drawElements(GLenum mode, GLsizei count, const GLubyte* indices) {
-        drawElements<GLubyte>(mode, count, indices);
+    virtual void drawElements(GLenum mode, GLsizei count, const GLubyte* indices, const GLuint basevertex = 0) {
+        drawElements<GLubyte>(mode, count, indices, basevertex);
     }
 
-    virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices) {
-        drawElements<GLushort>(mode, count, indices);
+    virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices, const GLuint basevertex = 0) {
+        drawElements<GLushort>(mode, count, indices, basevertex);
     }
 
-    virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices) {
-        drawElements<GLuint>(mode, count, indices);
+    virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices, const GLuint basevertex = 0) {
+        drawElements<GLuint>(mode, count, indices, basevertex);
     }
 
     void line(unsigned int a, unsigned int b) {

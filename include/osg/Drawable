@@ -55,7 +55,7 @@
 #endif
 
 
-// #define INLINE_DRAWABLE_DRAW
+#define INLINE_DRAWABLE_DRAW
 
 namespace osg {
 
@@ -278,7 +278,13 @@ class OSG_EXPORT Drawable : public Node
         */
         virtual void compileGLObjects(RenderInfo& renderInfo) const;
 
-        virtual VertexArrayState* createVertexArrayState(RenderInfo& renderInfo) const;
+        /** set the vertex array state of this Drawable **/
+        void setVertexArrayState(VertexArrayState*vas){_vas=vas;}
+
+        /** get the vertex array state of this Drawable **/
+        VertexArrayState* getVertexArrayState()const{return _vas;}
+
+        virtual PerContextVertexArrayState* createPerContextVertexArrayState(RenderInfo& renderInfo) const;
 
 
         /** Set whether to use a mutex to ensure ref() and unref() are thread safe.*/
@@ -491,8 +497,7 @@ class OSG_EXPORT Drawable : public Node
         typedef osg::buffered_value<GLuint> GLObjectList;
         mutable GLObjectList    _globjList;
 
-        typedef buffered_object< osg::ref_ptr<VertexArrayState> > VertexArrayStateList;
-        mutable VertexArrayStateList    _vertexArrayStateList;
+        ref_ptr<VertexArrayState> _vas;
 
         ref_ptr<DrawCallback>   _drawCallback;
 };
@@ -505,11 +510,11 @@ inline void Drawable::draw(RenderInfo& renderInfo) const
     if (useVertexArrayObject)
     {
         unsigned int contextID = renderInfo.getContextID();
+        PerContextVertexArrayState* vas = _vas->getPCVertexArrayStates()[contextID];
 
-        VertexArrayState* vas = _vertexArrayStateList[contextID].get();
         if (!vas)
         {
-            _vertexArrayStateList[contextID] = vas = createVertexArrayState(renderInfo);
+            _vas->getPCVertexArrayStates()[contextID] = vas = createPerContextVertexArrayState(renderInfo);
         }
         else
         {
@@ -558,7 +563,7 @@ inline void Drawable::draw(RenderInfo& renderInfo) const
     else
 #endif
     {
-        // if state.previousVertexArrayState() is different than currentVertexArrayState bind current
+        // if state.previousPerContextVertexArrayState() is different than currentPerContextVertexArrayState bind current
 
         // OSG_NOTICE<<"Fallback drawInner()........................"<<std::endl;
 

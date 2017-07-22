@@ -524,35 +524,35 @@ class OSG_EXPORT State : public Referenced
         void dirtyAllAttributes();
 
 
-        /** Proxy helper class for applyig a VertexArrayState in a local scope, with the preivous value being resotred automatically on leaving the scope that proxy was created.*/
+        /** Proxy helper class for applyig a PerContextVertexArrayState in a local scope, with the preivous value being resotred automatically on leaving the scope that proxy was created.*/
         struct SetCurrentVertexArrayStateProxy
         {
-            SetCurrentVertexArrayStateProxy(osg::State& state, VertexArrayState* vas):_state(state) { _state.setCurrentVertexArrayState(vas); }
+            SetCurrentVertexArrayStateProxy(osg::State& state, PerContextVertexArrayState* vas):_state(state) { _state.setCurrentVertexArrayState(vas); }
             ~SetCurrentVertexArrayStateProxy() { _state.setCurrentToGlobalVertexArrayState(); }
             osg::State& _state;
         };
 
         /** Set the CurrentVetexArrayState object that take which vertex arrays are bound.*/
-        void setCurrentVertexArrayState(VertexArrayState* vas) { _vas = vas; }
+        void setCurrentVertexArrayState(PerContextVertexArrayState* vas) { _vas = vas; }
 
         inline void bindVertexArrayObject() const {
-            if(_current_bound_vao==_vas->getVertexArrayObject())return;
-            _current_bound_vao = _vas->getVertexArrayObject();
-            _glBindVertexArrayObject (_current_bound_vao);
+            if(_currentVAO==_vas->getVertexArrayObject())return;
+            _currentVAO = _vas->getVertexArrayObject();
+            _glBindVertexArrayObject (_currentVAO);
         }
 
         inline void unbindVertexArrayObject() const {
-         //  if(_state->getCurrentBoundVAO()!=0){
-           _current_bound_vao=0;
-           _glBindVertexArrayObject (0);
-         // }
+           if(_currentVAO!=0){
+               _currentVAO=0;
+               _glBindVertexArrayObject (0);
+          }
         }
 
         /** Get the CurrentVetexArrayState object that take which vertex arrays are bound.*/
-        inline VertexArrayState* getCurrentVertexArrayState() const { return _vas; }
+        inline PerContextVertexArrayState* getCurrentVertexArrayState() const { return _vas; }
 
-        /** Set the getCurrentVertexArrayState to the GloabalVertexArrayState.*/
-        void setCurrentToGlobalVertexArrayState() { _vas = _globalVertexArrayState.get(); }
+        /** Set the getCurrentVertexArrayState to the GloabalPerContextVertexArrayState.*/
+        void setCurrentToGlobalVertexArrayState() { _vas = _globalPerContextVertexArrayState.get(); }
 
 
         /** disable the vertex, normal, color, tex coords, secondary color, fog coord and index arrays.*/
@@ -574,6 +574,27 @@ class OSG_EXPORT State : public Referenced
         void bindElementBufferObject(osg::GLBufferObject* ebo) { _vas->bindElementBufferObject(ebo); }
         void unbindElementBufferObject() { _vas->unbindElementBufferObject(); }
 
+
+        inline void bindDrawIndirectBufferObject(osg::GLBufferObject* ibo)
+        {
+            if (ibo->isDirty())
+            {
+                ibo->compileBuffer();
+                _currentDIBO = ibo;
+            }
+            else if (ibo != _currentDIBO)
+            {
+                ibo->bindBuffer();
+                _currentDIBO = ibo;
+            }
+        }
+
+        inline void unbindDrawIndirectBufferObject()
+        {
+            if (!_currentDIBO) return;
+            _glBindBuffer(GL_DRAW_INDIRECT_BUFFER,0);
+            _currentDIBO = 0;
+        }
 
         void setCurrentPixelBufferObject(osg::GLBufferObject* pbo) { _currentPBO = pbo; }
         const GLBufferObject* getCurrentPixelBufferObject() const { return _currentPBO; }
@@ -604,14 +625,14 @@ class OSG_EXPORT State : public Referenced
         }
 
 
-        void setCurrentVertexArrayObject(GLuint vao) { _currentVAO = vao; }
+        //void setCurrentVertexArrayObject(GLuint vao) { _currentVAO = vao; }
         GLuint getCurrentVertexArrayObject() const { return _currentVAO; }
 
-        inline void bindVertexArrayObject(const VertexArrayState* vas) { bindVertexArrayObject(vas->getVertexArrayObject()); }
+        //inline void bindVertexArrayObject(const PerContextVertexArrayState* vas) { bindVertexArrayObject(vas->getVertexArrayObject()); }
 
-        inline void bindVertexArrayObject(GLuint vao) { if (_currentVAO!=vao) { _glExtensions->glBindVertexArray(vao); _currentVAO = vao; } }
+        //inline void bindVertexArrayObject(GLuint vao) { if (_currentVAO!=vao) { _glExtensions->glBindVertexArray(vao); _currentVAO = vao; } }
 
-        inline void unbindVertexArrayObject() { if (_currentVAO!=0) { _glExtensions->glBindVertexArray(0); _currentVAO = 0; } }
+        //inline void unbindVertexArrayObject() { if (_currentVAO!=0) { _glExtensions->glBindVertexArray(0); _currentVAO = 0; } }
 
 
         typedef std::vector<GLushort> IndicesGLushort;
@@ -1057,9 +1078,8 @@ class OSG_EXPORT State : public Referenced
         GraphicsContext*            _graphicsContext;
         unsigned int                _contextID;
 
-        osg::ref_ptr<VertexArrayState>  _globalVertexArrayState;
-        VertexArrayState*               _vas;
-        mutable GLuint                  _current_bound_vao;
+        osg::ref_ptr<PerContextVertexArrayState>  _globalPerContextVertexArrayState;
+        PerContextVertexArrayState*               _vas;
 
         bool                            _shaderCompositionEnabled;
         bool                            _shaderCompositionDirty;
@@ -1273,7 +1293,9 @@ class OSG_EXPORT State : public Referenced
         unsigned int                    _currentActiveTextureUnit;
         unsigned int                    _currentClientActiveTextureUnit;
         GLBufferObject*                 _currentPBO;
-        GLuint                          _currentVAO;
+        GLBufferObject*                 _currentDIBO;
+        mutable GLuint                  _currentVAO;
+
 
 
         inline ModeMap& getOrCreateTextureModeMap(unsigned int unit)

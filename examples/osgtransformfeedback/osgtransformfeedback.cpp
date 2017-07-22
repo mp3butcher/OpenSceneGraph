@@ -346,27 +346,26 @@ int main( int , char** )
         somePointsRenderer->setColorArray(gencolorvAry);
         somePointsRenderer->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
 
-    #define INDIRECTDRAW 1
-     #ifndef INDIRECTDRAW
+#define INDIRECTDRAW 1
+#ifndef INDIRECTDRAW
         somePointsRenderer-> addPrimitiveSet( new osg::DrawArrays( GL_LINES, 0,numprimgen));
 #else
-     ///draw call is static but we try with indirectdraw
+        ///draw call is static but we try with indirectdraw
 
-osg::ref_ptr<osg::DrawArraysIndirect> da=new osg::DrawArraysIndirect(GL_LINES);
-/*        uint  count;
-*        uint  instanceCount;
-*        uint  first;
-*        uint  baseInstance;*/
- osg::ref_ptr<osg::DrawArraysIndirectCommand> ida=new osg::DrawArraysIndirectCommand();
- ida->push_back(numprimgen/2);//count fed by queryobjects
- ida->push_back(1);//num instance
- ida->push_back(0);//first
- ida->push_back(0);//baseInstance
+        osg::ref_ptr<osg::MultiDrawArraysIndirect> da=new osg::MultiDrawArraysIndirect(GL_LINES);
+        /*        uint  count;
+        *        uint  instanceCount;
+        *        uint  first;
+        *        uint  baseInstance;*/
+        osg::ref_ptr<osg::DrawArraysIndirectCommand> ida=da->getIndirectCommand();
+        ida->push_back(osg::DrawArraysIndirectCmd(numprimgen/2,//count fed by queryobjects
+        1,//num instance
+        0,//first,
+        0));//baseInstance
 
-da->setIndirectCommand(ida);
-querybuffer=ida->getBufferObject();
+        querybuffer=ida->getBufferObject();
         somePointsRenderer-> addPrimitiveSet( da);
-      //  somePointsRenderer-> addPrimitiveSet( new osg::DrawArrays( GL_LINES, 0,numprimgen));
+        //  somePointsRenderer-> addPrimitiveSet( new osg::DrawArrays( GL_LINES, 0,numprimgen));
 #endif
         osg::StateSet* sset =   somePointsRenderer-> getOrCreateStateSet();
         sset->setAttribute( createRenderShader() );

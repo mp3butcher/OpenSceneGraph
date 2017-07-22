@@ -8,108 +8,113 @@ public:
 
     //set geometry responsible of the shared vas and compute primset basevertices
     void setMaster(SharedVAOGeometry*m);
-#if 0
-/// nothing have to be modified in fact
+#if 1
     virtual void compileGLObjects(osg::RenderInfo& renderInfo) const
-    {
-        osg::State& state = *renderInfo.getState();
-        if (renderInfo.getState()->useVertexBufferObject(_supportsVertexBufferObjects && _useVertexBufferObjects))
         {
-            unsigned int contextID = state.getContextID();
-            osg::GLExtensions* extensions = state.get<osg::GLExtensions>();
-            if (!extensions) return;
-
-            typedef std::set<osg::BufferObject*> BufferObjects;
-            BufferObjects bufferObjects;
-
-            // first collect all the active unique BufferObjects
-            if (_vertexArray.valid() && _vertexArray->getBufferObject()) bufferObjects.insert(_vertexArray->getBufferObject());
-            if (_normalArray.valid() && _normalArray->getBufferObject()) bufferObjects.insert(_normalArray->getBufferObject());
-            if (_colorArray.valid() && _colorArray->getBufferObject()) bufferObjects.insert(_colorArray->getBufferObject());
-            if (_secondaryColorArray.valid() && _secondaryColorArray->getBufferObject()) bufferObjects.insert(_secondaryColorArray->getBufferObject());
-            if (_fogCoordArray.valid() && _fogCoordArray->getBufferObject()) bufferObjects.insert(_fogCoordArray->getBufferObject());
-
-            for(ArrayList::const_iterator itr = _texCoordList.begin();
-                itr != _texCoordList.end();
-                ++itr)
+            osg::State& state = *renderInfo.getState();
+            if (renderInfo.getState()->useVertexBufferObject(_supportsVertexBufferObjects && _useVertexBufferObjects))
             {
-                if (itr->valid() && (*itr)->getBufferObject()) bufferObjects.insert((*itr)->getBufferObject());
-            }
+                unsigned int contextID = state.getContextID();
+                osg::GLExtensions* extensions = state.get<osg::GLExtensions>();
+                if (!extensions) return;
 
-            for(ArrayList::const_iterator itr = _vertexAttribList.begin();
-                itr != _vertexAttribList.end();
-                ++itr)
-            {
-                if (itr->valid() && (*itr)->getBufferObject()) bufferObjects.insert((*itr)->getBufferObject());
-            }
+                typedef std::set<osg::BufferObject*> BufferObjects;
+                BufferObjects bufferObjects;
 
-            for(PrimitiveSetList::const_iterator itr = _primitives.begin();
-                itr != _primitives.end();
-                ++itr)
-            {
-                if ((*itr)->getBufferObject()) bufferObjects.insert((*itr)->getBufferObject());
-            }
+                // first collect all the active unique BufferObjects
+                if (_vertexArray.valid() && _vertexArray->getBufferObject()) bufferObjects.insert(_vertexArray->getBufferObject());
+                if (_normalArray.valid() && _normalArray->getBufferObject()) bufferObjects.insert(_normalArray->getBufferObject());
+                if (_colorArray.valid() && _colorArray->getBufferObject()) bufferObjects.insert(_colorArray->getBufferObject());
+                if (_secondaryColorArray.valid() && _secondaryColorArray->getBufferObject()) bufferObjects.insert(_secondaryColorArray->getBufferObject());
+                if (_fogCoordArray.valid() && _fogCoordArray->getBufferObject()) bufferObjects.insert(_fogCoordArray->getBufferObject());
 
-            //osg::ElapsedTime timer;
-
-            // now compile any buffer objects that require it.
-            for(BufferObjects::iterator itr = bufferObjects.begin();
-                itr != bufferObjects.end();
-                ++itr)
-            {
-                osg::GLBufferObject* glBufferObject = (*itr)->getOrCreateGLBufferObject(contextID);
-                if (glBufferObject && glBufferObject->isDirty())
+                for(ArrayList::const_iterator itr = _texCoordList.begin();
+                    itr != _texCoordList.end();
+                    ++itr)
                 {
-                    // OSG_NOTICE<<"Compile buffer "<<glBufferObject<<std::endl;
-                    glBufferObject->compileBuffer();
+                    if (itr->valid() && (*itr)->getBufferObject()) bufferObjects.insert((*itr)->getBufferObject());
+                }
+
+                for(ArrayList::const_iterator itr = _vertexAttribList.begin();
+                    itr != _vertexAttribList.end();
+                    ++itr)
+                {
+                    if (itr->valid() && (*itr)->getBufferObject()) bufferObjects.insert((*itr)->getBufferObject());
+                }
+
+                for(PrimitiveSetList::const_iterator itr = _primitives.begin();
+                    itr != _primitives.end();
+                    ++itr)
+                {
+                    if ((*itr)->getBufferObject()) bufferObjects.insert((*itr)->getBufferObject());
+                }
+
+                //osg::ElapsedTime timer;
+
+                // now compile any buffer objects that require it.
+                for(BufferObjects::iterator itr = bufferObjects.begin();
+                    itr != bufferObjects.end();
+                    ++itr)
+                {
+                    osg::GLBufferObject* glBufferObject = (*itr)->getOrCreateGLBufferObject(contextID);
+                    if (glBufferObject && glBufferObject->isDirty())
+                    {
+                        // OSG_NOTICE<<"Compile buffer "<<glBufferObject<<std::endl;
+                        glBufferObject->compileBuffer();
+                    }
+                }
+
+                // OSG_NOTICE<<"Time to compile "<<timer.elapsedTime_m()<<"ms"<<std::endl;
+
+                // unbind the BufferObjects
+                extensions->glBindBuffer(GL_ARRAY_BUFFER_ARB,0);
+                extensions->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB,0);
+
+                if (state.useVertexArrayObject(_useVertexArrayObject) && !bufferObjects.empty())
+                {
+                    osg::PerContextVertexArrayState* vas = 0;
+
+
+
+
+                    _vas->getPCVertexArrayStates()[contextID] = vas = createPerContextVertexArrayState(renderInfo);
+
+                    osg::State::SetCurrentVertexArrayStateProxy setVASProxy(state, vas);
+
+                     state.bindVertexArrayObject();
+
+                    drawVertexArraysImplementation(renderInfo);
+
+                    ///MY
+                     //embed EBO in VAO (not required as first time geometry is drawn the ebo is bound -seams not overbound across multiple draw cool-)
+                    osg::Geometry::DrawElementsList drawelmts;
+                    this->getDrawElementsList(drawelmts);
+                    ///assume all drawelmt have the same bo
+                    if(!drawelmts.empty())     vas->bindElementBufferObject((*drawelmts.begin())->getBufferObject()->getGLBufferObject(contextID));
+
+                    state.unbindVertexArrayObject();
+                    vas->setRequiresSetArrays(getDataVariance()==osg::Object::DYNAMIC);
+                    ///END MY
                 }
             }
-
-            // OSG_NOTICE<<"Time to compile "<<timer.elapsedTime_m()<<"ms"<<std::endl;
-
-            // unbind the BufferObjects
-            extensions->glBindBuffer(GL_ARRAY_BUFFER_ARB,0);
-            extensions->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB,0);
-
-            if (state.useVertexArrayObject(_useVertexArrayObject) && !bufferObjects.empty())
+            else
             {
-                osg::VertexArrayState* vas = 0;
-
-                _vertexArrayStateList[contextID] = vas = createVertexArrayState(renderInfo);
-
-                osg::State::SetCurrentVertexArrayStateProxy setVASProxy(state, vas);
-
-                vas->bindVertexArrayObject();
-
-                drawVertexArraysImplementation(renderInfo);
-
-                ///MY embed EBO in VAO
-              /*  osg::Geometry::DrawElementsList drawelmts;
-                this->getDrawElementsList(drawelmts);
-                ///assume all drawelmt have the same bo
-                if(!drawelmts.empty())     vas->bindElementBufferObject((*drawelmts.begin())->getBufferObject()->getGLBufferObject(contextID));
-                vas->unbindVertexArrayObject();
-                vas->setRequiresSetArrays(getDataVariance()==osg::Object::DYNAMIC);*/
-                ///END MY
+                Drawable::compileGLObjects(renderInfo);
             }
         }
-        else
-        {
-            Drawable::compileGLObjects(renderInfo);
-        }
-    }
+
 #endif
-    inline osg::VertexArrayState*  newcreateVertexArrayState(osg::RenderInfo&renderInfo)const
+    inline osg::PerContextVertexArrayState*  newcreatePerContextVertexArrayState(osg::RenderInfo&renderInfo)const
     {
         ///MY
-        ///this line transforms createVertexArrayState into getOrCreateVertexArrayState(RenderInfo& renderInfo)
+        ///this line transforms createPerContextVertexArrayState into getOrCreatePerContextVertexArrayState(RenderInfo& renderInfo)
         ///avoiding overwriting of _vertexArrayStateList[cID] when vas is shared among several geometries
-        if(_vertexArrayStateList[renderInfo.getContextID()])return _vertexArrayStateList[renderInfo.getContextID()];
+        if(_vas->getPCVertexArrayStates()[renderInfo.getContextID()])return _vas->getPCVertexArrayStates()[renderInfo.getContextID()];
         ///END MY
         osg::State& state = *renderInfo.getState();
-        osg::VertexArrayState* vas = new osg::VertexArrayState(&state);
+        osg::PerContextVertexArrayState* vas = _vas->getPCVertexArrayStates()[renderInfo.getContextID()]=new osg::PerContextVertexArrayState(&state);
 
-        // OSG_NOTICE<<"Creating new osg::VertexArrayState "<< vas<<std::endl;
+        // OSG_NOTICE<<"Creating new osg::PerContextVertexArrayState "<< vas<<std::endl;
 
         if (_vertexArray.valid()) vas->assignVertexArrayDispatcher();
         if (_colorArray.valid()) vas->assignColorArrayDispatcher();
@@ -122,13 +127,13 @@ public:
 
         if (state.useVertexArrayObject(_useVertexArrayObject))
         {
-            // OSG_NOTICE<<"  Setup VertexArrayState to use VAO "<<vas<<std::endl;
+            // OSG_NOTICE<<"  Setup PerContextVertexArrayState to use VAO "<<vas<<std::endl;
 
             vas->generateVertexArrayObject();
         }
         else
         {
-            // OSG_NOTICE<<"  Setup VertexArrayState to without using VAO "<<vas<<std::endl;
+            // OSG_NOTICE<<"  Setup PerContextVertexArrayState to without using VAO "<<vas<<std::endl;
         }
 
         return vas;
@@ -136,14 +141,15 @@ public:
     SharedVAOGeometry * master;///the only Geometry that actually create a VAS
 protected:
     virtual ~SharedVAOGeometry() {};
-    virtual osg::VertexArrayState*  createVertexArrayState(osg::RenderInfo&ri)const
+    ///overriden in order to hack vao sharing among geometries
+    virtual osg::PerContextVertexArrayState*  createPerContextVertexArrayState(osg::RenderInfo&ri)const
     {
         if(true){
             if(master!=this) //only master is its master
-                return master->newcreateVertexArrayState(ri);
+                return master->newcreatePerContextVertexArrayState(ri);
             if(getVertexArray())
             std::cout<<"master create vAS "<<this<<std::endl;}
-            return newcreateVertexArrayState(ri);
+            return newcreatePerContextVertexArrayState(ri);
 
       }
 };
@@ -153,12 +159,28 @@ protected:
 class DrawArraysBaseVertex : public osg::DrawArrays
 {
 public:
-    GLint _basevertex;SharedVAOGeometry *pate;
+    GLint _basevertex;//SharedVAOGeometry *pate;
+    osg::Geometry *pate;
     DrawArraysBaseVertex(GLenum mode=0):
         osg::DrawArrays(mode) {}
 
-    DrawArraysBaseVertex(const osg::DrawArrays& array,SharedVAOGeometry *g, const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY):
-        osg::DrawArrays(array,copyop)    {pate=g;}
+    DrawArraysBaseVertex(
+
+            const osg::DrawArrays& array,
+        #if 1
+            osg::Geometry*p,
+        #endif
+            const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY):
+        osg::DrawArrays(array,copyop)    {
+#if 1
+
+        pate=p;
+#endif
+        _mode=array.getMode();
+        _first=array.getFirst();
+        _count=array.getCount();
+
+    }
     virtual void draw(osg::State& state, bool useVertexBufferObjects) const
     {
 #if defined(OSG_GLES1_AVAILABLE) || defined(OSG_GLES2_AVAILABLE)
@@ -176,16 +198,20 @@ public:
       {
           mode = GL_TRIANGLE_STRIP;
       }
-#if 0
-            const osg::Array * array=pate->getVertexArray();
-            if(!array)array=pate->getVertexAttribArray(0);
-            array->getBufferObject()->getProfile()._size;
-            osg::GLBufferObject* globj=array->getOrCreateGLBufferObject(state.getContextID());
-            std::cerr<<pate<<"< "<<  globj->getOffset(array->getBufferIndex())/                (array->getElementSize()) << "== "<<_basevertex<<std::endl;
-#endif
+
       if (_numInstances>=1) state.glDrawArraysInstanced(mode,_first+_basevertex,_count, _numInstances);
       else glDrawArrays(mode,_first+_basevertex,_count);
 #else
+#if 1
+        const osg::Array * array=pate->getVertexArray();
+        if(!array)array=pate->getVertexAttribArray(0);
+        array->getBufferObject()->getProfile()._size;
+        osg::GLBufferObject* globj=array->getOrCreateGLBufferObject(state.getContextID());
+        assert(globj->getOffset(array->getBufferIndex())/                (array->getElementSize())==_basevertex);
+       // std::cerr<<pate<<"< "<<  globj->getOffset(array->getBufferIndex())/                (array->getElementSize()) << "== "<<_basevertex<<std::endl;
+#endif
+
+       // std::cout<<_first<<" "<<_basevertex<<std::endl;
       if (_numInstances>=1) state.glDrawArraysInstanced(_mode,_first+_basevertex,_count, _numInstances);
       else glDrawArrays(_mode,_first+_basevertex,_count);
 #endif
@@ -222,7 +248,8 @@ public:
     {
         return "DrawElementsBaseVertex<##T,##DrawType>";
     }
-
+    /// NEWVAS : virtual added in DrawElements in order to be passed to array dispatcher at VAS compile time
+    virtual GLint getBaseVertex()const {return _basevertex;}
     virtual void draw(osg::State& state, bool useVertexBufferObjects) const
     {
         osg:: GLExtensions* ext = state.get<osg::GLExtensions>();

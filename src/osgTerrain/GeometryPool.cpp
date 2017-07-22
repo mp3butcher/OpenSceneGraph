@@ -793,12 +793,17 @@ SharedGeometry::~SharedGeometry()
 {
 }
 
-osg::VertexArrayState* SharedGeometry::createVertexArrayState(osg::RenderInfo& renderInfo) const
+osg::PerContextVertexArrayState* SharedGeometry::createPerContextVertexArrayState(osg::RenderInfo& renderInfo) const
 {
     osg::State& state = *renderInfo.getState();
-
-    osg::VertexArrayState* vas = new osg::VertexArrayState(&state);
-
+#if 0
+//robert way
+    osg::PerContextVertexArrayState* vas = new osg::PerContextVertexArrayState(&state);
+#else
+    osg::PerContextVertexArrayState* vas = _vas->getPCVertexArrayStates()[state.getContextID()];
+    if(vas)return vas;
+    _vas->getPCVertexArrayStates()[state.getContextID()] = vas = new osg::PerContextVertexArrayState(&state);
+#endif
     // OSG_NOTICE<<"Creating new osg::VertexArrayState "<< vas<<std::endl;
 
     if (_vertexArray.valid()) vas->assignVertexArrayDispatcher();
@@ -853,10 +858,14 @@ void SharedGeometry::compileGLObjects(osg::RenderInfo& renderInfo) const
         if (state.useVertexArrayObject(_useVertexArrayObject))
         {
 
-            osg::VertexArrayState* vas = 0;
+            osg::PerContextVertexArrayState* vas = 0;
+#if 0
+//Robert way
 
-            _vertexArrayStateList[contextID] = vas = createVertexArrayState(renderInfo);
-
+            _vertexArrayStateList[contextID] = vas = createPerContextVertexArrayState(renderInfo);
+#else
+            vas = createPerContextVertexArrayState(renderInfo);
+#endif
             // OSG_NOTICE<<"  setting up VertexArrayObject "<<vas<<std::endl;
 
             osg::State::SetCurrentVertexArrayStateProxy setVASProxy(state, vas);
@@ -904,7 +913,7 @@ void SharedGeometry::drawImplementation(osg::RenderInfo& renderInfo) const
     // OSG_NOTICE<<"SharedGeometry::drawImplementation "<<computeDiagonals<<std::endl;
 
     osg::State& state = *renderInfo.getState();
-    osg::VertexArrayState* vas = state.getCurrentVertexArrayState();
+    osg::PerContextVertexArrayState* vas = state.getCurrentVertexArrayState();
 
 
     // state.checkGLErrors("Before SharedGeometry::drawImplementation.");

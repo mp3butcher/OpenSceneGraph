@@ -657,12 +657,17 @@ void osgParticle::ParticleSystem::releaseGLObjects(osg::State* state) const
     }
 }
 
-osg::VertexArrayState* osgParticle::ParticleSystem::createVertexArrayState(osg::RenderInfo& renderInfo) const
+osg::PerContextVertexArrayState* osgParticle::ParticleSystem::createVertexArrayState(osg::RenderInfo& renderInfo) const
 {
     osg::State& state = *renderInfo.getState();
-
+#if 0
+//robert way
     osg::VertexArrayState* vas = new osg::VertexArrayState(&state);
-
+#else
+    osg::PerContextVertexArrayState* vas = _vas->getPCVertexArrayStates()[state.getContextID()];
+    if(vas)return vas;
+    _vas->getPCVertexArrayStates()[state.getContextID()] = vas = new osg::PerContextVertexArrayState(&state);
+#endif
     vas->assignVertexArrayDispatcher();
     vas->assignNormalArrayDispatcher();
     vas->assignColorArrayDispatcher();
@@ -794,7 +799,7 @@ void osgParticle::ParticleSystem::ArrayData::dirty()
 
 void osgParticle::ParticleSystem::ArrayData::dispatchArrays(osg::State& state)
 {
-    osg::VertexArrayState* vas = state.getCurrentVertexArrayState();
+    osg::PerContextVertexArrayState* vas = state.getCurrentVertexArrayState();
 
     vas->lazyDisablingOfVertexAttributes();
 

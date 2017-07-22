@@ -9,7 +9,7 @@
 #include <osg/PolygonStipple>
 #include <osg/TriangleFunctor>
 #include <osg/io_utils>
-
+#include <assert.h>
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
 
@@ -23,6 +23,7 @@
 #include <iostream>
 
 #include "SharedVAOGeometry"
+#define NEWVAS 1
 
 ///1)transform Geometries into SharedVAOGeometries
 ///2)transform primset to their basevertex equivalents
@@ -38,25 +39,48 @@ public:
     {
         _hardMaxbuffsize=1000000000;///min of all glbuffermaxsize
         _softMaxbuffsize=900000000;///ofline: keep all boset during traversal
-        _numVAOsInUsed=0;_hack=true;
+        _numVAOsInUsed=0;
+        _hack=true;
     }
     virtual void apply(osg::Geode& transform);
     // virtual void apply(osg::Geometry& transform);
-    void setHardBufferSize(unsigned int i)    {        _hardMaxbuffsize=i;    }
-    unsigned int getHardBufferSize()const    {        return _hardMaxbuffsize;    }
-    void setSoftBufferSize(unsigned int i)    {        _softMaxbuffsize=i;    }
-    unsigned int getSoftBufferSize()const    {        return _softMaxbuffsize;    }
-    unsigned int getNumBufferSetGenerated()const    {        return _numVAOsInUsed;    }
+    void setHardBufferSize(unsigned int i)    {
+        _hardMaxbuffsize=i;
+    }
+    unsigned int getHardBufferSize()const    {
+        return _hardMaxbuffsize;
+    }
+    void setSoftBufferSize(unsigned int i)    {
+        _softMaxbuffsize=i;
+    }
+    unsigned int getSoftBufferSize()const    {
+        return _softMaxbuffsize;
+    }
+    unsigned int getNumBufferSetGenerated()const    {
+        return _numVAOsInUsed;
+    }
 
-    bool isHackActivated()const    {        return _hack;    }
-    void setIsHackActivated(bool i)    {        _hack=i;    }
-   
+    bool isHackActivated()const    {
+        return _hack;
+    }
+    void setIsHackActivated(bool i)    {
+        _hack=i;
+    }
+
 protected:
 
-    void treatBufferObjects(SharedVAOGeometry* g);
     typedef std::vector< osg::BufferObject* > BuffSet;
-    typedef std::pair< std::vector<BuffSet>,SharedVAOGeometry *> BuffSetAndMaster;
-    std::map<unsigned int,BuffSetAndMaster > _store;
+#ifndef NEWVAS
+    typedef  std::pair<BuffSet,SharedVAOGeometry *>  BuffSetAndMaster;
+    typedef  std::vector< BuffSetAndMaster > VecBuffSetAndMaster;
+    SharedVAOGeometry*  treatBufferObjects(SharedVAOGeometry* g);
+#else
+    typedef  std::pair<BuffSet,osg::Geometry *>  BuffSetAndMaster;
+    typedef  std::vector< BuffSetAndMaster > VecBuffSetAndMaster;
+    osg::Geometry*  treatBufferObjects(osg::Geometry* g);
+
+#endif
+    std::map<unsigned int,VecBuffSetAndMaster > _store;
 
     unsigned int _hardMaxbuffsize;///prohibit bufferdata concatenation in bufferobject
     unsigned int _softMaxbuffsize;///hint a bufferobject is full (and increment lastempty)
@@ -65,6 +89,37 @@ protected:
 };
 
 
+void setPrimitivesBaseVertex(osg::Geometry *g){
+
+    GLint basevertex=0; uint elmtsize=static_cast<osg::Array*>(g->getVertexArray()->getBufferObject()->getBufferData(0))->getElementSize();
+    if(g->getVertexArray()) {
+        for(int i=0; i<g->getVertexArray()->getBufferIndex(); i++) {
+assert(static_cast<osg::Array*>(g->getVertexArray()->getBufferObject()->getBufferData(i))->getElementSize()==elmtsize);
+            basevertex+=g->getVertexArray()->getBufferObject()->getBufferData(i)->getTotalDataSize();
+        }
+
+        assert(g->getVertexArray()->getElementSize()==elmtsize);
+        basevertex/=g->getVertexArray()->getElementSize();
+///  setbasevertex without the pointer hack in drawElementsbasevertex
+
+        osg::Geometry::PrimitiveSetList& drawelmts=g->getPrimitiveSetList();
+
+        for(osg::Geometry::PrimitiveSetList::iterator prit=drawelmts.begin(); prit!=drawelmts.end(); prit++)
+        {
+            if(dynamic_cast<osg::DrawElementsUByte*>(prit->get()))
+                dynamic_cast<DrawElementsBaseVertexUBYTE*>(prit->get())->_basevertex=basevertex;
+            else if(dynamic_cast<osg::DrawElementsUInt*>(prit->get()))
+                dynamic_cast<DrawElementsBaseVertexUINT*>(prit->get())->_basevertex=basevertex;
+            else if(dynamic_cast<osg::DrawElementsUShort*>(prit->get()))
+                dynamic_cast<DrawElementsBaseVertexUSHORT*>(prit->get())->_basevertex=basevertex;
+            else    if(dynamic_cast<osg::DrawArrays*>(prit->get())){
+             //computebound fail with classic DrawArray   dynamic_cast<DrawArraysBaseVertex*>(prit->get())->setFirst( basevertex);//basevertex;
+                //don't understand why drawablecomputebound is based on primitivefunctor and not simply on the parsing the whole vertexarray ...kinda overkill
+            dynamic_cast<DrawArraysBaseVertex*>(prit->get())->_basevertex = basevertex;//basevertex;
+            }
+        }
+    }
+}
 
 void SharedVAOGeometry::setMaster(SharedVAOGeometry*m)
 {
@@ -72,34 +127,8 @@ void SharedVAOGeometry::setMaster(SharedVAOGeometry*m)
     master=m;
 
     if(!m)return;
-    GLint basevertex=0;
-    if(getVertexArray()){
-for(int i=0;i<getVertexArray()->getBufferIndex();i++){
+    setPrimitivesBaseVertex(this);
 
-basevertex+=getVertexArray()->getBufferObject()->getBufferData(i)->getTotalDataSize();
-    }
-basevertex/=getVertexArray()->getElementSize();
-///  setbasevertex without the pointer hack in drawElementsbasevertex
-///
-osg::Geometry::PrimitiveSetList& drawelmts=this->getPrimitiveSetList();
-
-for(osg::Geometry::PrimitiveSetList::iterator prit=drawelmts.begin(); prit!=drawelmts.end(); prit++)
-{
-if(dynamic_cast<osg::DrawElementsUByte*>(prit->get()))
-    dynamic_cast<DrawElementsBaseVertexUBYTE*>(prit->get())->_basevertex=basevertex;
-else if(dynamic_cast<osg::DrawElementsUInt*>(prit->get()))
-dynamic_cast<DrawElementsBaseVertexUINT*>(prit->get())->_basevertex=basevertex;
-else if(dynamic_cast<osg::DrawElementsUShort*>(prit->get()))
-dynamic_cast<DrawElementsBaseVertexUSHORT*>(prit->get())->_basevertex=basevertex;
-else    if(dynamic_cast<osg::DrawArrays*>(prit->get()))
-            dynamic_cast<DrawArraysBaseVertex*>(prit->get())->_basevertex=basevertex;
-
-// g->removePrimitiveSet(g->getPrimitiveSetIndex(*prit));
-
-}
-
-
-}
 }
 /*
 void MakeSharedBufferObjectsVisitor::apply(osg::Geometry&g)
@@ -110,20 +139,25 @@ void MakeSharedBufferObjectsVisitor::apply(osg::Geode&g)
 {
     osg::ref_ptr<osg::Geode> gr=new osg::Geode;
     osg::Geometry * geom;
-    for(int i=0; i<g.getNumDrawables(); i++)
+    for(uint i=0; i<g.getNumDrawables(); i++)
     {
         geom=g.getChild(i)->asGeometry();
-        if(geom &&geom->getVertexArray()){
-///DEBUG remove stateset 
-geom->setStateSet(0);
-if(_hack)
-            gr->addDrawable(new SharedVAOGeometry(*(osg::Geometry*)g.getDrawable(i),osg::CopyOp(osg::CopyOp::DEEP_COPY_ALL)));
-else gr->addDrawable(geom);
-}
+        if(geom &&geom->getVertexArray()) {
+///DEBUG remove stateset
+            geom->setStateSet(0);
+            if(_hack)
+#ifndef NEWVAS
+                gr->addDrawable(new SharedVAOGeometry(*(osg::Geometry*)g.getDrawable(i),osg::CopyOp(osg::CopyOp::DEEP_COPY_ALL)));
+#else
+                gr->addDrawable(g.getDrawable(i));
+
+#endif
+            else gr->addDrawable(geom);
+        }
     }
     g.removeDrawables(0,g.getNumDrawables());
 
-    for(int i=0; i<gr->getNumDrawables(); i++)
+    for(uint i=0; i<gr->getNumDrawables(); i++)
     {
         geom=gr->getChild(i)->asGeometry();
         ///force data variance to static
@@ -133,17 +167,28 @@ else gr->addDrawable(geom);
         geom->setUseVertexArrayObject(true);
 
 
-       if(_hack) treatBufferObjects( (SharedVAOGeometry*) geom);
-         g.addDrawable(geom);
+        if(_hack) geom=treatBufferObjects( (SharedVAOGeometry*) geom);
+        if(geom)g.addDrawable(geom);
+        else std::cerr<<"trowed"<<std::endl;
     }
 }
 ///return Hash without lastbit (index array bit)
 #define MAX_TEX_COORD 8
 #define MAX_VERTEX_ATTRIB 16
+///in case of array binding != PER_VERTEX drop the array
+#define HACKARRAY(GEOM,ARRAYPROP) if (GEOM->get##ARRAYPROP() && GEOM->get##ARRAYPROP()->getBinding()!=osg::Array::BIND_PER_VERTEX) {OSG_DEBUG<<#ARRAYPROP<<"removed"<<std::endl; GEOM->set##ARRAYPROP(0);}
+
+#define HACKARRAYS(GEOM,ARRAYPROP,I) if (GEOM->get##ARRAYPROP(I) && GEOM->get##ARRAYPROP(I)->getBinding()!=osg::Array::BIND_PER_VERTEX){OSG_DEBUG<<#ARRAYPROP<<"removed"<<std::endl;GEOM->set##ARRAYPROP(I,0);}
+
 unsigned int getArrayList(osg::Geometry*g,osg::Geometry::ArrayList &arrayList)
 {
     unsigned int hash=0;
-
+    HACKARRAY(g,VertexArray)
+            HACKARRAY(g,VertexArray)
+            HACKARRAY(g,NormalArray)
+            HACKARRAY(g,ColorArray)
+            HACKARRAY(g,SecondaryColorArray)
+            HACKARRAY(g,FogCoordArray)
     if (g->getVertexArray())
     {
         hash++;
@@ -176,6 +221,7 @@ unsigned int getArrayList(osg::Geometry*g,osg::Geometry::ArrayList &arrayList)
     hash<<=1;
     for(unsigned int unit=0; unit<g->getNumTexCoordArrays(); ++unit)
     {
+        HACKARRAYS(g,TexCoordArray,unit)
         osg::Array* array = g->getTexCoordArray(unit);
         if (array)
         {
@@ -187,6 +233,7 @@ unsigned int getArrayList(osg::Geometry*g,osg::Geometry::ArrayList &arrayList)
     hash<<=MAX_TEX_COORD-g->getNumTexCoordArrays();
     for(unsigned int  index = 0; index <g->getNumVertexAttribArrays(); ++index )
     {
+        HACKARRAYS(g,VertexAttribArray,index)
         osg::Array* array =g->getVertexAttribArray(index);
         if (array)
         {
@@ -208,10 +255,24 @@ bool isGuesting(const osg::BufferObject&bo,const osg::BufferData*bd)
     return false;
 }
 
+#ifndef NEWVAS
+    SharedVAOGeometry * MakeSharedBufferObjectsVisitor::treatBufferObjects(SharedVAOGeometry* g)
+#else
+    osg::Geometry*  MakeSharedBufferObjectsVisitor::treatBufferObjects(osg::Geometry* g)
+#endif
 
-void  MakeSharedBufferObjectsVisitor::treatBufferObjects(SharedVAOGeometry* g)
 {
+    osg::Geometry::ArrayList  bdlist;
+    unsigned int hash= getArrayList(g,bdlist),hasht;
 
+    for(osg::Geometry::ArrayList::iterator prit=bdlist.begin(); prit!=bdlist.end(); prit++){
+
+        if((*prit)->getBinding()!=    osg::Array::BIND_PER_VERTEX){
+            ///cant do anything
+            std::cerr<<"throwing geom"<<std::endl;
+            g=0;return 0;
+        }
+    }
     osg::Geometry::PrimitiveSetList newdrawelmts;
 
     ///convert primset to BaseVertex
@@ -225,13 +286,12 @@ void  MakeSharedBufferObjectsVisitor::treatBufferObjects(SharedVAOGeometry* g)
             newdrawelmts.push_back( new DrawElementsBaseVertexUINT(*dynamic_cast<osg::DrawElementsUInt*>(prit->get()),osg::CopyOp(osg::CopyOp::DEEP_COPY_ALL)));
         else if(dynamic_cast<osg::DrawElementsUShort*>(prit->get()))
             newdrawelmts.push_back( new DrawElementsBaseVertexUSHORT(*dynamic_cast<osg::DrawElementsUShort*>(prit->get()),osg::CopyOp(osg::CopyOp::DEEP_COPY_ALL)));
-        else if(dynamic_cast<osg::DrawArrays*>(prit->get()))
-                newdrawelmts.push_back( new DrawArraysBaseVertex(*dynamic_cast<osg::DrawArrays*>(prit->get()),g,osg::CopyOp(osg::CopyOp::DEEP_COPY_ALL)));
-            else
+        else if(dynamic_cast<osg::DrawArrays*>(prit->get()))            newdrawelmts.push_back( new DrawArraysBaseVertex(*dynamic_cast<osg::DrawArrays*>(prit->get()),g,osg::CopyOp(osg::CopyOp::DEEP_COPY_ALL)));
+        else
         {
-            std::cout<<"Not taken into account"<<std::endl;
+            std::cout<<"Not taken into account"<<std::endl; return 0;
         }
-       // g->removePrimitiveSet(g->getPrimitiveSetIndex(*prit));
+        // g->removePrimitiveSet(g->getPrimitiveSetIndex(*prit));
 
     }
     ///basevertices will be setted later
@@ -239,9 +299,8 @@ void  MakeSharedBufferObjectsVisitor::treatBufferObjects(SharedVAOGeometry* g)
     for(osg::Geometry::PrimitiveSetList::iterator prit=newdrawelmts.begin(); prit!=newdrawelmts.end(); prit++)
         g->addPrimitiveSet(*prit);
 #endif
-    osg::Geometry::ArrayList  bdlist;
-osg::Geometry::DrawElementsList drawelmts;
-    unsigned int hash= getArrayList(g,bdlist),hasht;
+
+    osg::Geometry::DrawElementsList drawelmts;
     //std::cout<<bdlist.size()<<" "<<hash<<std::endl;
     drawelmts.clear();
     g->getDrawElementsList(drawelmts);
@@ -259,10 +318,10 @@ osg::Geometry::DrawElementsList drawelmts;
         nbdrawelmt++;
     }
 
-    std::pair< std::vector<BuffSet>,SharedVAOGeometry *> & vecBuffSetANDmaster=_store[hash];
-//std::vector<BuffSet>  vecBuffSet=vecBuffSetANDmaster.first;
+    VecBuffSetAndMaster & vecBuffSetANDmaster=_store[hash];
 
-    std::vector<BuffSet>::iterator itbuffset=  vecBuffSetANDmaster.first.begin();//+vecBuffSet.lastempty;
+
+    VecBuffSetAndMaster::iterator itbuffset=  vecBuffSetANDmaster.begin();//+vecBuffSet.lastempty;
 
     unsigned int * buffSize=new unsigned int [nbborequired+nbdrawelmt],*ptrbuffsize=buffSize;
 
@@ -270,94 +329,115 @@ osg::Geometry::DrawElementsList drawelmts;
     bool canGuest=false;
     bool alreadyGuesting=true;
     osg::Geometry::ArrayList::iterator arit;
-    while(!canGuest && itbuffset!=vecBuffSetANDmaster.first.end())
+    while(!canGuest && itbuffset!=vecBuffSetANDmaster.end())
     {
         canGuest=true;
         alreadyGuesting=true;
 
-        BuffSet::iterator itbo=(*itbuffset).begin();
+        BuffSet::iterator itbo=(*itbuffset).first.begin();
         for(arit=bdlist.begin(); arit!=bdlist.end(); itbo++,arit++,ptrbuffsize++)
         {
             *ptrbuffsize=(*itbo)->computeRequiredBufferSize()+(*arit)->getTotalDataSize();
             if(*ptrbuffsize>_hardMaxbuffsize)canGuest=false;
-
             ///check bufferobject already guesting the bd
             if(!isGuesting(**itbo,(*arit)))alreadyGuesting=false;
 
         }
-        for(unsigned index=0; index< drawelmts.size(); index++)
-        {
 
-            *ptrbuffsize=(*itbo)->computeRequiredBufferSize()+drawelmts[index]->getTotalDataSize();
-            if(*ptrbuffsize++>_hardMaxbuffsize)                    canGuest=false;
+        if(!drawelmts.empty())
+            *ptrbuffsize=(*itbo)->computeRequiredBufferSize();
+        for(unsigned index=0; index< drawelmts.size(); index++,ptrbuffsize++)
+        {
+            *ptrbuffsize+=drawelmts[index]->getTotalDataSize();
+            if(*ptrbuffsize>_hardMaxbuffsize)                    canGuest=false;
             ///check bufferobject already guesting the bd
             if(!isGuesting(**itbo,drawelmts[index]))alreadyGuesting=false;
-
         }
 
-        ptrbuffsize=buffSize;
+        ptrbuffsize=buffSize; //reset ptr to bufferSizes table
+        //DEBUG alreadyGuesting=false;
         if(alreadyGuesting)
         {
             delete [] buffSize;
 
-            if(!vecBuffSetANDmaster.second)
-                std::cout<<"l258 reusing vao of "<<vecBuffSetANDmaster.second<<std::endl;
+            if(!(*itbuffset).second)
+                std::cout<<"l258 reusing vao of "<<(*itbuffset).second<<std::endl;
+#ifndef NEWVAS
+            g->setMaster((*itbuffset).second);
+#else
 
-            g->setMaster(vecBuffSetANDmaster.second);
-            return;
+            setPrimitivesBaseVertex(g);
+
+            g->setVertexArrayState((*itbuffset).second->getVertexArrayState());
+#endif
+            OSG_WARN<<"already guested by the buffer set"<<std::endl;
+            return g;
         }
         if(!canGuest)itbuffset++;
 
     }
 
-    if(itbuffset!=vecBuffSetANDmaster.first.end())
+    //if(itbuffset!=vecBuffSetANDmaster.first.end())//==
+        if(canGuest)
     {
         unsigned buffSetMaxSize=0;
-        BuffSet::iterator itbo= itbuffset->begin();
+        BuffSet::iterator itbo= itbuffset->first.begin();
         ptrbuffsize=buffSize;
         for( arit=bdlist.begin(); arit!=bdlist.end(); itbo++,arit++,ptrbuffsize++)
         {
             (*arit)->setBufferObject(*itbo);
             buffSetMaxSize=buffSetMaxSize<*ptrbuffsize?*ptrbuffsize:buffSetMaxSize;
         }
+
         for(unsigned index=0; index< drawelmts.size(); index++)
-        {
+        {//assert(*itbo == itbuffset->back());
             drawelmts[index]->setBufferObject(*itbo);
             buffSetMaxSize=buffSetMaxSize<*ptrbuffsize?*ptrbuffsize:buffSetMaxSize;
             ptrbuffsize++;
         }
         ///check if bufferobject is full against soft limit
-        if( buffSetMaxSize>_softMaxbuffsize)
-            vecBuffSetANDmaster.first.erase(itbuffset);
+        //if( buffSetMaxSize>_softMaxbuffsize)            vecBuffSetANDmaster.first.erase(itbuffset);
 
         delete [] buffSize;
-        if(!vecBuffSetANDmaster.second)
-            std::cout<<"l288 reusing vao of "<<vecBuffSetANDmaster.second<<std::endl;
+        if(!(*itbuffset).second)
+            std::cout<<"l288 reusing vao of "<<(*itbuffset).second<<std::endl;
+#ifndef NEWVAS
+        g->setMaster((*itbuffset).second);
+#else
 
-        g->setMaster(vecBuffSetANDmaster.second);
-        return;
+        setPrimitivesBaseVertex(g);
+        g->setVertexArrayState((*itbuffset).second->getVertexArrayState());
+#endif
+
+        return g;
     }
 
 
     _numVAOsInUsed++;
-    vecBuffSetANDmaster.second=g;
+   //if(vecBuffSetANDmaster.first.empty())
+ //   vecBuffSetANDmaster.second=g;
 
     OSG_WARN<<"create new vao buffset, num vao currently in used:"<<_numVAOsInUsed<<" geom:"<<g<<std::endl;
     ///new BuffSetis required
-    BuffSet newBuffSet;
+    BuffSetAndMaster     newBuffSet;
+    newBuffSet.second=g;
     /// Check if buffer object set offsets configuration is compatible with base vertex draw
     int commonoffset=0;
-    bool ready2go=true;
     bool canbereused=true;
+    bool ready2go=
+        #if 1
+            false;
+#else
+            true;
     arit=bdlist.begin();
     if(!bdlist.empty())
     {
-        for(int i=0; i<(*arit)->getBufferIndex(); i++)commonoffset+=(*arit)->getBufferObject()->getBufferData(i)->getTotalDataSize();
+        for(uint i=0; i<(*arit)->getBufferIndex(); i++)commonoffset+=(*arit)->getBufferObject()->getBufferData(i)->getTotalDataSize();
         newBuffSet.push_back((*arit)->getBufferObject());
         for( arit++; arit!=bdlist.end()&&ready2go; arit++)
         {
             int offset=0;
-            for(int i=0; i<(*arit)->getBufferIndex(); i++)offset+=(*arit)->getBufferObject()->getBufferData(i)->getTotalDataSize();
+            for(uint i=0; i<(*arit)->getBufferIndex(); i++)offset+=(*arit)->getBufferObject()->getBufferData(i)->getTotalDataSize();
             if(offset!=commonoffset)ready2go=false;
             if((*arit)->getBufferObject()->computeRequiredBufferSize()>_softMaxbuffsize)canbereused=false;
             newBuffSet.push_back((*arit)->getBufferObject());
@@ -371,43 +451,52 @@ osg::Geometry::DrawElementsList drawelmts;
             newBuffSet.push_back(drawelmts[index]->getBufferObject());
             break;
         }
-
+#endif
     ///if configuration is good assume bo set is ready to be used as it is
     if(ready2go)
     {
-        if(canbereused) vecBuffSetANDmaster.first.push_back(newBuffSet);
+        if(canbereused) vecBuffSetANDmaster.push_back(newBuffSet);
         delete [] buffSize;
-        if(!vecBuffSetANDmaster.second)
-            std::cout<<"l327 reusing vao of "<<vecBuffSetANDmaster.second<<std::endl;
+        if(!newBuffSet.second)
+            std::cout<<"l327 reusing vao of "<<newBuffSet.second<<std::endl;
 
-        g->setMaster(vecBuffSetANDmaster.second);
-        return;
+#ifndef NEWVAS
+        g->setMaster((SharedVAOGeometry*)newBuffSet.second);
+#else
+
+        setPrimitivesBaseVertex(g);
+        g->setVertexArrayState(newBuffSet.second->getVertexArrayState());
+#endif
+        return g;
     }
 
     ///current configuration doesn't fit so create a new buffset
-    newBuffSet.clear();
-    std::cout<<newBuffSet.size()<<" "<<hash<<std::endl;
+    newBuffSet.first.clear();
+    std::cout<<newBuffSet.first.size()<<" "<<hash<<std::endl;
 
     osg::ElementBufferObject *ebo=0;
     for( arit=bdlist.begin(); arit!=bdlist.end(); arit++)
     {
-        newBuffSet.push_back(new osg::VertexBufferObject());
-        (*arit)->setBufferObject(newBuffSet.back());
+        (*arit)->setBufferObject( new osg::VertexBufferObject());
+        newBuffSet.first.push_back( (*arit)->getBufferObject());
+
     }
-   if(!drawelmts.empty()) ebo=new osg::ElementBufferObject();
+    if(!drawelmts.empty()) ebo=new osg::ElementBufferObject();
     for(unsigned index=0; index<drawelmts.size(); index++)
     {
-        //if(!ebo)
-        {
-
-            newBuffSet.push_back(ebo);
-        }
+        newBuffSet.first.push_back(ebo);
         drawelmts[index]->setBufferObject(ebo);
     }
 
-    vecBuffSetANDmaster.first.push_back(newBuffSet);
+    vecBuffSetANDmaster.push_back(newBuffSet);
     delete [] buffSize;
-     g->setMaster(vecBuffSetANDmaster.second);
+#ifndef NEWVAS
+    g->setMaster(newBuffSet.second);
+#else
+    setPrimitivesBaseVertex(g);
+    g->setVertexArrayState(newBuffSet.second->getVertexArrayState());
+#endif
+    return g;
 }
 
 /// This demo illustrates how VAO Sharing and basevertex draw reduce CPU draw overhead
@@ -418,25 +507,26 @@ int main(int argc, char **argv)
 
     osg::ArgumentParser args(&argc,argv);
 
-    osg::Node * loaded=osgDB::readNodeFiles(args);
 
     args.getApplicationUsage()->setApplicationName(args.getApplicationName());
     args.getApplicationUsage()->setDescription(args.getApplicationName()+" is an example on how to use  bufferobject factorization+basevertex drawing in order to minimize state changes.");
     args.getApplicationUsage()->setCommandLineUsage(args.getApplicationName()+" [options] filename ...");
     args.getApplicationUsage()->addCommandLineOption("--Hmaxsize <factor>","max bufferobject size allowed (hard limit)");
-    args.getApplicationUsage()->addCommandLineOption("--Smaxsize <factor>","max bufferobject size allowed (soft limit)");  
-  args.getApplicationUsage()->addCommandLineOption("--classic","don't use basevertex");
-       MakeSharedBufferObjectsVisitor vaovis;
-       GLuint maxsize;
-       while(args.read("--Hmaxsize",maxsize) ) {
-           vaovis.setHardBufferSize(maxsize);
-       }
-       while(args.read("--Smaxsize",maxsize) ) {
-           vaovis.setSoftBufferSize(maxsize);
-       }
- if(args.read("--classic") ) {
-           vaovis.setIsHackActivated(false);
- } else  vaovis.setIsHackActivated(true);
+    args.getApplicationUsage()->addCommandLineOption("--Smaxsize <factor>","max bufferobject size allowed (soft limit)");
+    args.getApplicationUsage()->addCommandLineOption("--classic","don't use basevertex");
+    MakeSharedBufferObjectsVisitor vaovis;
+    unsigned int  maxsize;
+
+    while(args.read("--Hmaxsize",maxsize) ) {
+        vaovis.setHardBufferSize(maxsize);
+    }
+    while(args.read("--Smaxsize",maxsize) ) {
+        vaovis.setSoftBufferSize(maxsize);
+    }
+    if(args.read("--classic") ) {
+        vaovis.setIsHackActivated(false);
+    } else  vaovis.setIsHackActivated(true);
+    osg::Node * loaded=osgDB::readNodeFiles(args);
     // create the model
     if(loaded)
     {
@@ -452,6 +542,6 @@ int main(int argc, char **argv)
 
         return viewer.run();
     }
- args.getApplicationUsage()->write(std::cout,osg::ApplicationUsage::COMMAND_LINE_OPTION);
+    args.getApplicationUsage()->write(std::cout,osg::ApplicationUsage::COMMAND_LINE_OPTION);
 
 }

@@ -131,7 +131,7 @@ public:
         }
     }
 
-    virtual void drawElements(GLenum mode,GLsizei count,const GLubyte* indices)
+    virtual void drawElements(GLenum mode,GLsizei count,const GLubyte* indices, const GLuint basevertex = 0)
     {
         if (indices==0 || count==0) return;
 
@@ -144,7 +144,7 @@ public:
             {
                 IndexPointer ilast = &indices[count];
                 for(IndexPointer  iptr=indices;iptr<ilast;iptr+=3)
-                    this->operator()(*iptr,*(iptr+1),*(iptr+2));
+                    this->operator()((*iptr)+ basevertex,*(iptr+1)+ basevertex,*(iptr+2)+ basevertex);
                 break;
             }
             case(GL_TRIANGLE_STRIP):
@@ -152,8 +152,8 @@ public:
                 IndexPointer iptr = indices;
                 for(GLsizei i=2;i<count;++i,++iptr)
                 {
-                    if ((i%2)) this->operator()(*(iptr),*(iptr+2),*(iptr+1));
-                    else       this->operator()(*(iptr),*(iptr+1),*(iptr+2));
+                    if ((i%2)) this->operator()(*(iptr)+ basevertex,*(iptr+2)+ basevertex,*(iptr+1)+ basevertex);
+                    else       this->operator()(*(iptr)+ basevertex,*(iptr+1)+ basevertex,*(iptr+2)+ basevertex);
                 }
                 break;
             }
@@ -162,8 +162,8 @@ public:
                 IndexPointer iptr = indices;
                 for(GLsizei i=3;i<count;i+=4,iptr+=4)
                 {
-                    this->operator()(*(iptr),*(iptr+1),*(iptr+2));
-                    this->operator()(*(iptr),*(iptr+2),*(iptr+3));
+                    this->operator()(*(iptr)+ basevertex,*(iptr+1)+ basevertex,*(iptr+2)+ basevertex);
+                    this->operator()(*(iptr)+ basevertex,*(iptr+2)+ basevertex,*(iptr+3)+ basevertex);
                 }
                 break;
             }
@@ -172,8 +172,8 @@ public:
                 IndexPointer iptr = indices;
                 for(GLsizei i=3;i<count;i+=2,iptr+=2)
                 {
-                    this->operator()(*(iptr),*(iptr+1),*(iptr+2));
-                    this->operator()(*(iptr+1),*(iptr+3),*(iptr+2));
+                    this->operator()(*(iptr)+ basevertex,*(iptr+1)+ basevertex,*(iptr+2)+ basevertex);
+                    this->operator()(*(iptr+1)+ basevertex,*(iptr+3)+ basevertex,*(iptr+2)+ basevertex);
                 }
                 break;
             }
@@ -185,7 +185,7 @@ public:
                 ++iptr;
                 for(GLsizei i=2;i<count;++i,++iptr)
                 {
-                    this->operator()(first,*(iptr),*(iptr+1));
+                    this->operator()(first+ basevertex,*(iptr)+ basevertex,*(iptr+1)+ basevertex);
                 }
                 break;
             }
@@ -199,7 +199,7 @@ public:
         }
     }
 
-    virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices)
+    virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices, const GLuint basevertex = 0)
     {
         if (indices==0 || count==0) return;
 
@@ -212,7 +212,7 @@ public:
             {
                 IndexPointer ilast = &indices[count];
                 for(IndexPointer  iptr=indices;iptr<ilast;iptr+=3)
-                    this->operator()(*iptr,*(iptr+1),*(iptr+2));
+                    this->operator()(*iptr+ basevertex,*(iptr+1)+ basevertex,*(iptr+2)+ basevertex);
                 break;
             }
             case(GL_TRIANGLE_STRIP):
@@ -220,8 +220,8 @@ public:
                 IndexPointer iptr = indices;
                 for(GLsizei i=2;i<count;++i,++iptr)
                 {
-                    if ((i%2)) this->operator()(*(iptr),*(iptr+2),*(iptr+1));
-                    else       this->operator()(*(iptr),*(iptr+1),*(iptr+2));
+                    if ((i%2)) this->operator()(*(iptr)+ basevertex,*(iptr+2)+ basevertex,*(iptr+1)+ basevertex);
+                    else       this->operator()(*(iptr)+ basevertex,*(iptr+1)+ basevertex,*(iptr+2)+ basevertex);
                 }
                 break;
             }
@@ -230,8 +230,8 @@ public:
                 IndexPointer iptr = indices;
                 for(GLsizei i=3;i<count;i+=4,iptr+=4)
                 {
-                    this->operator()(*(iptr),*(iptr+1),*(iptr+2));
-                    this->operator()(*(iptr),*(iptr+2),*(iptr+3));
+                    this->operator()(*(iptr)+ basevertex,*(iptr+1)+ basevertex,*(iptr+2)+ basevertex);
+                    this->operator()(*(iptr)+ basevertex,*(iptr+2)+ basevertex,*(iptr+3)+ basevertex);
                 }
                 break;
             }
@@ -240,8 +240,8 @@ public:
                 IndexPointer iptr = indices;
                 for(GLsizei i=3;i<count;i+=2,iptr+=2)
                 {
-                    this->operator()(*(iptr),*(iptr+1),*(iptr+2));
-                    this->operator()(*(iptr+1),*(iptr+3),*(iptr+2));
+                    this->operator()(*(iptr)+ basevertex,*(iptr+1)+ basevertex,*(iptr+2)+ basevertex);
+                    this->operator()(*(iptr+1)+ basevertex,*(iptr+3)+ basevertex,*(iptr+2)+ basevertex);
                 }
                 break;
             }
@@ -253,7 +253,7 @@ public:
                 ++iptr;
                 for(GLsizei i=2;i<count;++i,++iptr)
                 {
-                    this->operator()(first,*(iptr),*(iptr+1));
+                    this->operator()(first+ basevertex,*(iptr)+ basevertex,*(iptr+1)+ basevertex);
                 }
                 break;
             }
@@ -267,7 +267,7 @@ public:
         }
     }
 
-    virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices)
+    virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices, const GLuint basevertex = 0)
     {
         if (indices==0 || count==0) return;
 
@@ -280,7 +280,7 @@ public:
             {
                 IndexPointer ilast = &indices[count];
                 for(IndexPointer  iptr=indices;iptr<ilast;iptr+=3)
-                    this->operator()(*iptr,*(iptr+1),*(iptr+2));
+                    this->operator()((*iptr)+ basevertex,*(iptr+1)+ basevertex,*(iptr+2)+ basevertex);
                 break;
             }
             case(GL_TRIANGLE_STRIP):
@@ -288,8 +288,8 @@ public:
                 IndexPointer iptr = indices;
                 for(GLsizei i=2;i<count;++i,++iptr)
                 {
-                    if ((i%2)) this->operator()(*(iptr),*(iptr+2),*(iptr+1));
-                    else       this->operator()(*(iptr),*(iptr+1),*(iptr+2));
+                    if ((i%2)) this->operator()(*(iptr)+ basevertex,*(iptr+2)+ basevertex,*(iptr+1)+ basevertex);
+                    else       this->operator()(*(iptr)+ basevertex,*(iptr+1)+ basevertex,*(iptr+2)+ basevertex);
                 }
                 break;
             }
@@ -298,8 +298,8 @@ public:
                 IndexPointer iptr = indices;
                 for(GLsizei i=3;i<count;i+=4,iptr+=4)
                 {
-                    this->operator()(*(iptr),*(iptr+1),*(iptr+2));
-                    this->operator()(*(iptr),*(iptr+2),*(iptr+3));
+                    this->operator()(*(iptr)+ basevertex,*(iptr+1)+ basevertex,*(iptr+2)+ basevertex);
+                    this->operator()(*(iptr)+ basevertex,*(iptr+2)+ basevertex,*(iptr+3)+ basevertex);
                 }
                 break;
             }
@@ -308,8 +308,8 @@ public:
                 IndexPointer iptr = indices;
                 for(GLsizei i=3;i<count;i+=2,iptr+=2)
                 {
-                    this->operator()(*(iptr),*(iptr+1),*(iptr+2));
-                    this->operator()(*(iptr+1),*(iptr+3),*(iptr+2));
+                    this->operator()(*(iptr)+ basevertex,*(iptr+1)+ basevertex,*(iptr+2)+ basevertex);
+                    this->operator()(*(iptr+1)+ basevertex,*(iptr+3)+ basevertex,*(iptr+2)+ basevertex);
                 }
                 break;
             }
@@ -321,7 +321,7 @@ public:
                 ++iptr;
                 for(GLsizei i=2;i<count;++i,++iptr)
                 {
-                    this->operator()(first,*(iptr),*(iptr+1));
+                    this->operator()(first+ basevertex,*(iptr)+ basevertex,*(iptr+1)+ basevertex);
                 }
                 break;
             }

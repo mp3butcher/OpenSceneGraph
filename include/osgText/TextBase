@@ -286,7 +286,7 @@ protected:
 
     void initArraysAndBuffers();
 
-    osg::VertexArrayState* createVertexArrayState(osg::RenderInfo& renderInfo) const;
+    virtual osg::PerContextVertexArrayState* createPerContextVertexArrayState(osg::RenderInfo& renderInfo) const;
 
     bool computeMatrix(osg::Matrix& matrix, osg::State* state=0) const;
 

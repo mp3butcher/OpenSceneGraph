@@ -574,6 +574,13 @@ class OSG_EXPORT BufferData : public Object
 
         void removeClient(osg::Object * /*client*/) { --_numClients; }
 
+        /** return the offset in bytes of the bufferdata in its associated buffer object*/
+        inline unsigned int getBufferObjectOffset() const{
+            unsigned int offset=0;
+            if( getBufferObject() )
+                for(unsigned int i=0; i<getBufferIndex(); i++) offset+=getBufferObject()->getBufferData(i)->getTotalDataSize();
+            return offset;
+        }
 protected:
 
         virtual ~BufferData();
@@ -609,6 +616,28 @@ class OSG_EXPORT VertexBufferObject : public BufferObject
 
     protected:
         virtual ~VertexBufferObject();
+};
+
+class OSG_EXPORT DrawIndirectBufferObject : public BufferObject
+{
+    public:
+
+        DrawIndirectBufferObject();
+
+        /** Copy constructor using CopyOp to manage deep vs shallow copy.*/
+        DrawIndirectBufferObject(const DrawIndirectBufferObject& vbo,const CopyOp& copyop=CopyOp::SHALLOW_COPY);
+
+        META_Object(osg,DrawIndirectBufferObject);
+
+        unsigned int addArray(osg::Array* array);
+        void removeArray(osg::Array* array);
+
+        void setArray(unsigned int i, Array* array);
+        Array* getArray(unsigned int i);
+        const Array* getArray(unsigned int i) const;
+
+    protected:
+        virtual ~DrawIndirectBufferObject();
 };
 
 class DrawElements;

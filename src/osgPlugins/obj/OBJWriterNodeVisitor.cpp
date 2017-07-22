@@ -177,23 +177,23 @@ class ObjPrimitiveIndexWriter : public osg::PrimitiveIndexFunctor {
 
         virtual void drawArrays(GLenum mode,GLint first,GLsizei count);
 
-        virtual void drawElements(GLenum mode,GLsizei count,const GLubyte* indices)
+        virtual void drawElements(GLenum mode,GLsizei count,const GLubyte* indices, const GLuint basevertex = 0)
         {
-            drawElementsImplementation<GLubyte>(mode, count, indices);
+            drawElementsImplementation<GLubyte>(mode, count, indices, basevertex);
         }
-        virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices)
+        virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices, const GLuint basevertex = 0)
         {
-            drawElementsImplementation<GLushort>(mode, count, indices);
+            drawElementsImplementation<GLushort>(mode, count, indices, basevertex);
         }
 
-        virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices)
+        virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices, const GLuint basevertex = 0)
         {
-            drawElementsImplementation<GLuint>(mode, count, indices);
+            drawElementsImplementation<GLuint>(mode, count, indices, basevertex);
         }
 
     protected:
 
-        template<typename T>void drawElementsImplementation(GLenum mode, GLsizei count, const T* indices)
+        template<typename T> inline void drawElementsImplementation(GLenum mode, GLsizei count, const T* indices, const GLuint basevertex = 0)
         {
             if (indices==0 || count==0) return;
 
@@ -205,7 +205,7 @@ class ObjPrimitiveIndexWriter : public osg::PrimitiveIndexFunctor {
                 {
                     IndexPointer ilast = &indices[count];
                     for(IndexPointer  iptr=indices;iptr<ilast;iptr+=3)
-                        writeTriangle(*iptr,*(iptr+1),*(iptr+2));
+                        writeTriangle(*iptr+basevertex,*(iptr+1)+basevertex,*(iptr+2)+basevertex);
 
                     break;
                 }
@@ -214,8 +214,8 @@ class ObjPrimitiveIndexWriter : public osg::PrimitiveIndexFunctor {
                     IndexPointer iptr = indices;
                     for(GLsizei i=2;i<count;++i,++iptr)
                     {
-                        if ((i%2)) writeTriangle(*(iptr),*(iptr+2),*(iptr+1));
-                        else       writeTriangle(*(iptr),*(iptr+1),*(iptr+2));
+                        if ((i%2)) writeTriangle(*(iptr)+basevertex,*(iptr+2)+basevertex,*(iptr+1)+basevertex);
+                        else       writeTriangle(*(iptr)+basevertex,*(iptr+1)+basevertex,*(iptr+2)+basevertex);
                     }
                     break;
                 }
@@ -224,8 +224,8 @@ class ObjPrimitiveIndexWriter : public osg::PrimitiveIndexFunctor {
                     IndexPointer iptr = indices;
                     for(GLsizei i=3;i<count;i+=4,iptr+=4)
                     {
-                        writeTriangle(*(iptr),*(iptr+1),*(iptr+2));
-                        writeTriangle(*(iptr),*(iptr+2),*(iptr+3));
+                        writeTriangle(*(iptr)+basevertex,*(iptr+1)+basevertex,*(iptr+2)+basevertex);
+                        writeTriangle(*(iptr)+basevertex,*(iptr+2)+basevertex,*(iptr+3)+basevertex);
                     }
                     break;
                 }
@@ -234,8 +234,8 @@ class ObjPrimitiveIndexWriter : public osg::PrimitiveIndexFunctor {
                     IndexPointer iptr = indices;
                     for(GLsizei i=3;i<count;i+=2,iptr+=2)
                     {
-                        writeTriangle(*(iptr),*(iptr+1),*(iptr+2));
-                        writeTriangle(*(iptr+1),*(iptr+3),*(iptr+2));
+                        writeTriangle(*(iptr)+basevertex,*(iptr+1)+basevertex,*(iptr+2)+basevertex);
+                        writeTriangle(*(iptr+1)+basevertex,*(iptr+3)+basevertex,*(iptr+2)+basevertex);
                     }
                     break;
                 }
@@ -243,11 +243,11 @@ class ObjPrimitiveIndexWriter : public osg::PrimitiveIndexFunctor {
                 case(GL_TRIANGLE_FAN):
                 {
                     IndexPointer iptr = indices;
-                    unsigned int first = *iptr;
+                    unsigned int first = *iptr+basevertex;
                     ++iptr;
                     for(GLsizei i=2;i<count;++i,++iptr)
                     {
-                        writeTriangle(first,*(iptr),*(iptr+1));
+                        writeTriangle(first,*(iptr)+basevertex,*(iptr+1)+basevertex);
                     }
                     break;
                 }
@@ -257,7 +257,7 @@ class ObjPrimitiveIndexWriter : public osg::PrimitiveIndexFunctor {
                     for(IndexPointer  iptr=indices;iptr<ilast;++iptr)
 
                     {
-                        writePoint(*iptr);
+                        writePoint(*iptr+basevertex);
                     }
                     break;
                 }
@@ -267,7 +267,7 @@ class ObjPrimitiveIndexWriter : public osg::PrimitiveIndexFunctor {
                     IndexPointer ilast = &indices[count];
                     for(IndexPointer  iptr=indices;iptr<ilast;iptr+=2)
                     {
-                        writeLine(*iptr, *(iptr+1));
+                        writeLine(*iptr+basevertex, *(iptr+1)+basevertex);
                     }
                     break;
                 }
@@ -278,7 +278,7 @@ class ObjPrimitiveIndexWriter : public osg::PrimitiveIndexFunctor {
                     for(IndexPointer  iptr=indices+1;iptr<ilast;iptr+=2)
 
                     {
-                        writeLine(*(iptr-1), *iptr);
+                        writeLine(*(iptr-1)+basevertex, *iptr+basevertex);
                     }
                     break;
                 }
@@ -287,9 +287,9 @@ class ObjPrimitiveIndexWriter : public osg::PrimitiveIndexFunctor {
                     IndexPointer ilast = &indices[count];
                     for(IndexPointer  iptr=indices+1;iptr<ilast;iptr+=2)
                     {
-                        writeLine(*(iptr-1), *iptr);
+                        writeLine(*(iptr-1)+basevertex, *iptr+basevertex);
                     }
-                    writeLine(*ilast, *indices);
+                    writeLine(*ilast+basevertex, *indices+basevertex);
                     break;
                 }
 
