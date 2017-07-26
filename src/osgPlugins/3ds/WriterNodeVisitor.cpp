@@ -188,23 +188,23 @@ public:
 
       virtual void drawArrays(GLenum mode,GLint first,GLsizei count);
 
-      virtual void drawElements(GLenum mode,GLsizei count,const GLubyte* indices)
+      virtual void drawElements(GLenum mode,GLsizei count,const GLubyte* indices, const GLuint basevertex = 0)
       {
-          drawElementsImplementation<GLubyte>(mode, count, indices);
+          drawElementsImplementation<GLubyte>(mode, count, indices, basevertex);
       }
-      virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices)
+      virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices, const GLuint basevertex = 0)
       {
-          drawElementsImplementation<GLushort>(mode, count, indices);
+          drawElementsImplementation<GLushort>(mode, count, indices, basevertex);
       }
 
-      virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices)
+      virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices, const GLuint basevertex = 0)
       {
-          drawElementsImplementation<GLuint>(mode, count, indices);
+          drawElementsImplementation<GLuint>(mode, count, indices, basevertex);
       }
 
 protected:
 
-    template<typename T>void drawElementsImplementation(GLenum mode, GLsizei count, const T* indices)
+    template<typename T> inline void drawElementsImplementation(GLenum mode, GLsizei count, const T* indices, const GLuint basevertex = 0)
     {
         if (indices==0 || count==0) return;
 
@@ -217,7 +217,7 @@ protected:
                 //lib3ds_mesh_resize_faces(_mesh, _lastFaceIndex + count / 3);
                 IndexPointer ilast = &indices[count];
                 for(IndexPointer  iptr=indices;iptr<ilast;iptr+=3)
-                    writeTriangle(*iptr,*(iptr+1),*(iptr+2));
+                    writeTriangle(*iptr+basevertex,*(iptr+1)+basevertex,*(iptr+2)+basevertex);
 
                 break;
             }
@@ -227,8 +227,8 @@ protected:
                 IndexPointer iptr = indices;
                 for(GLsizei i=2;i<count;++i,++iptr)
                 {
-                    if ((i%2)) writeTriangle(*(iptr),*(iptr+2),*(iptr+1));
-                    else       writeTriangle(*(iptr),*(iptr+1),*(iptr+2));
+                    if ((i%2)) writeTriangle(*(iptr)+basevertex,*(iptr+2)+basevertex,*(iptr+1)+basevertex);
+                    else       writeTriangle(*(iptr)+basevertex,*(iptr+1)+basevertex,*(iptr+2)+basevertex);
                 }
                 break;
             }
@@ -238,8 +238,8 @@ protected:
                 IndexPointer iptr = indices;
                 for(GLsizei i=3;i<count;i+=4,iptr+=4)
                 {
-                    writeTriangle(*(iptr),*(iptr+1),*(iptr+2));
-                    writeTriangle(*(iptr),*(iptr+2),*(iptr+3));
+                    writeTriangle(*(iptr)+basevertex,*(iptr+1)+basevertex,*(iptr+2)+basevertex);
+                    writeTriangle(*(iptr)+basevertex,*(iptr+2)+basevertex,*(iptr+3)+basevertex);
                 }
                 break;
             }
@@ -249,8 +249,8 @@ protected:
                 IndexPointer iptr = indices;
                 for(GLsizei i=3;i<count;i+=2,iptr+=2)
                 {
-                    writeTriangle(*(iptr),*(iptr+1),*(iptr+2));
-                    writeTriangle(*(iptr+1),*(iptr+3),*(iptr+2));
+                    writeTriangle(*(iptr)+basevertex,*(iptr+1)+basevertex,*(iptr+2)+basevertex);
+                    writeTriangle(*(iptr+1)+basevertex,*(iptr+3)+basevertex,*(iptr+2)+basevertex);
                 }
                 break;
             }
@@ -259,11 +259,11 @@ protected:
             {
                 //lib3ds_mesh_resize_faces(_mesh, _lastFaceIndex + count -2);
                 IndexPointer iptr = indices;
-                unsigned int first = *iptr;
+                unsigned int first = *iptr+basevertex;
                 ++iptr;
                 for(GLsizei i=2;i<count;++i,++iptr)
                 {
-                    writeTriangle(first,*(iptr),*(iptr+1));
+                    writeTriangle(first,*(iptr)+basevertex,*(iptr+1)+basevertex);
                 }
                 break;
             }

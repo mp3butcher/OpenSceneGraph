@@ -98,7 +98,7 @@ public:
     iterator begin() { return _impl.begin(); }
     const_iterator end() const { return _impl.end(); }
     iterator end() { return _impl.end(); }
-
+    inline void offsetData(ValueT offset) {  for(iterator itr=begin(); itr!=end(); ++itr) *itr += offset; }
     const_reverse_iterator rbegin() const { return _impl.rbegin(); }
     reverse_iterator rbegin() { return _impl.rbegin(); }
     const_reverse_iterator rend() const { return _impl.rend(); }

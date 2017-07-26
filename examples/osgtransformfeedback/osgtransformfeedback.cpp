@@ -44,6 +44,7 @@
 
 #include <iostream>
 
+#include <osg/PrimitiveSetIndirect>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -111,32 +112,44 @@ static const char* vertSource =
 
 static const char* geomSource =
 {
-    "#version 120\n"
+    "#version 400\n"
     "#extension GL_EXT_geometry_shader4 : enable\n"
-    "uniform float u_anim1;\n"
-    " varying in vec4 v_color[];\n"
+    "#extension GL_ARB_gpu_shader5  : enable\n"
+    "#extension GL_ARB_enhanced_layouts  : enable\n"
+"layout(points) in;\n"
+//"layout(points, max_vertices = 1) out;\n"
+#if 1
+
+"layout(stream = 0) out vec4 out1;  \n"
+"layout(stream = 1) out vec4 out2;  \n"
+
+#else
     " varying  vec4 out1;\n"
     " varying  vec4 out2;\n"
+#endif
+    "uniform float u_anim1;\n"
+    " varying in vec4 v_color[];\n"
     "void main(void)\n"
     "{\n"
     "    vec4 v =vec4( gl_PositionIn[0].xyz,1);\n"
     " out1 =  v + vec4(u_anim1,0.,0.,0.);//  gl_Position = v + vec4(u_anim1,0.,0.,0.); \n"
+        "  EmitStreamVertex(0);\n"
+        "EndPrimitive();\n"
     " out2 =  v_color[0] + vec4(0,0.,u_anim1,0.);// addblue \n"
-    "  EmitVertex();\n"
-    "    EndPrimitive();\n"
+    "  EmitStreamVertex(1);\n""EndPrimitive();\n"
     "   out1 =  v - vec4(u_anim1,0.,0.,0.); // gl_Position = v - vec4(u_anim1,0.,0.,0.);  \n"
+"  EmitStreamVertex(0);\n""EndPrimitive();\n"
     " out2 =  v_color[0] + vec4(0,0.,u_anim1,0.);// addblue \n"
-    " EmitVertex();\n"
-    "    EndPrimitive();\n"
+"  EmitStreamVertex(1);\n""EndPrimitive();\n"
     "\n"
     "   out1=  v + vec4(0.,1.0-u_anim1,0.,0.);// gl_Position = v + vec4(0.,1.0-u_anim1,0.,0.); \n"
+"  EmitStreamVertex(0);\n""EndPrimitive();\n"
     " out2 =  v_color[0] + vec4(0,0.,u_anim1,0.);// addblue \n"
-    "  EmitVertex();\n"
-    "    EndPrimitive();\n"
+"  EmitStreamVertex(1);\n""EndPrimitive();\n"
     "   out1 =  v - vec4(0.,1.0-u_anim1,0.,0.); //gl_Position = v - vec4(0.,1.0-u_anim1,0.,0.); \n"
+"  EmitStreamVertex(0);\n""EndPrimitive();\n"
     " out2 =  v_color[0] + vec4(0,0.,u_anim1,0.);// addblue \n"
-    "  EmitVertex();\n"
-    "    EndPrimitive();\n"
+"  EmitStreamVertex(1);\n""EndPrimitive();\n"
     "}\n"
 };
 
@@ -148,11 +161,11 @@ osg::Program* createGeneratorShader()
     pgm->setName( "osg transformfeedback demo" );
 
     pgm->addShader( new osg::Shader( osg::Shader::VERTEX,   vertSource ) );
-    pgm->setParameter( GL_GEOMETRY_VERTICES_OUT_EXT, 4 );
+    pgm->setParameter( GL_GEOMETRY_VERTICES_OUT_EXT, 8 );
     pgm->setParameter( GL_GEOMETRY_INPUT_TYPE_EXT, GL_POINTS );
     pgm->setParameter( GL_GEOMETRY_OUTPUT_TYPE_EXT, GL_POINTS );
     pgm->addShader( new osg::Shader( osg::Shader::GEOMETRY, geomSource ) );
-
+//#define SEPARATED 1
 #ifdef SEPARATED
     pgm->addTransformFeedbackVarying(std::string("out1"));
     pgm->addTransformFeedbackVarying(std::string("out2"));
@@ -174,84 +187,105 @@ osg::Program* createRenderShader()
     pgm->addShader( new osg::Shader( osg::Shader::FRAGMENT, fragSource ) );
     return pgm;
 }
-class QueryBufferObjectIndexBinding:public osg::BufferIndexBinding{
+class QueryBufferObjectIndexBinding:public osg::BufferIndexBinding {
 public:
-QueryBufferObjectIndexBinding(int index=0):osg::BufferIndexBinding(GL_QUERY_BUFFER, index){
-setBufferObject(new osg::VertexBufferObject());}
+    QueryBufferObjectIndexBinding(int index=0):osg::BufferIndexBinding(GL_QUERY_BUFFER, index) {
+        setBufferObject(new osg::VertexBufferObject());
+    }
 };
 ///////////////////////////////////////////////////////////////////////////
 #define BUFFER_OFFSET(i)    ((void*)NULL + (i))
 
-struct QueryStuff{
-QueryStuff():_queryinit(false),
-		_queryavailable(false){}
- GLuint _queries[10];
-GLint _queryresult,
-_queryavailable;
-bool _queryinit;
+struct QueryStuff {
+    QueryStuff():_queryinit(false),
+        _queryavailable(false) {}
+    GLuint _queries[10];
+    GLint _queryresult,
+          _queryavailable;
+    bool _queryinit;
 };
 class TransformFeedbackDrawCallback: public osg::Drawable::DrawCallback
 {
-	public:
-unsigned int _nbstreamout;
-	 
-	//mutable osg::buffered_value<QueryStuff> _querystuff;
-mutable QueryStuff _querystuff[10];///MAXGRAPHICALCONTEXT
-	osg::ref_ptr<osg::BufferObject > _queryBufferObjectBinding;
-	TransformFeedbackDrawCallback(unsigned int nbstreamout):osg::Drawable::DrawCallback(),
-_nbstreamout(nbstreamout){
+public:
+    unsigned int _nbstreamout;
 
-	}
+    //mutable osg::buffered_value<QueryStuff> _querystuff;
+    mutable QueryStuff _querystuff[10];///MAXGRAPHICALCONTEXT
+    osg::ref_ptr<osg::BufferObject > _queryBufferObjectBinding;
+    TransformFeedbackDrawCallback(unsigned int nbstreamout):osg::Drawable::DrawCallback(),
+        _nbstreamout(nbstreamout) {
 
-	void setQueryBufferObject(osg::BufferObject*buff){
-	_queryBufferObjectBinding=buff;
-	}
-	const osg::BufferObject * getQueryBufferObject()const{return _queryBufferObjectBinding;}
+    }
 
-	void drawImplementation(osg::RenderInfo& renderInfo,const osg::Drawable*  drawable ) const
-	{
-const GLuint &contextID=renderInfo.getState()->getContextID();
-	  	osg::GLExtensions* ext = renderInfo.getState()->get<osg::GLExtensions>();
-		if(!_querystuff[contextID]._queryinit){
-		ext->glGenQueries(_nbstreamout,_querystuff[contextID]._queries);
-		_querystuff[contextID]._queryinit=true;
-		}
+    void setQueryBufferObject(osg::BufferObject*buff) {
+        _queryBufferObjectBinding=buff;
+    }
+    const osg::BufferObject * getQueryBufferObject()const {
+        return _queryBufferObjectBinding;
+    }
 
-		// Perform  query for each stream (TODO retrieve _nbstreamout automatiquelly :
-///1)via state.getPCP.getProgram().getTransormFeedBackVaryings 
-///!!!-ignoring specials varyings ~gl_Next_Buffer and gl_SkipCompopents !!! 
-//2)via  retrieving the number of TransformFeedbackBufferBinding applied on the state (don't know how)
-for(int streamid=0;streamid<_nbstreamout;streamid++)
-		ext->glBeginQueryIndexed(GL_PRIMITIVES_GENERATED,streamid, _querystuff[contextID]._queries[streamid]);
+    void drawImplementation(osg::RenderInfo& renderInfo,const osg::Drawable*  drawable ) const
+    {
+        const GLuint &contextID=renderInfo.getState()->getContextID();
+        osg::GLExtensions* ext = renderInfo.getState()->get<osg::GLExtensions>();
+        if(!_querystuff[contextID]._queryinit) {
+            ext->glGenQueries(_nbstreamout,_querystuff[contextID]._queries);
+            _querystuff[contextID]._queryinit=true;
+        }
 
-		ext->glBeginTransformFeedback(GL_POINTS);
-		drawable->drawImplementation(renderInfo);
-		ext->glEndTransformFeedback();
+        // Perform  query for each stream
+        //TODO perhaps: retrieve _nbstreamout automatiquelly :
+    ///1)via state.getPCP.getProgram().getTransormFeedBackVaryings
+    ///!!!-...ignoring specials varyings gl_XXX -gl_NextBuffer and gl_SkipCompopents- !!!
+    ///2)via  retrieving the number of TransformFeedbackBufferBinding applied on the state (don't know how)
+   const osg::StateAttribute *sa=0;
+    for(osg::State::AttributeMap::const_iterator it=renderInfo.getState()->getAttributeMap().begin();it!=renderInfo.getState()->getAttributeMap().end();it++ )
+{
+const osg::State::AttributeStack &a=(*(it)).second;
+if(!a.attributeVec.empty())sa=a.attributeVec[0].first;
 
-for(int streamid=0;streamid<_nbstreamout;streamid++)
-		ext->glEndQueryIndexed(GL_PRIMITIVES_GENERATED,streamid);
+}
+        for(int streamid=0; streamid<_nbstreamout; streamid++)
+            ext->glBeginQueryIndexed(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN,streamid, _querystuff[contextID]._queries[streamid]);
 
-		// Get query results to buffer object
+        ext->glBeginTransformFeedback(GL_POINTS);
+        drawable->drawImplementation(renderInfo);
+        ext->glEndTransformFeedback();
+
+        for(int streamid=0; streamid<_nbstreamout; streamid++)
+            ext->glEndQueryIndexed(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN,streamid);
+    #define QUERYBUFFER
+    #ifdef QUERYBUFFER
+        // Get query results to buffer object
 ///		glBindBuffer(GL_QUERY_BUFFER, _queryBufferObjectBinding);
 //_queryBufferObjectBinding->apply(*renderInfo.getState());
- 	osg::GLBufferObject* glObject
+        osg::GLBufferObject* glObject
             = _queryBufferObjectBinding->getOrCreateGLBufferObject(renderInfo.getState()->getContextID());
         if (!glObject->_extensions->isUniformBufferObjectSupported)
             return;
         if (glObject->isDirty()) glObject->compileBuffer();
+
         glObject->_extensions->glBindBuffer(GL_QUERY_BUFFER,
-                                                 glObject->getGLObjectID());
+                                            glObject->getGLObjectID());
 
         GLshort stride=1;///in case of TFB target is also the Query Object target (indirectdraw command)
-for(GLuint streamid=0;streamid<_nbstreamout;streamid++)	{	
-std::cerr<<"retrieving result for query no"<<streamid<<std::endl;
-ext->glGetQueryObjectuiv(_querystuff[contextID]._queries[streamid], GL_QUERY_RESULT, (( GLuint *)( NULL+sizeof(GLuint)* (streamid*stride) )));
-}
+        for(GLuint streamid=0; streamid<_nbstreamout; streamid++)	{
+         //   std::cerr<<"retrieving result for query no"<<streamid<<std::endl;
+       //     ext->glGetQueryObjectuiv(_querystuff[contextID]._queries[streamid], GL_QUERY_RESULT, (( GLuint *)( NULL+sizeof(GLuint)* (streamid*stride) )));
+            ext->glGetQueryObjectuiv(_querystuff[contextID]._queries[streamid], GL_QUERY_RESULT, (( GLuint *)( NULL )));
+        }
+#else
+ for(GLuint streamid=0; streamid<_nbstreamout; streamid++)	{
+            GLuint result;
+            ext->glGetQueryObjectuiv(_querystuff[contextID]._queries[streamid], GL_QUERY_RESULT, &result);
+            std::cerr<<"retrieving result for query no"<<streamid <<": "<<result<<std::endl;
 
+        }
+        #endif
 
-		// Bind query result buffer as uniform buffer
-		//glBindBufferBase(GL_UNIFORM_BUFFER, 0, queryBuffer);
- 	}
+        // Bind query result buffer as uniform buffer
+        //glBindBufferBase(GL_UNIFORM_BUFFER, 0, queryBuffer);
+    }
 };
 
 int main( int , char** )
@@ -292,25 +326,47 @@ int main( int , char** )
         u_anim1->setUpdateCallback( new SineAnimation( 4, 0.5, 0.5 ) );
         sset->addUniform( u_anim1 );
     }
-
+    osg::BufferObject * querybuffer=0;
     osg::ref_ptr<osg::Geometry > somePointsRenderer = new osg::Geometry();
     {
         int numprimgen=somePointsGenerator->getVertexArray()->getNumElements()*4;
         somePointsRenderer->setUseVertexBufferObjects(true);
         somePointsRenderer->setUseDisplayList(false);
 
+        osg::VertexBufferObject *rendererBO=new osg::VertexBufferObject;
+        osg::VertexBufferObject *rendererBO2=new osg::VertexBufferObject;
         osg::ref_ptr<osg::Vec4Array> vAry2 = new osg::Vec4Array;
         vAry2->resize(numprimgen);
-        vAry2->setVertexBufferObject(new osg::VertexBufferObject);
+        vAry2->setVertexBufferObject(rendererBO);
         somePointsRenderer-> setVertexArray(vAry2);
 
         osg::ref_ptr<osg::Vec4Array> gencolorvAry = new osg::Vec4Array;;
         gencolorvAry->resize(numprimgen);
-        gencolorvAry->setVertexBufferObject(new osg::VertexBufferObject);
+        gencolorvAry->setVertexBufferObject(rendererBO);
         somePointsRenderer->setColorArray(gencolorvAry);
         somePointsRenderer->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-        somePointsRenderer-> addPrimitiveSet( new osg::DrawArrays( GL_LINES, 0,numprimgen));
 
+#define INDIRECTDRAW 1
+#ifndef INDIRECTDRAW
+        somePointsRenderer-> addPrimitiveSet( new osg::DrawArrays( GL_LINES, 0,numprimgen));
+#else
+        ///draw call is static but we try with indirectdraw
+
+        osg::ref_ptr<osg::MultiDrawArraysIndirect> da=new osg::MultiDrawArraysIndirect(GL_LINES);
+        /*        uint  count;
+        *        uint  instanceCount;
+        *        uint  first;
+        *        uint  baseInstance;*/
+        osg::ref_ptr<osg::DrawArraysIndirectCommand> ida=da->getIndirectCommand();
+        ida->push_back(osg::DrawArraysIndirectCmd(numprimgen/2,//count fed by queryobjects
+        1,//num instance
+        0,//first,
+        0));//baseInstance
+
+        querybuffer=ida->getBufferObject();
+        somePointsRenderer-> addPrimitiveSet( da);
+        //  somePointsRenderer-> addPrimitiveSet( new osg::DrawArrays( GL_LINES, 0,numprimgen));
+#endif
         osg::StateSet* sset =   somePointsRenderer-> getOrCreateStateSet();
         sset->setAttribute( createRenderShader() );
 
@@ -318,23 +374,29 @@ int main( int , char** )
     }
 
     TransformFeedbackDrawCallback *tr=new  TransformFeedbackDrawCallback(2);
-osg::VertexBufferObject * querybuffer=new osg::VertexBufferObject;
-osg::Vec4iArray * fakeresult=new osg::Vec4iArray();
-fakeresult->push_back(osg::Vec4i(0,0,0,0));
-fakeresult->push_back(osg::Vec4i(0,0,0,0));
-fakeresult->push_back(osg::Vec4i(0,0,0,0));
-fakeresult->push_back(osg::Vec4i(0,0,0,0));
-fakeresult->push_back(osg::Vec4i(0,0,0,0));
-fakeresult->setBufferObject(querybuffer);
-tr->setQueryBufferObject(querybuffer);
+
+     #ifndef INDIRECTDRAW
+      osg::VertexBufferObject * querybuffer=new osg::VertexBufferObject;
+    osg::Vec4iArray * fakeresult=new osg::Vec4iArray();
+    fakeresult->push_back(osg::Vec4i(0,0,0,0));
+    fakeresult->push_back(osg::Vec4i(0,0,0,0));
+    fakeresult->push_back(osg::Vec4i(0,0,0,0));
+    fakeresult->push_back(osg::Vec4i(0,0,0,0));
+    fakeresult->push_back(osg::Vec4i(0,0,0,0));
+    fakeresult->setBufferObject(querybuffer);
+    #endif
+    tr->setQueryBufferObject(querybuffer);
 
     osg::TransformFeedbackBufferBinding *tfbb=new   osg::TransformFeedbackBufferBinding (0);
     tfbb->setBufferObject(somePointsRenderer->getVertexArray()->getVertexBufferObject());
     osg::TransformFeedbackBufferBinding *tfbb2=new   osg::TransformFeedbackBufferBinding (1);
     tfbb2->setBufferObject(somePointsRenderer->getColorArray()->getVertexBufferObject());
 
+    osg::BufferObject *rendererBO=somePointsRenderer->getVertexArray()->getBufferObject();
+
     tfbb->setSize(somePointsRenderer->getVertexArray()->getTotalDataSize());
     tfbb2->setSize(somePointsRenderer->getColorArray()->getTotalDataSize());
+    tfbb2->setOffset(tfbb->getSize());
 
     somePointsGenerator->setDrawCallback(tr);
 

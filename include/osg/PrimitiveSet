@@ -91,13 +91,13 @@ public:
     virtual void drawArrays(GLenum mode,GLint first,GLsizei count) = 0;
 
     /// Mimics the OpenGL \c glDrawElements() function.
-    virtual void drawElements(GLenum mode,GLsizei count,const GLubyte* indices) = 0;
+    virtual void drawElements(GLenum mode,GLsizei count,const GLubyte* indices, const GLuint basevertex = 0) = 0;
 
     /// Mimics the OpenGL \c glDrawElements() function.
-    virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices) = 0;
+    virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices, const GLuint basevertex = 0) = 0;
 
     /// Mimics the OpenGL \c glDrawElements() function.
-    virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices) = 0;
+    virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices, const GLuint basevertex = 0) = 0;
 
     /// Mimics the OpenGL \c glBegin() function.
     virtual void begin(GLenum mode) = 0;
@@ -147,9 +147,9 @@ public:
     virtual void setVertexArray(unsigned int count,const Vec4d* vertices) = 0;
 
     virtual void drawArrays(GLenum mode,GLint first,GLsizei count) = 0;
-    virtual void drawElements(GLenum mode,GLsizei count,const GLubyte* indices) = 0;
-    virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices) = 0;
-    virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices) = 0;
+    virtual void drawElements(GLenum mode,GLsizei count,const GLubyte* indices, const GLuint basevertex = 0) = 0;
+    virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices, const GLuint basevertex = 0) = 0;
+    virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices, const GLuint basevertex = 0) = 0;
 
     virtual void begin(GLenum mode) = 0;
     virtual void vertex(unsigned int pos) = 0;
@@ -185,15 +185,15 @@ class OSG_EXPORT PrimitiveSet : public BufferData
             MultiDrawElementsUShortPrimitiveType,
             MultiDrawElementsUIntPrimitiveType,
 
-            DrawArraysIndirectPrimitiveType,
+            /*DrawArraysIndirectPrimitiveType,
             DrawArrayLengthsIndirectPrimitiveType,
             DrawElementsUByteIndirectPrimitiveType,
             DrawElementsUShortIndirectPrimitiveType,
-            DrawElementsUIntIndirectPrimitiveType,
+            DrawElementsUIntIndirectPrimitiveType,*/
             MultiDrawArraysIndirectPrimitiveType,
             MultiDrawElementsUByteIndirectPrimitiveType,
             MultiDrawElementsUShortIndirectPrimitiveType,
-MultiDrawElementsUIntIndirectPrimitiveType
+            MultiDrawElementsUIntIndirectPrimitiveType
         };
 
         enum Mode
@@ -417,7 +417,7 @@ class DrawElements : public PrimitiveSet
         virtual void setElement(unsigned int, unsigned int) = 0;
         virtual unsigned int getElement(unsigned int) = 0;
         virtual void addElement(unsigned int) = 0;
-
+        virtual GLint getBaseVertex()const {return 0;}
     protected:
 
         virtual ~DrawElements() {}

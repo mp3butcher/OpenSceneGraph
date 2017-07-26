@@ -685,17 +685,32 @@ void Geometry::resizeGLObjectBuffers(unsigned int maxSize)
 void Geometry::releaseGLObjects(State* state) const
 {
     Drawable::releaseGLObjects(state);
-
+ #if 0
     if (state)
     {
+
+ //robert way
         if (_vertexArrayStateList[state->getContextID()].valid())
         {
             _vertexArrayStateList[state->getContextID()]->release();
             _vertexArrayStateList[state->getContextID()] = 0;
         }
+
     }
     else _vertexArrayStateList.clear();
+ #else
+    if (state)
+    {
 
+        if (_vas->getPCVertexArrayStates()[state->getContextID()].valid())
+        {
+            _vas->getPCVertexArrayStates()[state->getContextID()]->release();
+            _vas->getPCVertexArrayStates()[state->getContextID()] = 0;
+        }
+
+    }
+    else _vas->getPCVertexArrayStates().clear();
+ #endif
     ArrayList arrays;
     if (getArrayList(arrays))
     {
@@ -720,13 +735,31 @@ void Geometry::releaseGLObjects(State* state) const
 
 }
 
-VertexArrayState* Geometry::createVertexArrayState(RenderInfo& renderInfo) const
+PerContextVertexArrayState* Geometry::createPerContextVertexArrayState(RenderInfo& renderInfo) const
 {
     State& state = *renderInfo.getState();
+#if 0
+// robert way
+    PerContextVertexArrayState* vas = new osg::PerContextVertexArrayState(&state);
+#else
+    PerContextVertexArrayState* vas ;
+    if( vas = _vas->getPCVertexArrayStates()[state.getContextID()])
+        return vas;
 
-    VertexArrayState* vas = new osg::VertexArrayState(&state);
+    GLint basevertex = 0; osg::DrawElements * de;
+    //seek drawelements for a base vertex
+    for(PrimitiveSetList::const_iterator itr = _primitives.begin(); itr != _primitives.end(); ++itr)
+    {
+        if (  ( de = (*itr)->getDrawElements() ) && (*itr)->getBufferObject() ){
+            basevertex = de->getBaseVertex();
+            OSG_WARN<<"vas basevertex "<<basevertex<<std::endl;
+            break;//as pr share the same vas they should all have the same basevertex
+        }
+    }
+    _vas->getPCVertexArrayStates()[renderInfo.getContextID()] = vas = new osg::PerContextVertexArrayState(&state,basevertex);
+#endif
 
-    // OSG_NOTICE<<"Creating new osg::VertexArrayState "<< vas<<std::endl;
+    // OSG_NOTICE<<"Creating new osg::PerContextVertexArrayState "<< vas<<std::endl;
 
     if (_vertexArray.valid()) vas->assignVertexArrayDispatcher();
     if (_colorArray.valid()) vas->assignColorArrayDispatcher();
@@ -739,13 +772,13 @@ VertexArrayState* Geometry::createVertexArrayState(RenderInfo& renderInfo) const
 
     if (state.useVertexArrayObject(_useVertexArrayObject))
     {
-        // OSG_NOTICE<<"  Setup VertexArrayState to use VAO "<<vas<<std::endl;
+        // OSG_NOTICE<<"  Setup PerContextVertexArrayState to use VAO "<<vas<<std::endl;
 
         vas->generateVertexArrayObject();
     }
     else
     {
-        // OSG_NOTICE<<"  Setup VertexArrayState to without using VAO "<<vas<<std::endl;
+        // OSG_NOTICE<<"  Setup PerContextVertexArrayState to without using VAO "<<vas<<std::endl;
     }
 
     return vas;
@@ -814,10 +847,13 @@ void Geometry::compileGLObjects(RenderInfo& renderInfo) const
 
         if (state.useVertexArrayObject(_useVertexArrayObject) && !bufferObjects.empty())
         {
-            VertexArrayState* vas = 0;
-
-            _vertexArrayStateList[contextID] = vas = createVertexArrayState(renderInfo);
-
+            PerContextVertexArrayState* vas = 0;
+#if 0
+//robert way
+            _vertexArrayStateList[contextID] = vas = createPerContextVertexArrayState(renderInfo);
+#else
+             _vas->getPCVertexArrayStates()[contextID] = vas = createPerContextVertexArrayState(renderInfo);
+#endif
             State::SetCurrentVertexArrayStateProxy setVASProxy(state, vas);
 
             state.bindVertexArrayObject();
@@ -825,6 +861,7 @@ void Geometry::compileGLObjects(RenderInfo& renderInfo) const
             drawVertexArraysImplementation(renderInfo);
 
             state.unbindVertexArrayObject();
+            vas->setRequiresSetArrays(getDataVariance()==osg::Object::DYNAMIC);
         }
     }
     else
@@ -866,7 +903,7 @@ void Geometry::drawImplementation(RenderInfo& renderInfo) const
     if (usingVertexBufferObjects && !usingVertexArrayObjects)
     {
         // unbind the VBO's if any are used.
-        osg::VertexArrayState* vas = state.getCurrentVertexArrayState();
+        osg::PerContextVertexArrayState* vas = state.getCurrentVertexArrayState();
         vas->unbindVertexBufferObject();
         vas->unbindElementBufferObject();
     }
@@ -877,7 +914,7 @@ void Geometry::drawImplementation(RenderInfo& renderInfo) const
 void Geometry::drawVertexArraysImplementation(RenderInfo& renderInfo) const
 {
     State& state = *renderInfo.getState();
-    VertexArrayState* vas = state.getCurrentVertexArrayState();
+    PerContextVertexArrayState* vas = state.getCurrentVertexArrayState();
 
     bool handleVertexAttributes = !_vertexAttribList.empty();
 
@@ -1276,6 +1313,7 @@ GLboolean Geometry::getVertexAttribNormalize(unsigned int index) const
     else return GL_FALSE;
 }
 #endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  Helper methods

@@ -83,7 +83,7 @@ public:
         }
     }
 
-    virtual void drawElements(GLenum mode,GLsizei count,const GLubyte* indices)
+    virtual void drawElements(GLenum mode,GLsizei count,const GLubyte* indices, const GLuint basevertex = 0)
     {
         if (indices==0 || count==0) return;
 
@@ -96,7 +96,7 @@ public:
         {
             IndexPointer ilast = &indices[count];
             for(IndexPointer  iptr=indices;iptr<ilast;iptr+=1)
-                this->operator()(*iptr);
+                this->operator()(*iptr+basevertex);
         }
         break;
         default:
@@ -104,7 +104,7 @@ public:
         }
     }
 
-    virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices)
+    virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices, const GLuint basevertex = 0)
     {
         if (indices==0 || count==0) return;
 
@@ -117,7 +117,7 @@ public:
         {
             IndexPointer ilast = &indices[count];
             for(IndexPointer  iptr=indices;iptr<ilast;iptr+=1)
-                this->operator()(*iptr);
+                this->operator()(*iptr+basevertex);
         }
         break;
         default:
@@ -125,7 +125,7 @@ public:
         }
     }
 
-    virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices)
+    virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices, const GLuint basevertex = 0)
     {
         if (indices==0 || count==0) return;
 
@@ -138,7 +138,7 @@ public:
         {
             IndexPointer ilast = &indices[count];
             for(IndexPointer  iptr=indices;iptr<ilast;iptr+=1)
-                this->operator()(*iptr);
+                this->operator()(*iptr+basevertex);
         }
         break;
         default:

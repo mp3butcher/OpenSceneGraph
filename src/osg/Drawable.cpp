@@ -240,6 +240,7 @@ Drawable::Drawable()
 #else
      _useVertexArrayObject = true;
 #endif
+     _vas = new osg::VertexArrayState();
 }
 
 Drawable::Drawable(const Drawable& drawable,const CopyOp& copyop):
@@ -256,6 +257,9 @@ Drawable::Drawable(const Drawable& drawable,const CopyOp& copyop):
     _drawCallback(drawable._drawCallback)
 {
     setStateSet(copyop(drawable._stateset.get()));
+
+    if (copyop.getCopyFlags() & CopyOp::DEEP_COPY_ARRAYS) _vas =drawable.getVertexArrayState(); //share vas if they share arrays
+    else  _vas = new VertexArrayState();
 }
 
 Drawable::~Drawable()
@@ -307,7 +311,7 @@ void Drawable::resizeGLObjectBuffers(unsigned int maxSize)
 
     _globjList.resize(maxSize);
 
-    _vertexArrayStateList.resize(maxSize);
+    _vas->getPCVertexArrayStates().resize(maxSize);
 }
 
 void Drawable::releaseGLObjects(State* state) const
@@ -334,13 +338,14 @@ void Drawable::releaseGLObjects(State* state) const
                 globj = 0;
             }
         }
+        PerContextVertexArrayState* vas = contextID <_vas->  getPCVertexArrayStates().size() ? _vas->  getPCVertexArrayStates()[contextID].get() : 0;
 
-        VertexArrayState* vas = contextID <_vertexArrayStateList.size() ? _vertexArrayStateList[contextID].get() : 0;
         if (vas)
         {
             vas->release();
-            _vertexArrayStateList[contextID] = 0;
+            _vas->  getPCVertexArrayStates()[contextID] = 0;
         }
+
     }
     else
     {
@@ -455,11 +460,12 @@ void Drawable::dirtyGLObjects()
     }
 #endif
 
-    for(i=0; i<_vertexArrayStateList.size(); ++i)
+    for(i=0; i<_vas->getPCVertexArrayStates().size(); ++i)
     {
-        VertexArrayState* vas = _vertexArrayStateList[i].get();
+        PerContextVertexArrayState* vas = _vas->getPCVertexArrayStates()[i].get();
         if (vas) vas->dirty();
     }
+
 }
 
 
@@ -517,34 +523,34 @@ struct ComputeBound : public PrimitiveFunctor
             else if (_vertices4d) _drawArrays(_vertices4d+first, _vertices4d+(first+count));
         }
 
-        virtual void drawElements(GLenum,GLsizei count,const GLubyte* indices)
+        virtual void drawElements(GLenum,GLsizei count,const GLubyte* indices, const GLuint basevertex = 0)
         {
-            if (_vertices3f) _drawElements(_vertices3f, indices, indices + count);
-            else if (_vertices2f) _drawElements(_vertices2f, indices, indices + count);
-            else if (_vertices4f) _drawElements(_vertices4f, indices, indices + count);
-            else if (_vertices2d) _drawElements(_vertices2d, indices, indices + count);
-            else if (_vertices3d) _drawElements(_vertices3d, indices, indices + count);
-            else if (_vertices4d) _drawElements(_vertices4d, indices, indices + count);
+            if (_vertices3f) _drawElements(_vertices3f+basevertex*3*sizeof(float), indices, indices + count);
+            else if (_vertices2f) _drawElements(_vertices2f+basevertex*2*sizeof(float), indices, indices + count);
+            else if (_vertices4f) _drawElements(_vertices4f+basevertex*4*sizeof(float), indices, indices + count);
+            else if (_vertices2d) _drawElements(_vertices2d+basevertex*2*sizeof(double), indices, indices + count);
+            else if (_vertices3d) _drawElements(_vertices3d+basevertex*3*sizeof(double), indices, indices + count);
+            else if (_vertices4d) _drawElements(_vertices4d+basevertex*4*sizeof(double), indices, indices + count);
         }
 
-        virtual void drawElements(GLenum,GLsizei count,const GLushort* indices)
+        virtual void drawElements(GLenum,GLsizei count,const GLushort* indices, const GLuint basevertex = 0)
         {
-            if      (_vertices3f) _drawElements(_vertices3f, indices, indices + count);
-            else if (_vertices2f) _drawElements(_vertices2f, indices, indices + count);
-            else if (_vertices4f) _drawElements(_vertices4f, indices, indices + count);
-            else if (_vertices2d) _drawElements(_vertices2d, indices, indices + count);
-            else if (_vertices3d) _drawElements(_vertices3d, indices, indices + count);
-            else if (_vertices4d) _drawElements(_vertices4d, indices, indices + count);
+            if      (_vertices3f) _drawElements(_vertices3f+basevertex*3*sizeof(float), indices, indices + count);
+            else if (_vertices2f) _drawElements(_vertices2f+basevertex*2*sizeof(float), indices, indices + count);
+            else if (_vertices4f) _drawElements(_vertices4f+basevertex*4*sizeof(float), indices, indices + count);
+            else if (_vertices2d) _drawElements(_vertices2d+basevertex*2*sizeof(double), indices, indices + count);
+            else if (_vertices3d) _drawElements(_vertices3d+basevertex*3*sizeof(double), indices, indices + count);
+            else if (_vertices4d) _drawElements(_vertices4d+basevertex*4*sizeof(double), indices, indices + count);
         }
 
-        virtual void drawElements(GLenum,GLsizei count,const GLuint* indices)
+        virtual void drawElements(GLenum,GLsizei count,const GLuint* indices, const GLuint basevertex = 0)
         {
-            if      (_vertices3f) _drawElements(_vertices3f, indices, indices + count);
-            else if (_vertices2f) _drawElements(_vertices2f, indices, indices + count);
-            else if (_vertices4f) _drawElements(_vertices4f, indices, indices + count);
-            else if (_vertices2d) _drawElements(_vertices2d, indices, indices + count);
-            else if (_vertices3d) _drawElements(_vertices3d, indices, indices + count);
-            else if (_vertices4d) _drawElements(_vertices4d, indices, indices + count);
+            if      (_vertices3f) _drawElements(_vertices3f+basevertex*3*sizeof(float), indices, indices + count);
+            else if (_vertices2f) _drawElements(_vertices2f+basevertex*2*sizeof(float), indices, indices + count);
+            else if (_vertices4f) _drawElements(_vertices4f+basevertex*4*sizeof(float), indices, indices + count);
+            else if (_vertices2d) _drawElements(_vertices2d+basevertex*3*sizeof(double), indices, indices + count);
+            else if (_vertices3d) _drawElements(_vertices3d+basevertex*2*sizeof(double), indices, indices + count);
+            else if (_vertices4d) _drawElements(_vertices4d+basevertex*4*sizeof(double), indices, indices + count);
         }
 
         virtual void begin(GLenum) {}
@@ -640,15 +646,15 @@ void Drawable::draw(RenderInfo& renderInfo) const
     {
         unsigned int contextID = renderInfo.getContextID();
 
-        VertexArrayState* vas = _vertexArrayStateList[contextID].get();
+        PerContextVertexArrayState* vas = _vas->getPCVertexArrayStates()[contextID].get();
         if (!vas)
         {
-            _vertexArrayStateList[contextID] = vas = createVertexArrayState(renderInfo);
-
+              _vas->getPCVertexArrayStates()[contextID] =
+                      vas = createPerContextVertexArrayState(renderInfo);
         }
         else
         {
-            // vas->setRequiresSetArrays(getDataVariance()==osg::Object::DYNAMIC);
+                  // vas->setRequiresSetArrays(getDataVariance()==osg::Object::DYNAMIC);
         }
 
         State::SetCurrentVertexArrayStateProxy setVASProxy(state, vas);
@@ -665,7 +671,7 @@ void Drawable::draw(RenderInfo& renderInfo) const
     // TODO, add check against whether VAO is active and supported
     if (state.getCurrentVertexArrayState())
     {
-        //OSG_NOTICE<<"state.getCurrentVertexArrayState()->getVertexArrayObject()="<< state.getCurrentVertexArrayState()->getVertexArrayObject()<<std::endl;
+        //OSG_NOTICE<<"state.getCurrentPerContextVertexArrayState()->getVertexArrayObject()="<< state.getCurrentPerContextVertexArrayState()->getVertexArrayObject()<<std::endl;
         state.bindVertexArrayObject(state.getCurrentVertexArrayState());
     }
 
@@ -697,7 +703,7 @@ void Drawable::draw(RenderInfo& renderInfo) const
     else
 #endif
     {
-        // if state.previousVertexArrayState() is different than currentVertexArrayState bind current
+        // if state.previousPerContextVertexArrayState() is different than currentPerContextVertexArrayState bind current
 
         // OSG_NOTICE<<"Fallback drawInner()........................"<<std::endl;
 
@@ -707,9 +713,9 @@ void Drawable::draw(RenderInfo& renderInfo) const
 
 #endif
 
-VertexArrayState* Drawable::createVertexArrayState(RenderInfo& renderInfo) const
+PerContextVertexArrayState* Drawable::createPerContextVertexArrayState(RenderInfo& renderInfo) const
 {
-    VertexArrayState* vos = new osg::VertexArrayState(renderInfo.getState());
+    PerContextVertexArrayState* vos = _vas->getPCVertexArrayStates()[renderInfo.getContextID()] = new osg::PerContextVertexArrayState(renderInfo.getState());
     vos->assignAllDispatchers();
     return vos;
 
