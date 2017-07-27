@@ -357,11 +357,13 @@ int main( int , char** )
         *        uint  instanceCount;
         *        uint  first;
         *        uint  baseInstance;*/
-        osg::ref_ptr<osg::DrawArraysIndirectCommand> ida=da->getIndirectCommand();
-        ida->push_back(osg::DrawArraysIndirectCmd(numprimgen/2,//count fed by queryobjects
+        osg::ref_ptr<osg::DefaultIndirectCommandDrawArrays> ida=new osg::DefaultIndirectCommandDrawArrays();
+
+        ida->push_back(osg::DrawArraysIndirectCommand(numprimgen/2,//count fed by queryobjects
         1,//num instance
         0,//first,
         0));//baseInstance
+        da->setIndirectCommandArray(ida);
 
         querybuffer=ida->getBufferObject();
         somePointsRenderer-> addPrimitiveSet( da);

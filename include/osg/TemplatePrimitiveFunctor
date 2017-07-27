@@ -165,110 +165,104 @@ public:
             }
     }
 
-        template<class IndexType>
-        void drawElementsTemplate(GLenum mode,GLsizei count,const IndexType* indices, const GLuint basevertex = 0)
-        {
-            if (indices==0 || count==0) return;
-
-        typedef const IndexType* IndexPointer;
-
-        switch(mode)
+            template<class IndexType>
+            void drawElementsTemplate(GLenum mode,GLsizei count,const IndexType* indices, const GLuint basevertex = 0)
             {
+                if (indices==0 || count==0) return;
 
-                case(GL_TRIANGLES): {
-                    IndexPointer ilast = &indices[count];
-                    for(IndexPointer  iptr=indices;iptr<ilast;iptr+=3)
-                        this->operator()(_vertexArrayPtr[*iptr+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],_vertexArrayPtr[*(iptr+2)+basevertex],
-                            false);
-                    break;
-                }
-                case(GL_TRIANGLE_STRIP): {
-                    IndexPointer iptr = indices;
-                    for(GLsizei i=2;i<count;++i,++iptr)
+                typedef const IndexType* IndexPointer;
+
+                switch(mode)
                     {
-                        if ((i%2)) this->operator()(_vertexArrayPtr[*(iptr)+basevertex],_vertexArrayPtr[*(iptr+2)+basevertex],
-                                                    _vertexArrayPtr[*(iptr+1)+basevertex],
-                                false);
-                        else       this->operator()(_vertexArrayPtr[*(iptr)+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
-                                                    _vertexArrayPtr[*(iptr+2)+basevertex],
-                                false);
+                    case(GL_TRIANGLES): {
+                        IndexPointer ilast = &indices[count];
+                        for(IndexPointer  iptr=indices;iptr<ilast;iptr+=3)
+                            this->operator()(_vertexArrayPtr[*iptr+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],_vertexArrayPtr[*(iptr+2)+basevertex],false);
+                        break;
                     }
-                    break;
-                }
-                case(GL_QUADS): {
-                    IndexPointer iptr = indices;
-                    for(GLsizei i=3;i<count;i+=4,iptr+=4)
-                    {
-                        this->operator()(_vertexArrayPtr[*(iptr)+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
-                                         _vertexArrayPtr[*(iptr+2)+basevertex],_vertexArrayPtr[*(iptr+3)+basevertex],
-                                false);
+                    case(GL_TRIANGLE_STRIP): {
+                        IndexPointer iptr = indices;
+                        for(GLsizei i=2;i<count;++i,++iptr)
+                        {
+                            if ((i%2)) this->operator()(_vertexArrayPtr[*(iptr)+basevertex],_vertexArrayPtr[*(iptr+2)+basevertex],
+                                                        _vertexArrayPtr[*(iptr+1)+basevertex],false);
+                            else       this->operator()(_vertexArrayPtr[*(iptr)+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
+                                                        _vertexArrayPtr[*(iptr+2)+basevertex],false);
+                        }
+                        break;
                     }
-                    break;
-                }
-                case(GL_QUAD_STRIP): {
-                    IndexPointer iptr = indices;
-                    for(GLsizei i=3;i<count;i+=2,iptr+=2)
-                    {
-                        this->operator()(_vertexArrayPtr[*(iptr)+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
-                                         _vertexArrayPtr[*(iptr+3)+basevertex],_vertexArrayPtr[*(iptr+2)+basevertex],
-                                false);
+                    case(GL_QUADS): {
+                        IndexPointer iptr = indices;
+                        for(GLsizei i=3;i<count;i+=4,iptr+=4)
+                        {
+                            this->operator()(_vertexArrayPtr[*(iptr)+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
+                                             _vertexArrayPtr[*(iptr+2)+basevertex],_vertexArrayPtr[*(iptr+3)+basevertex],
+                                                false);
+                        }
+                        break;
                     }
-                    break;
-                }
-                case(GL_POLYGON): // treat polygons as GL_TRIANGLE_FAN
-                case(GL_TRIANGLE_FAN): {
-                    IndexPointer iptr = indices;
-                    const Vec3& vfirst = _vertexArrayPtr[*iptr+basevertex];
-                    ++iptr;
-                    for(GLsizei i=2;i<count;++i,++iptr)
-                    {
-                        this->operator()(vfirst,_vertexArrayPtr[*(iptr)+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
-                                false);
+                    case(GL_QUAD_STRIP): {
+                        IndexPointer iptr = indices;
+                        for(GLsizei i=3;i<count;i+=2,iptr+=2)
+                        {
+                            this->operator()(_vertexArrayPtr[*(iptr)+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
+                                                _vertexArrayPtr[*(iptr+3)+basevertex],_vertexArrayPtr[*(iptr+2)+basevertex],
+                                                false);
+                        }
+                        break;
                     }
-                    break;
-                }
-                case(GL_POINTS): {
-                    IndexPointer ilast = &indices[count];
-                    for(IndexPointer  iptr=indices;iptr<ilast;iptr+=1)
-                        this->operator()(_vertexArrayPtr[*iptr+basevertex],
-                            false);
-                    break;
-                }
-                case(GL_LINES): {
-                    IndexPointer ilast = &indices[count-1];
-                    for(IndexPointer  iptr=indices;iptr<ilast;iptr+=2)
-                        this->operator()(_vertexArrayPtr[*iptr+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
-                            false);
-                    break;
-                }
-                case(GL_LINE_STRIP): {
-                    IndexPointer ilast = &indices[count-1];
-                    for(IndexPointer  iptr=indices;iptr<ilast;iptr+=1)
-                        this->operator()(_vertexArrayPtr[*iptr+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
-                            false);
-                    break;
-                }
-                case(GL_LINE_STRIP_ADJACENCY): {
-                    IndexPointer ilast = &indices[count-2];
-                    for(IndexPointer  iptr=&indices[1];iptr<ilast;iptr+=1)
-                        this->operator()(_vertexArrayPtr[*iptr+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
-                                         false);
-                    break;
-                }
-                case(GL_LINE_LOOP): {
-                    IndexPointer ilast = &indices[count-1];
-                    for(IndexPointer  iptr=indices;iptr<ilast;iptr+=1)
-                        this->operator()(_vertexArrayPtr[*iptr+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
-                                         false);
-                    this->operator()(_vertexArrayPtr[*(ilast)],_vertexArrayPtr[indices[0]],
-                                     false);
-                    break;
-                }
-                default:
-                    break;
-            }        
+                    case(GL_POLYGON): // treat polygons as GL_TRIANGLE_FAN
+                    case(GL_TRIANGLE_FAN): {
+                        IndexPointer iptr = indices;
+                        const Vec3& vfirst = _vertexArrayPtr[*iptr+basevertex];
+                        ++iptr;
+                        for(GLsizei i=2;i<count;++i,++iptr)
+                        {
+                            this->operator()(vfirst,_vertexArrayPtr[*(iptr)+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
+                                                false);
+                        }
+                        break;
+                    }
+                    case(GL_POINTS): {
+                        IndexPointer ilast = &indices[count];
+                        for(IndexPointer  iptr=indices;iptr<ilast;iptr+=1)
+                            this->operator()(_vertexArrayPtr[*iptr+basevertex],false);
+                        break;
+                    }
+                    case(GL_LINES): {
+                        IndexPointer ilast = &indices[count-1];
+                        for(IndexPointer  iptr=indices;iptr<ilast;iptr+=2)
+                            this->operator()(_vertexArrayPtr[*iptr+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
+                                                false);
+                        break;
+                    }
+                    case(GL_LINE_STRIP): {
+                        IndexPointer ilast = &indices[count-1];
+                        for(IndexPointer  iptr=indices;iptr<ilast;iptr+=1)
+                            this->operator()(_vertexArrayPtr[*iptr+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
+                                                false);
+                        break;
+                    }
+                    case(GL_LINE_STRIP_ADJACENCY): {
+                        IndexPointer ilast = &indices[count-2];
+                        for(IndexPointer  iptr=&indices[1];iptr<ilast;iptr+=1)
+                            this->operator()(_vertexArrayPtr[*iptr+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
+                                                false);
+                        break;
+                    }
+                    case(GL_LINE_LOOP): {
+                        IndexPointer ilast = &indices[count-1];
+                        for(IndexPointer  iptr=indices;iptr<ilast;iptr+=1)
+                            this->operator()(_vertexArrayPtr[*iptr+basevertex],_vertexArrayPtr[*(iptr+1)+basevertex],
+                                                false);
+                        this->operator()(_vertexArrayPtr[*(ilast)+basevertex],_vertexArrayPtr[indices[0]+basevertex],
+                                            false);
+                        break;
+                    }
+                    default:
+                        break;
+                    }
         }
-
 
         virtual void drawElements(GLenum mode,GLsizei count,const GLubyte* indices, const GLuint basevertex = 0)
         {
@@ -284,34 +278,13 @@ public:
         {
             drawElementsTemplate(mode, count, indices, basevertex);
         }
-        virtual void begin(GLenum mode)
-        {
-            _modeCache = mode;
-            _vertexCache.clear();
-        }
 
-        virtual void vertex(const Vec2& vert) { _vertexCache.push_back(osg::Vec3(vert[0],vert[1],0.0f)); }
-        virtual void vertex(const Vec3& vert) { _vertexCache.push_back(vert); }
-        virtual void vertex(const Vec4& vert) { _vertexCache.push_back(osg::Vec3(vert[0],vert[1],vert[2])/vert[3]); }
-        virtual void vertex(float x,float y) { _vertexCache.push_back(osg::Vec3(x,y,0.0f)); }
-        virtual void vertex(float x,float y,float z) { _vertexCache.push_back(osg::Vec3(x,y,z)); }
-        virtual void vertex(float x,float y,float z,float w) { _vertexCache.push_back(osg::Vec3(x,y,z)/w); }
-        virtual void end()
-        {
-            if (!_vertexCache.empty())
-            {
-                setVertexArray(_vertexCache.size(),&_vertexCache.front());
-                _treatVertexDataAsTemporary = true;
-                drawArrays(_modeCache,0,_vertexCache.size());
-            }
-        }
 
     protected:
 
 
         unsigned int        _vertexArraySize;
         const Vec3*         _vertexArrayPtr;
-        GLenum _modeCache;
 };
 
 

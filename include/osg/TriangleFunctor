@@ -65,34 +65,7 @@ namespace osg {
     {
         notify(WARN)<<"Triangle Functor does not support Vec4d* vertex arrays"<<std::endl;
     }
-      /// Mimics the OpenGL \c glVertex() "family of functions".
-    virtual void vertex(const Vec2& vert)  {
-        notify(WARN)<<"Triangle Functor  vertex() not implemented"<<std::endl;
-    }
-    /// Mimics the OpenGL \c glVertex() "family of functions".
-    virtual void vertex(const Vec3& vert)  {
-        notify(WARN)<<"Triangle Functor  vertex() not implemented"<<std::endl;
-    }
 
-    /// Mimics the OpenGL \c glVertex() "family of functions".
-    virtual void vertex(const Vec4& vert)  {
-        notify(WARN)<<"Triangle Functor  vertex() not implemented"<<std::endl;
-    }
-
-    /// Mimics the OpenGL \c glVertex() "family of functions".
-    virtual void vertex(float x,float y)  {
-        notify(WARN)<<"Triangle Functor  vertex() not implemented"<<std::endl;
-    }
-
-    /// Mimics the OpenGL \c glVertex() "family of functions".
-    virtual void vertex(float x,float y,float z)  {
-        notify(WARN)<<"Triangle Functor  vertex() not implemented"<<std::endl;
-    }
-
-    /// Mimics the OpenGL \c glVertex() "family of functions".
-    virtual void vertex(float x,float y,float z,float w)  {
-        notify(WARN)<<"Triangle Functor  vertex() not implemented"<<std::endl;
-    }
  };
 template<class T,class B>
 class BaseTriangleFunctor : public PrimitiveFunctorImpl, public T
@@ -103,8 +76,6 @@ public:
     {
         _vertexArraySize=0;
         _vertexArrayPtr=0;
-        _modeCache=0;
-        _treatVertexDataAsTemporary=false;
     }
 
     virtual ~BaseTriangleFunctor() {}
@@ -113,10 +84,6 @@ public:
         _vertexArraySize = count;
         _vertexArrayPtr = vertices;
     }
-    void setTreatVertexDataAsTemporary(bool treatVertexDataAsTemporary) { _treatVertexDataAsTemporary=treatVertexDataAsTemporary; }
-    bool getTreatVertexDataAsTemporary() const { return _treatVertexDataAsTemporary; }
-
-
 
     virtual void drawArrays(GLenum mode,GLint first,GLsizei count)
     {
@@ -385,46 +352,11 @@ public:
         }
     }
 
-    /** Note:
-      * begin(..),vertex(..) & end() are convenience methods for adapting
-      * non vertex array primitives to vertex array based primitives.
-      * This is done to simplify the implementation of primitive functor
-      * subclasses - users only need override drawArray and drawElements.
-    */
-    virtual void begin(GLenum mode)
-    {
-        _modeCache = mode;
-        _vertexCache.clear();
-    }
-    virtual void useVertexCacheAsVertexArray()
-    {
-        setVertexArray(_vertexCache.size(),&_vertexCache.front());
-    }
-
-    std::vector<B>   _vertexCache;
-   // virtual void vertex(const Vec2& vert) { _vertexCache.push_back(osg::Vec3(vert[0],vert[1],0.0f)); }
-    //virtual void vertex(const Vec3& vert) { _vertexCache.push_back(vert); }
-    //virtual void vertex(const Vec4& vert) { _vertexCache.push_back(osg::Vec3(vert[0],vert[1],vert[2])/vert[3]); }
-   // virtual void vertex(float x,float y) { _vertexCache.push_back(osg::Vec3(x,y,0.0f)); }
-   // virtual void vertex(float x,float y,float z) { _vertexCache.push_back(osg::Vec3(x,y,z)); }
-    //virtual void vertex(float x,float y,float z,float w) { _vertexCache.push_back(osg::Vec3(x,y,z)/w); }
-    virtual void vertex(const B& vert) { _vertexCache.push_back(vert); }
-    virtual void end()
-    {
-        if (!_vertexCache.empty())
-        {
-            setVertexArray(_vertexCache.size(),(B*)&_vertexCache.front());
-            _treatVertexDataAsTemporary = true;
-            drawArrays(_modeCache,0,_vertexCache.size());
-        }
-    }
-
 protected:
 
 
     unsigned int        _vertexArraySize;
     const B*         _vertexArrayPtr;
-    GLenum              _modeCache;
 };
 
 
