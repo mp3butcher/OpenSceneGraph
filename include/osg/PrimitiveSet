@@ -130,6 +130,7 @@ public:
 
     std::vector<Vec3>   _vertexCache;
     bool                _treatVertexDataAsTemporary;
+
 };
 
 class PrimitiveIndexFunctor
@@ -147,6 +148,7 @@ public:
     virtual void setVertexArray(unsigned int count,const Vec4d* vertices) = 0;
 
     virtual void drawArrays(GLenum mode,GLint first,GLsizei count) = 0;
+
     virtual void drawElements(GLenum mode,GLsizei count,const GLubyte* indices, const GLuint basevertex = 0) = 0;
     virtual void drawElements(GLenum mode,GLsizei count,const GLushort* indices, const GLuint basevertex = 0) = 0;
     virtual void drawElements(GLenum mode,GLsizei count,const GLuint* indices, const GLuint basevertex = 0) = 0;
@@ -162,6 +164,7 @@ public:
 
     std::vector<Vec3>   _vertexCache;
     bool                _treatVertexDataAsTemporary;
+
 };
 
 class DrawElements;
@@ -184,12 +187,11 @@ class OSG_EXPORT PrimitiveSet : public BufferData
             MultiDrawElementsUBytePrimitiveType,
             MultiDrawElementsUShortPrimitiveType,
             MultiDrawElementsUIntPrimitiveType,
-
-            /*DrawArraysIndirectPrimitiveType,
+            DrawArraysIndirectPrimitiveType,
             DrawArrayLengthsIndirectPrimitiveType,
             DrawElementsUByteIndirectPrimitiveType,
             DrawElementsUShortIndirectPrimitiveType,
-            DrawElementsUIntIndirectPrimitiveType,*/
+            DrawElementsUIntIndirectPrimitiveType,
             MultiDrawArraysIndirectPrimitiveType,
             MultiDrawElementsUByteIndirectPrimitiveType,
             MultiDrawElementsUShortIndirectPrimitiveType,

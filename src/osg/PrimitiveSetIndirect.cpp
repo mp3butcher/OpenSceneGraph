@@ -20,109 +20,268 @@
 #include <osg/Notify>
 #include <assert.h>
 
+///  TODO: add base vertex feature to PrimitiveFunctor and PrimitiveIndexFunctor
+//#define PRIMFUNCTORBASEVERTEX 1
+
 using namespace osg;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// DrawArrayIndirectCommand
+// DrawElementsIndirect
 //
+template<class T>
+inline unsigned int getNumPrimitivesDI( const T&_this )
+{
+    unsigned int offset= _this.getFirstCommandToDraw();
+    IndirectCommandDrawElements *cmd=const_cast<IndirectCommandDrawElements *>(_this.getIndirectCommandArray());
+    unsigned int total=0;
+    switch(_this.getMode())
+    {
+    case(PrimitiveSet::POINTS):
+        return cmd->count(offset);
+    case(PrimitiveSet::LINES):
+        return cmd->count(offset)/2;
+    case(PrimitiveSet::TRIANGLES):
+        return cmd->count(offset)/3;
+    case(PrimitiveSet::QUADS):
+        return cmd->count(offset)/4;
+    case(PrimitiveSet::LINE_STRIP):
+    case(PrimitiveSet::LINE_LOOP):
+    case(PrimitiveSet::TRIANGLE_STRIP):
+    case(PrimitiveSet::TRIANGLE_FAN):
+    case(PrimitiveSet::QUAD_STRIP):
+    case(PrimitiveSet::PATCHES):
+    case(PrimitiveSet::POLYGON):
+    {
+        return 1;
+    }
+    }
+    return total;
+}
 
-DrawArraysIndirectCommand::DrawArraysIndirectCommand():BufferData(),MixinVector<DrawArraysIndirectCmd>() {}
-DrawArraysIndirectCommand::DrawArraysIndirectCommand(const DrawArraysIndirectCommand& copy,const CopyOp& copyop/*=CopyOp::SHALLOW_COPY*/)
-    :BufferData(copy, copyop),MixinVector<DrawArraysIndirectCmd>() {
+unsigned int DrawElementsIndirectUInt::getNumPrimitives() const{return getNumPrimitivesDI<DrawElementsIndirectUInt>(*this);}
+unsigned int DrawElementsIndirectUByte::getNumPrimitives() const{return getNumPrimitivesDI<DrawElementsIndirectUByte>(*this);}
+unsigned int DrawElementsIndirectUShort::getNumPrimitives() const{return getNumPrimitivesDI<DrawElementsIndirectUShort>(*this);}
+
+void DrawElementsIndirectUInt::draw(State& state, bool useVertexBufferObjects) const
+{   GLBufferObject* dibo = _indirectCommandArray->getBufferObject()->getOrCreateGLBufferObject( state.getContextID() );
+    state.bindDrawIndirectBufferObject(dibo);
+
+    GLenum mode = _mode;
+#if defined(OSG_GLES1_AVAILABLE) || defined(OSG_GLES2_AVAILABLE)
+    if (mode==GL_POLYGON) mode = GL_TRIANGLE_FAN;
+    if (mode==GL_QUAD_STRIP) mode = GL_TRIANGLE_STRIP;
+#endif
+
+    GLBufferObject* ebo = getOrCreateGLBufferObject(state.getContextID());
+
+    assert (useVertexBufferObjects && ebo);
+
+    state.bindElementBufferObject(ebo);
+
+    state.get<GLExtensions>()-> glDrawElementsIndirect(mode, GL_UNSIGNED_INT,
+     (const GLvoid *)(dibo->getOffset(_indirectCommandArray->getBufferIndex()) //command array adress
+     +_firstCommand* _indirectCommandArray->getElementSize())// runtime offset computaion can be sizeof(*_indirectCommandArray->begin())
+     );
+
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// DrawElementIndirectCommand
-//
-DrawElementsIndirectCommand::DrawElementsIndirectCommand():BufferData(),MixinVector<DrawElementsIndirectCmd>() {}
-DrawElementsIndirectCommand::DrawElementsIndirectCommand(const DrawElementsIndirectCommand& copy,const CopyOp& copyop/*=CopyOp::SHALLOW_COPY*/)
-    :BufferData(copy, copyop), MixinVector<DrawElementsIndirectCmd>(){
-}
-MultiDrawElementsIndirectUByte::~MultiDrawElementsIndirectUByte()
+
+DrawElementsIndirectUInt::~DrawElementsIndirectUInt()
 {
     releaseGLObjects();
 }
-/*
-void DrawArraysIndirect::draw(State& state, bool) const
+void DrawElementsIndirectUInt::offsetIndices(int offset)
 {
-    GLBufferObject* dibo=_indirectCommand->getBufferObject()->getOrCreateGLBufferObject(state.getContextID());
-    state.bindDrawIndirectBufferObject(dibo);
-
-#if defined(OSG_GLES1_AVAILABLE) || defined(OSG_GLES2_AVAILABLE)
-    GLenum mode = _mode;
-    if (_mode==GL_QUADS)
+    for(iterator itr=begin();
+            itr!=end();
+            ++itr)
     {
-        state.drawQuads(_first, _count, _numInstances);
-        return;
+        *itr += offset;
     }
-    else if (mode==GL_POLYGON)
-    {
-        mode = GL_TRIANGLE_FAN;
-    }
-    else if (mode==GL_QUAD_STRIP)
-    {
-        mode = GL_TRIANGLE_STRIP;
-    }
-
-    if (_numInstances>=1) state.glDrawArraysInstanced(mode,_first,_count, _numInstances);
-    else glDrawArrays(mode,_first,_count);
-#else
-    // if (_numInstances>=1) state.glDrawArraysItInstanced(_mode,_first,_count, _numInstances);
-    //else
-    state.get<GLExtensions>()->glDrawArraysIndirect(_mode,_indirect);
+}
+void DrawElementsIndirectUInt::accept(PrimitiveFunctor& functor) const
+{
+#ifdef PRIMFUNCTORBASEVERTEX
+   //  TODO: add base vertex parameter in PrimitiveFunctor and PrimitiveIndexFunctor drawelements method
+   if (!empty())
+        functor.drawElements(_mode,_indirectCommandArray->count(_firstCommand),
+                      &(*this)[_indirectCommandArray->firstIndex(_firstCommand)]
+                    ,_indirectCommandArray->baseVertex(_firstCommand));
 #endif
 }
 
-void DrawArraysIndirect::accept(PrimitiveFunctor& functor) const
+void DrawElementsIndirectUInt::accept(PrimitiveIndexFunctor& functor) const
 {
-    //cant mimic GPU stored drawcall functor.drawArrays(_mode,_first,_count);
+#ifdef PRIMFUNCTORBASEVERTEX
+   //  TODO: add base vertex parameter in PrimitiveFunctor and PrimitiveIndexFunctor drawelements method
+   if (!empty())
+        functor.drawElements(_mode,_indirectCommandArray->count(_firstCommand),
+                      &(*this)[_indirectCommandArray->firstIndex(_firstCommand)]
+                    ,_indirectCommandArray->baseVertex(_firstCommand));
+#endif
+
+}
+void DrawElementsIndirectUByte::draw(State& state, bool useVertexBufferObjects) const
+{   GLBufferObject* dibo = _indirectCommandArray->getBufferObject()->getOrCreateGLBufferObject( state.getContextID() );
+    state.bindDrawIndirectBufferObject(dibo);
+
+    GLenum mode = _mode;
+#if defined(OSG_GLES1_AVAILABLE) || defined(OSG_GLES2_AVAILABLE)
+    if (mode==GL_POLYGON) mode = GL_TRIANGLE_FAN;
+    if (mode==GL_QUAD_STRIP) mode = GL_TRIANGLE_STRIP;
+#endif
+
+    GLBufferObject* ebo = getOrCreateGLBufferObject(state.getContextID());
+
+    assert (useVertexBufferObjects && ebo);
+
+    state.bindElementBufferObject(ebo);
+
+    state.get<GLExtensions>()-> glDrawElementsIndirect(mode, GL_UNSIGNED_BYTE, (const GLvoid *)(dibo->getOffset(_indirectCommandArray->getBufferIndex())
+    +_firstCommand* _indirectCommandArray->getElementSize()));
+
+}
+DrawElementsIndirectUByte::~DrawElementsIndirectUByte()
+{
+    releaseGLObjects();
+}
+void DrawElementsIndirectUByte::offsetIndices(int offset)
+{
+    for(iterator itr=begin();
+            itr!=end();
+            ++itr)
+    {
+        *itr += offset;
+    }
+}
+void DrawElementsIndirectUByte::accept(PrimitiveFunctor& functor) const
+{
+#ifdef PRIMFUNCTORBASEVERTEX
+   //  TODO: add base vertex parameter in PrimitiveFunctor and PrimitiveIndexFunctor drawelements method
+   if (!empty())
+        functor.drawElements(_mode,_indirectCommandArray->count(_firstCommand),
+                      &(*this)[_indirectCommandArray->firstIndex(_firstCommand)]
+                    ,_indirectCommandArray->baseVertex(_firstCommand));
+#endif
 }
 
-void DrawArraysIndirect::accept(PrimitiveIndexFunctor& functor) const
+void DrawElementsIndirectUByte::accept(PrimitiveIndexFunctor& functor) const
 {
-    //cant mimic GPU stored drawcall functor.drawArrays(_mode,_first,_count);
+#ifdef PRIMFUNCTORBASEVERTEX
+   //  TODO: add base vertex parameter in PrimitiveFunctor and PrimitiveIndexFunctor drawelements method
+   if (!empty())
+        functor.drawElements(_mode,_indirectCommandArray->count(_firstCommand),
+                      &(*this)[_indirectCommandArray->firstIndex(_firstCommand)]
+                    ,_indirectCommandArray->baseVertex(_firstCommand));
+#endif
 }
-*/
+void DrawElementsIndirectUShort::draw(State& state, bool useVertexBufferObjects) const
+{   GLBufferObject* dibo = _indirectCommandArray->getBufferObject()->getOrCreateGLBufferObject( state.getContextID() );
+    state.bindDrawIndirectBufferObject(dibo);
 
-unsigned int MultiDrawElementsIndirect::getNumPrimitives() const
+    GLenum mode = _mode;
+#if defined(OSG_GLES1_AVAILABLE) || defined(OSG_GLES2_AVAILABLE)
+    if (mode==GL_POLYGON) mode = GL_TRIANGLE_FAN;
+    if (mode==GL_QUAD_STRIP) mode = GL_TRIANGLE_STRIP;
+#endif
+
+    GLBufferObject* ebo = getOrCreateGLBufferObject(state.getContextID());
+
+    assert (useVertexBufferObjects && ebo);
+
+    state.bindElementBufferObject(ebo);
+
+    state.get<GLExtensions>()-> glDrawElementsIndirect(mode, GL_UNSIGNED_SHORT, (const GLvoid *)(dibo->getOffset(_indirectCommandArray->getBufferIndex())
+    +_firstCommand* _indirectCommandArray->getElementSize()));
+
+}
+DrawElementsIndirectUShort::~DrawElementsIndirectUShort()
 {
+    releaseGLObjects();
+}
+void DrawElementsIndirectUShort::offsetIndices(int offset)
+{
+    for(iterator itr=begin();
+            itr!=end();
+            ++itr)
+    {
+        *itr += offset;
+    }
+}
+void DrawElementsIndirectUShort::accept(PrimitiveFunctor& functor) const
+{
+#ifdef PRIMFUNCTORBASEVERTEX
+   //  TODO: add base vertex parameter in PrimitiveFunctor and PrimitiveIndexFunctor drawelements method
+   if (!empty())
+        functor.drawElements(_mode,_indirectCommandArray->count(_firstCommand),
+                      &(*this)[_indirectCommandArray->firstIndex(_firstCommand)]
+                    ,_indirectCommandArray->baseVertex(_firstCommand));
+#endif
+}
+
+void DrawElementsIndirectUShort::accept(PrimitiveIndexFunctor& functor) const
+{
+#ifdef PRIMFUNCTORBASEVERTEX
+   //  TODO: add base vertex parameter in PrimitiveFunctor and PrimitiveIndexFunctor drawelements method
+   if (!empty())
+        functor.drawElements(_mode,_indirectCommandArray->count(_firstCommand),
+                      &(*this)[_indirectCommandArray->firstIndex(_firstCommand)]
+                    ,_indirectCommandArray->baseVertex(_firstCommand));
+#endif
+
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// MultiDrawElementsIndirect
+//
+template<class T>   inline
+unsigned int getNumPrimitivesMDI( const T&_this)
+{   IndirectCommandDrawElements *_indirectCommandArray=const_cast<IndirectCommandDrawElements *>(_this.getIndirectCommandArray());
     unsigned int total=0;
-    switch(_mode)
+    switch(_this.getMode())
     {
-    case(POINTS):
-         for(DrawElementsIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-            total+=itcmd->count;
-    case(LINES):
-        for(DrawElementsIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-           total+=itcmd->count/2;
-    case(TRIANGLES):
-        for(DrawElementsIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-           total+=itcmd->count/3;
-    case(QUADS):
-        for(DrawElementsIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-           total+=itcmd->count/4;
-    case(LINE_STRIP):
-    case(LINE_LOOP):
-    case(TRIANGLE_STRIP):
-    case(TRIANGLE_FAN):
-    case(QUAD_STRIP):
-    case(PATCHES):
-    case(POLYGON):
+    case(PrimitiveSet::POINTS):
+        for(unsigned int i=0;i<_indirectCommandArray->getNumElements();++i)
+            total+=_indirectCommandArray->count(i);
+    case(PrimitiveSet::LINES):
+        for(unsigned int i=0;i<_indirectCommandArray->getNumElements();++i)
+           total+=_indirectCommandArray->count(i)/2;
+    case(PrimitiveSet::TRIANGLES):
+        for(unsigned int i=0;i<_indirectCommandArray->getNumElements();++i)
+           total+=_indirectCommandArray->count(i)/3;
+    case(PrimitiveSet::QUADS):
+        for(unsigned int i=0;i<_indirectCommandArray->getNumElements();++i)
+           total+=_indirectCommandArray->count(i)/4;
+    case(PrimitiveSet::LINE_STRIP):
+    case(PrimitiveSet::LINE_LOOP):
+    case(PrimitiveSet::TRIANGLE_STRIP):
+    case(PrimitiveSet::TRIANGLE_FAN):
+    case(PrimitiveSet::QUAD_STRIP):
+    case(PrimitiveSet::PATCHES):
+    case(PrimitiveSet::POLYGON):
     {
-        unsigned int primcount = _indirectCommand->size();
+        unsigned int primcount = _indirectCommandArray->getNumElements();
         return primcount;
     }
     }
     return total;
 }
+
+unsigned int MultiDrawElementsIndirectUInt::getNumPrimitives() const{return getNumPrimitivesMDI<MultiDrawElementsIndirectUInt>(*this);}
+unsigned int MultiDrawElementsIndirectUByte::getNumPrimitives() const{return getNumPrimitivesMDI<MultiDrawElementsIndirectUByte>(*this);}
+unsigned int MultiDrawElementsIndirectUShort::getNumPrimitives() const{return getNumPrimitivesMDI<MultiDrawElementsIndirectUShort>(*this);}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // MultiDrawElementsIndirectUByte
 //
-
+MultiDrawElementsIndirectUByte::~MultiDrawElementsIndirectUByte()
+{
+    releaseGLObjects();
+}
 void MultiDrawElementsIndirectUByte::draw(State& state, bool useVertexBufferObjects) const
 {
-    GLBufferObject* dibo=_indirectCommand->getBufferObject()->getOrCreateGLBufferObject(state.getContextID());
+    GLBufferObject* dibo = _indirectCommandArray->getBufferObject()->getOrCreateGLBufferObject( state.getContextID() );
+
     state.bindDrawIndirectBufferObject(dibo);
     GLenum mode = _mode;
 #if defined(OSG_GLES1_AVAILABLE) || defined(OSG_GLES2_AVAILABLE)
@@ -137,33 +296,37 @@ void MultiDrawElementsIndirectUByte::draw(State& state, bool useVertexBufferObje
 
     state.bindElementBufferObject(ebo);
 
-    state.get<GLExtensions>()-> glMultiDrawElementsIndirect(mode, GL_UNSIGNED_BYTE, (const GLvoid *)(dibo->getOffset(_indirectCommand->getBufferIndex())),_indirectCommand->size(), _stride);
+    state.get<GLExtensions>()-> glMultiDrawElementsIndirect(mode, GL_UNSIGNED_BYTE, (const GLvoid *)(dibo->getOffset(_indirectCommandArray->getBufferIndex())),_indirectCommandArray->getNumElements(), _stride);
 
 }
 
 void MultiDrawElementsIndirectUByte::accept(PrimitiveFunctor& functor) const
 {
-    if (!empty())
-        for(DrawElementsIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-            functor.drawElements(_mode,itcmd->count,&(*this)[itcmd->firstIndex],itcmd->baseVertex);
+#ifdef PRIMFUNCTORBASEVERTEX
+  //TODO: add base vertex parameter in PrimitiveFunctor and PrimitiveIndexFunctor drawelements method
+       unsigned int maxindex=_count>0?_firstCommand + _count : _indirectCommandArray->getNumElements() - _firstCommand;
+       if (!empty() )
+            for(unsigned int i = _firstCommand; i<maxindex; ++i)
+                    functor.drawElements(_mode,_indirectCommandArray->count(i),
+                        &(*this)[_indirectCommandArray->firstIndex(i)]
+                        ,_indirectCommandArray->baseVertex(i));
+#endif
 }
 
 void MultiDrawElementsIndirectUByte::accept(PrimitiveIndexFunctor& functor) const
 {
-    if (!empty())
-        for(DrawElementsIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-            functor.drawElements(_mode,itcmd->count,&(*this)[itcmd->firstIndex],itcmd->baseVertex);
+#ifdef PRIMFUNCTORBASEVERTEX
+  //TODO: add base vertex parameter in PrimitiveFunctor and PrimitiveIndexFunctor drawelements method
+       unsigned int maxindex=_count>0?_firstCommand + _count : _indirectCommandArray->getNumElements() - _firstCommand;
+       if (!empty() )
+            for(unsigned int i = _firstCommand; i<maxindex; ++i)
+                    functor.drawElements(_mode,_indirectCommandArray->count(i),
+                        &(*this)[_indirectCommandArray->firstIndex(i)]
+                        ,_indirectCommandArray->baseVertex(i));
+#endif
 }
 
-void MultiDrawElementsIndirectUByte::offsetIndices(int offset)
-{
-    for(iterator itr=begin();
-            itr!=end();
-            ++itr)
-    {
-        *itr += offset;
-    }
-}
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -176,7 +339,7 @@ MultiDrawElementsIndirectUShort::~MultiDrawElementsIndirectUShort()
 }
 
 void MultiDrawElementsIndirectUShort::draw(State& state, bool useVertexBufferObjects) const
-{   GLBufferObject* dibo=_indirectCommand->getBufferObject()->getOrCreateGLBufferObject(state.getContextID());
+{   GLBufferObject* dibo = _indirectCommandArray->getBufferObject()->getOrCreateGLBufferObject( state.getContextID() );
     state.bindDrawIndirectBufferObject(dibo);
 
     GLenum mode = _mode;
@@ -191,32 +354,35 @@ void MultiDrawElementsIndirectUShort::draw(State& state, bool useVertexBufferObj
 
     state.bindElementBufferObject(ebo);
 
-    state.get<GLExtensions>()-> glMultiDrawElementsIndirect(mode, GL_UNSIGNED_SHORT, (const GLvoid *)(dibo->getOffset(_indirectCommand->getBufferIndex())),_indirectCommand->size(),_stride);
+    state.get<GLExtensions>()-> glMultiDrawElementsIndirect(mode, GL_UNSIGNED_SHORT, (const GLvoid *)(dibo->getOffset(_indirectCommandArray->getBufferIndex())),
+    _count>0?_count:_indirectCommandArray->getNumElements(),_stride);
 
 }
 
 void MultiDrawElementsIndirectUShort::accept(PrimitiveFunctor& functor) const
 {
-    if (!empty())
-        for(DrawElementsIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-            functor.drawElements(_mode,itcmd->count,&(*this)[itcmd->firstIndex],itcmd->baseVertex);
+#ifdef PRIMFUNCTORBASEVERTEX
+  //TODO: add base vertex parameter in PrimitiveFunctor and PrimitiveIndexFunctor drawelements method
+       unsigned int maxindex=_count>0?_firstCommand + _count : _indirectCommandArray->getNumElements() - _firstCommand;
+       if (!empty() )
+            for(unsigned int i = _firstCommand; i<maxindex; ++i)
+                    functor.drawElements(_mode,_indirectCommandArray->count(i),
+                        &(*this)[_indirectCommandArray->firstIndex(i)]
+                        ,_indirectCommandArray->baseVertex(i));
+#endif
 }
 
 void MultiDrawElementsIndirectUShort::accept(PrimitiveIndexFunctor& functor) const
 {
-    if (!empty())
-        for(DrawElementsIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-            functor.drawElements(_mode,itcmd->count,&(*this)[itcmd->firstIndex],itcmd->baseVertex);
-}
-
-void MultiDrawElementsIndirectUShort::offsetIndices(int offset)
-{
-    for(iterator itr=begin();
-            itr!=end();
-            ++itr)
-    {
-        *itr += offset;
-    }
+#ifdef PRIMFUNCTORBASEVERTEX
+  //TODO: add base vertex parameter in PrimitiveFunctor and PrimitiveIndexFunctor drawelements method
+       unsigned int maxindex=_count>0?_firstCommand + _count : _indirectCommandArray->getNumElements() - _firstCommand;
+       if (!empty() )
+            for(unsigned int i = _firstCommand; i<maxindex; ++i)
+                    functor.drawElements(_mode,_indirectCommandArray->count(i),
+                        &(*this)[_indirectCommandArray->firstIndex(i)]
+                        ,_indirectCommandArray->baseVertex(i));
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -230,7 +396,7 @@ MultiDrawElementsIndirectUInt::~MultiDrawElementsIndirectUInt()
 
 void MultiDrawElementsIndirectUInt::draw(State& state, bool useVertexBufferObjects) const
 {
-    GLBufferObject* dibo=_indirectCommand->getBufferObject()->getOrCreateGLBufferObject(state.getContextID());
+    GLBufferObject* dibo = _indirectCommandArray->getBufferObject()->getOrCreateGLBufferObject( state.getContextID() );
     state.bindDrawIndirectBufferObject(dibo);
     GLenum mode = _mode;
 #if defined(OSG_GLES1_AVAILABLE) || defined(OSG_GLES2_AVAILABLE)
@@ -245,114 +411,91 @@ void MultiDrawElementsIndirectUInt::draw(State& state, bool useVertexBufferObjec
 
     state.bindElementBufferObject(ebo);
 
-    state.get<GLExtensions>()-> glMultiDrawElementsIndirect(mode, GL_UNSIGNED_INT, (const GLvoid *)(dibo->getOffset(_indirectCommand->getBufferIndex())),_indirectCommand->size(),_stride);
+    state.get<GLExtensions>()-> glMultiDrawElementsIndirect(mode, GL_UNSIGNED_INT, (const GLvoid *)(dibo->getOffset(_indirectCommandArray->getBufferIndex())),
+    _count>0?_count:_indirectCommandArray->getNumElements(), _stride);
 
 }
 
 void MultiDrawElementsIndirectUInt::accept(PrimitiveFunctor& functor) const
 {
-
-    if (!empty())
-        for(DrawElementsIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-            functor.drawElements(_mode,itcmd->count,&(*this)[itcmd->firstIndex],itcmd->baseVertex);
+#ifdef PRIMFUNCTORBASEVERTEX
+  //TODO: add base vertex parameter in PrimitiveFunctor and PrimitiveIndexFunctor drawelements method
+       unsigned int maxindex=_count>0?_firstCommand + _count : _indirectCommandArray->getNumElements() - _firstCommand;
+       if (!empty() )
+            for(unsigned int i = _firstCommand; i<maxindex; ++i)
+                    functor.drawElements(_mode,_indirectCommandArray->count(i),
+                        &(*this)[_indirectCommandArray->firstIndex(i)]
+                        ,_indirectCommandArray->baseVertex(i));
+#endif
 }
 
 void MultiDrawElementsIndirectUInt::accept(PrimitiveIndexFunctor& functor) const
 {
-    if (!empty())
-        for(DrawElementsIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-            functor.drawElements(_mode,itcmd->count,&(*this)[itcmd->firstIndex],itcmd->baseVertex);
-
+#ifdef PRIMFUNCTORBASEVERTEX
+  //TODO: add base vertex parameter in PrimitiveFunctor and PrimitiveIndexFunctor drawelements method
+       unsigned int maxindex=_count>0?_firstCommand + _count : _indirectCommandArray->getNumElements() - _firstCommand;
+       if (!empty() )
+            for(unsigned int i = _firstCommand; i<maxindex; ++i)
+                    functor.drawElements(_mode,_indirectCommandArray->count(i),
+                        &(*this)[_indirectCommandArray->firstIndex(i)]
+                        ,_indirectCommandArray->baseVertex(i));
+#endif
 }
 
-void MultiDrawElementsIndirectUInt::offsetIndices(int offset)
-{
-    for(iterator itr=begin();
-            itr!=end();
-            ++itr)
-    {
-        *itr += offset;
-    }
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // MultiDrawArrays
 //
-#ifdef OSG_HAS_MULTIDRAWARRAYS
-void MultiDrawArraysIndirect::draw(osg::State& state, bool) const
+void DrawArraysIndirect::draw(osg::State& state, bool) const
 {
-    GLBufferObject* dibo=_indirectCommand->getBufferObject()->getOrCreateGLBufferObject(state.getContextID());
+    GLBufferObject* dibo = _indirectCommandArray->getBufferObject()->getOrCreateGLBufferObject( state.getContextID() );
     state.bindDrawIndirectBufferObject(dibo);
 
     GLExtensions* ext = state.get<GLExtensions>();
 
-    ext->glMultiDrawArraysIndirect(_mode,  (const GLvoid *)(dibo->getOffset(_indirectCommand->getBufferIndex())),_indirectCommand->size(),_stride);
+    ext->glDrawArraysIndirect(_mode,  (const GLvoid *)(dibo->getOffset(_indirectCommandArray->getBufferIndex())
+    +_firstCommand* _indirectCommandArray->getElementSize()));
 
 }
 
-void MultiDrawArraysIndirect::accept(PrimitiveFunctor& functor) const
+void DrawArraysIndirect::accept(PrimitiveFunctor& functor) const
 {
-    for(DrawArraysIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-    {
-        functor.drawArrays(_mode, itcmd->first, itcmd->count);
-    }
+    functor.drawArrays(_mode, _indirectCommandArray->first(_firstCommand), _indirectCommandArray->count(_firstCommand));
 }
 
-void MultiDrawArraysIndirect::accept(PrimitiveIndexFunctor& functor) const
+void DrawArraysIndirect::accept(PrimitiveIndexFunctor& functor) const
 {
-    for(DrawArraysIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-    {
-        functor.drawArrays(_mode, itcmd->first, itcmd->count);
-    }
+    functor.drawArrays(_mode, _indirectCommandArray->first(_firstCommand), _indirectCommandArray->count(_firstCommand));
 }
 
-unsigned int MultiDrawArraysIndirect::getNumIndices() const
+unsigned int DrawArraysIndirect::getNumIndices() const
 {
-    unsigned int total=0;
-
-    for(DrawArraysIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-        total+= itcmd->count;
-    return total;
+    return _indirectCommandArray->count(_firstCommand);
 }
 
-unsigned int MultiDrawArraysIndirect::index(unsigned int pos) const
+unsigned int DrawArraysIndirect::index(unsigned int pos) const
 {
-    DrawArraysIndirectCommand::iterator itcmd=_indirectCommand->begin();
-    for(; itcmd!=_indirectCommand->end(); itcmd++)
-    {
-        unsigned int count = itcmd->count;
-        if (pos<count) break;
-        pos -= count;
-    }
-    return itcmd->first + pos;
-
+ return _indirectCommandArray->first(_firstCommand)+ pos;
 }
 
-void MultiDrawArraysIndirect::offsetIndices(int offset)
+void DrawArraysIndirect::offsetIndices(int offset)
 {
-
-    for(DrawArraysIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-        itcmd->first += offset;
+    _indirectCommandArray->first(_firstCommand)+= offset;
 }
 
-unsigned int MultiDrawArraysIndirect::getNumPrimitives() const
+unsigned int DrawArraysIndirect::getNumPrimitives() const
 {
-    unsigned int total=0;
     switch(_mode)
     {
     case(POINTS):
-         for(DrawArraysIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-            total+=itcmd->count;
+            return _indirectCommandArray->count(_firstCommand);
     case(LINES):
-        for(DrawArraysIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-           total+=itcmd->count/2;
+           return _indirectCommandArray->count(_firstCommand)/2;
     case(TRIANGLES):
-        for(DrawArraysIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-           total+=itcmd->count/3;
+           return _indirectCommandArray->count(_firstCommand)/3;
     case(QUADS):
-        for(DrawArraysIndirectCommand::iterator itcmd=_indirectCommand->begin(); itcmd!=_indirectCommand->end(); itcmd++)
-           total+=itcmd->count/4;
+           return _indirectCommandArray->count(_firstCommand)/4;
     case(LINE_STRIP):
     case(LINE_LOOP):
     case(TRIANGLE_STRIP):
@@ -361,16 +504,107 @@ unsigned int MultiDrawArraysIndirect::getNumPrimitives() const
     case(PATCHES):
     case(POLYGON):
     {
-        unsigned int primcount = _indirectCommand->size();
+        return 1;
+    }
+    }
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// MultiDrawArrays
+//
+void MultiDrawArraysIndirect::draw(osg::State& state, bool) const
+{
+    GLBufferObject* dibo = _indirectCommandArray->getBufferObject()->getOrCreateGLBufferObject( state.getContextID() );
+    state.bindDrawIndirectBufferObject(dibo);
+
+    GLExtensions* ext = state.get<GLExtensions>();
+
+    ext->glMultiDrawArraysIndirect(_mode,  (const GLvoid *)(dibo->getOffset(_indirectCommandArray->getBufferIndex())+_firstCommand*_indirectCommandArray->getElementSize()),
+    _count>0?_count:_indirectCommandArray->getNumElements(), _stride);
+
+}
+
+void MultiDrawArraysIndirect::accept(PrimitiveFunctor& functor) const
+{
+    unsigned int maxindex=_count>0?_firstCommand + _count : _indirectCommandArray->getNumElements() - _firstCommand;
+    for(unsigned int i = _firstCommand; i<maxindex; ++i)
+    {
+        functor.drawArrays(_mode, _indirectCommandArray->first(i), _indirectCommandArray->count(i));
+    }
+}
+
+void MultiDrawArraysIndirect::accept(PrimitiveIndexFunctor& functor) const
+{
+    unsigned int maxindex=_count>0?_firstCommand + _count : _indirectCommandArray->getNumElements() - _firstCommand;
+    for(unsigned int i = _firstCommand; i<maxindex; ++i)
+    {
+        functor.drawArrays(_mode, _indirectCommandArray->first(i), _indirectCommandArray->count(i));
+    }
+}
+
+unsigned int MultiDrawArraysIndirect::getNumIndices() const
+{
+    unsigned int total=0;
+
+    unsigned int maxindex=_count>0?_firstCommand + _count : _indirectCommandArray->getNumElements() - _firstCommand;
+    for(unsigned int i = _firstCommand; i<maxindex; ++i)
+        total+= _indirectCommandArray->count(i);
+    return total;
+}
+
+unsigned int MultiDrawArraysIndirect::index(unsigned int pos) const
+{
+    unsigned int i = 0, maxindex=_count>0?_firstCommand + _count : _indirectCommandArray->getNumElements() - _firstCommand;
+    for(i=_firstCommand; i<maxindex;++i)
+      {
+        unsigned int count = _indirectCommandArray->count(i);
+        if (pos<count) break;
+        pos -= count;
+    }
+    if (i>=maxindex) return 0;
+    return _indirectCommandArray->first(maxindex-1) + pos;
+
+}
+
+void MultiDrawArraysIndirect::offsetIndices(int offset)
+{
+    unsigned int maxindex=_count>0?_firstCommand + _count : _indirectCommandArray->getNumElements() - _firstCommand;
+    for(unsigned int i = _firstCommand; i<maxindex; ++i)
+        _indirectCommandArray->first(i) += offset;
+}
+
+unsigned int MultiDrawArraysIndirect::getNumPrimitives() const
+{
+    unsigned int total=0;unsigned int maxindex=_count>0?_firstCommand + _count : _indirectCommandArray->getNumElements() - _firstCommand;
+
+    switch(_mode)
+    {
+    case(POINTS):
+          for(unsigned int i = _firstCommand; i<maxindex; ++i)
+            total+=_indirectCommandArray->count(i);
+    case(LINES):
+         for(unsigned int i = _firstCommand; i<maxindex; ++i)
+           total+=_indirectCommandArray->count(i)/2;
+    case(TRIANGLES):
+         for(unsigned int i = _firstCommand; i<maxindex; ++i)
+           total+=_indirectCommandArray->count(i)/3;
+    case(QUADS):
+         for(unsigned int i = _firstCommand; i<maxindex; ++i)
+           total+=_indirectCommandArray->count(i)/4;
+    case(LINE_STRIP):
+    case(LINE_LOOP):
+    case(TRIANGLE_STRIP):
+    case(TRIANGLE_FAN):
+    case(QUAD_STRIP):
+    case(PATCHES):
+    case(POLYGON):
+    {
+        unsigned int primcount = _indirectCommandArray->getNumElements();
         return primcount;
     }
     }
     return total;
 }
-/*
-void MultiDrawArraysIndirect::add(GLint first, GLsizei count)
-{
-    _firsts.push_back(first);
-    _counts.push_back(count);
-}*/
-#endif
+

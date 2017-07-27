@@ -1620,7 +1620,7 @@ void Texture::computeInternalFormatWithImage(const osg::Image& image) const
         }
     }
 
-#if defined (OSG_GLES1_AVAILABLE) || defined (OSG_GLES2_AVAILABLE)
+#if defined (OSG_GLES1_AVAILABLE) || defined (OSG_GLES2_AVAILABLE) || defined (OSG_GLES3_AVAILABLE)
     // GLES doesn't cope with internal formats of 1,2,3 and 4 and glTexImage doesn't
     // handle the _OES pixel formats so map them to the appropriate equivilants.
     switch(internalFormat)
@@ -1875,6 +1875,11 @@ void Texture::applyTexParameters(GLenum target, State& state) const
             extensions->debugObjectLabel(GL_TEXTURE, to->id(), getName());
         }
 
+    #if defined(OSG_GLES1_AVAILABLE) || defined(OSG_GLES2_AVAILABLE) || defined(OSG_GLES3_AVAILABLE) || defined(OSG_GL3_AVAILABLE)
+        if (ws == CLAMP) ws = CLAMP_TO_EDGE;
+        if (wt == CLAMP) wt = CLAMP_TO_EDGE;
+        if (wr == CLAMP) wr = CLAMP_TO_EDGE;
+    #endif
 
         WrapMode ws = _wrap_s, wt = _wrap_t, wr = _wrap_r;
 
@@ -2211,7 +2216,7 @@ void Texture::applyTexImage2D_load(State& state, GLenum target, const Image* ima
     {
         pbo = 0;
     }
-#if !defined(OSG_GLES1_AVAILABLE) && !defined(OSG_GLES2_AVAILABLE)
+#if !defined(OSG_GLES1_AVAILABLE) && !defined(OSG_GLES2_AVAILABLE) && !defined(OSG_GLES3_AVAILABLE)
     glPixelStorei(GL_UNPACK_ROW_LENGTH,rowLength);
 #endif
     if( !mipmappingRequired || useHardwareMipMapGeneration)
@@ -2557,7 +2562,7 @@ void Texture::applyTexImage2D_subload(State& state, GLenum target, const Image* 
     {
         pbo = 0;
     }
-#if !defined(OSG_GLES1_AVAILABLE) && !defined(OSG_GLES2_AVAILABLE)
+#if !defined(OSG_GLES1_AVAILABLE) && !defined(OSG_GLES2_AVAILABLE) && !defined(OSG_GLES3_AVAILABLE)
     glPixelStorei(GL_UNPACK_ROW_LENGTH,rowLength);
 #endif
     if( !mipmappingRequired || useHardwareMipMapGeneration)
@@ -2694,7 +2699,7 @@ Texture::GenerateMipmapMode Texture::mipmapBeforeTexImage(const State& state, bo
 {
     if (hardwareMipmapOn)
     {
-#if defined( OSG_GLES2_AVAILABLE ) || defined( OSG_GL3_AVAILABLE )
+#if defined( OSG_GLES2_AVAILABLE ) || defined( OSG_GLES3_AVAILABLE ) || defined( OSG_GL3_AVAILABLE )
         return GENERATE_MIPMAP;
 #else
 

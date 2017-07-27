@@ -56,7 +56,7 @@ struct ComputeAveragesFunctor
     ComputeAveragesFunctor():
         _num(0) {}
 
-    inline void operator() ( const osg::Vec3 &v1, const osg::Vec3 &v2, const osg::Vec3 &v3, bool)
+    inline void operator() ( const osg::Vec3 &v1, const osg::Vec3 &v2, const osg::Vec3 &v3)
     {
         // calc orientation of triangle.
         osg::Vec3d normal = (v2-v1)^(v3-v1);
@@ -93,7 +93,7 @@ struct ComputeDeviationFunctor
         _normal = normal;
     }
 
-    inline void operator() ( const osg::Vec3 &v1, const osg::Vec3 &v2, const osg::Vec3 &v3, bool)
+    inline void operator() ( const osg::Vec3 &v1, const osg::Vec3 &v2, const osg::Vec3 &v3)
     {
         // calc orientation of triangle.
         osg::Vec3 normal = (v2-v1)^(v3-v1);

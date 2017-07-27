@@ -534,17 +534,14 @@ struct CrawlTriangleFunctor
 
     osg::ref_ptr<Container> _out;
 
-
     CrawlTriangleFunctor(){_out=new Container;}
 
-
-
-    inline void operator() ( const T &v1, const T &v2, const T &v3, bool treatVertexDataAsTemporary )
+    inline void operator() ( const T &v1, const T &v2, const T &v3 )
     {
 
-_out->push_back(v1);
-_out->push_back(v2);
-_out->push_back(v3);
+        _out->push_back(v1);
+        _out->push_back(v2);
+        _out->push_back(v3);
     }
 };
 void MakeDrawArraysVisitor::makeMesh(Geometry& geom){

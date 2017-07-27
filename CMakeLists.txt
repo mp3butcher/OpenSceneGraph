@@ -70,8 +70,8 @@ IF(APPLE AND NOT ANDROID)
       ENDIF()
 
     ELSE()
-      #simulator uses i386 architectures
-      SET(CMAKE_OSX_ARCHITECTURES "i386" CACHE STRING "Build architectures for iOS Simulator" FORCE)
+      #simulator uses i386 and x86_64 architectures
+      SET(CMAKE_OSX_ARCHITECTURES "i386;x86_64" CACHE STRING "Build architectures for iOS Simulator" FORCE)
     ENDIF()
 
     #here we set the specific iphone sdk version. We can only set either device or simulator sdk. So if you want both you currently have to have two seperate projects
@@ -116,7 +116,7 @@ PROJECT(OpenSceneGraph)
 SET(OPENSCENEGRAPH_MAJOR_VERSION 3)
 SET(OPENSCENEGRAPH_MINOR_VERSION 5)
 SET(OPENSCENEGRAPH_PATCH_VERSION 6)
-SET(OPENSCENEGRAPH_SOVERSION 147)
+SET(OPENSCENEGRAPH_SOVERSION 149)
 
 # set to 0 when not a release candidate, non zero means that any generated
 # git tags will be treated as release candidates of given number
@@ -442,6 +442,8 @@ ENDIF(WIN32 AND NOT ANDROID)
 
 OPTION(OSG_NOTIFY_DISABLED "Set to ON to build OpenSceneGraph with the notify() disabled." OFF)
 
+OPTION(OSG_USE_DEPRECATED_API "Set to ON to build OpenSceneGraph with the OSG_USE_DEPREFATED_API #define enabled to allow access to deprecated APIs ." ON)
+
 OPTION(OSG_USE_FLOAT_MATRIX "Set to ON to build OpenSceneGraph with float Matrix instead of double." OFF)
 MARK_AS_ADVANCED(OSG_USE_FLOAT_MATRIX)
 
@@ -752,7 +754,7 @@ ELSE()
     FIND_PACKAGE(GTA)
     FIND_PACKAGE(CURL)
     FIND_PACKAGE(LibVNCServer)
-    FIND_PACKAGE(OurDCMTK)
+    FIND_PACKAGE(DCMTK)
     FIND_PACKAGE(FFmpeg)
     FIND_PACKAGE(GStreamer COMPONENTS app pbutils)
     FIND_PACKAGE(GLIB COMPONENTS gobject)
@@ -1105,9 +1107,9 @@ IF(APPLE AND NOT ANDROID)
             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -miphoneos-version-min=${IPHONE_VERSION_MIN}" FORCE)
 
         ELSE()
-            #simulator uses i386 architectures
-            SET(CMAKE_OSX_ARCHITECTURES "i386" CACHE STRING "Build architectures for iOS Simulator" FORCE)
-            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mno-thumb -arch i386 -pipe -no-cpp-precomp" CACHE STRING "Flags used by the compiler during all build types." FORCE)
+            #simulator uses i386 and x86_64 architectures
+            SET(CMAKE_OSX_ARCHITECTURES "i386;x86_64" CACHE STRING "Build architectures for iOS Simulator" FORCE)
+            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mno-thumb -pipe -no-cpp-precomp" CACHE STRING "Flags used by the compiler during all build types." FORCE)
 
             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mios-simulator-version-min=${IPHONE_VERSION_MIN}" FORCE)
 
