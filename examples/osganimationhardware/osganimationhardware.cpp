@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include <osgDB/ReadFile>
+#include <osgDB/WriteFile>
 #include <osgViewer/ViewerEventHandlers>
 #include <osgGA/TrackballManipulator>
 #include <osgGA/FlightManipulator>
@@ -28,6 +29,8 @@
 #include <osgAnimation/BasicAnimationManager>
 #include <osgAnimation/RigGeometry>
 #include <osgAnimation/RigTransformHardware>
+#include <osgAnimation/MorphGeometry>
+#include <osgAnimation/MorphTransformHardware>
 #include <osgAnimation/AnimationManagerBase>
 #include <osgAnimation/BoneMapVisitor>
 
@@ -41,6 +44,7 @@ static unsigned int getRandomValueinRange(unsigned int v)
 
 
 osg::ref_ptr<osg::Program> program;
+osg::ref_ptr<osg::Shader> skinningshader;
 // show how to override the default RigTransformHardware for customized usage
 struct MyRigTransformHardware : public osgAnimation::RigTransformHardware
 {
@@ -69,7 +73,6 @@ struct MyRigTransformHardware : public osgAnimation::RigTransformHardware
         osgAnimation::BoneMapVisitor mapVisitor;
         geom.getSkeleton()->accept(mapVisitor);
         osgAnimation::BoneMap bm = mapVisitor.getBoneMap();
-
         if (!createPalette(pos->size(),bm, geom.getVertexInfluenceSet().getVertexToBoneList()))
             return false;
 
@@ -80,7 +83,7 @@ struct MyRigTransformHardware : public osgAnimation::RigTransformHardware
         if (!program.valid()) {
             program = new osg::Program;
             program->setName("HardwareSkinning");
-            if (!_shader.valid())
+            if (!skinningshader.valid())
                 _shader = osg::Shader::readShaderFile(osg::Shader::VERTEX,"shaders/skinning.vert");
 
             if (!_shader.valid()) {
@@ -97,7 +100,7 @@ struct MyRigTransformHardware : public osgAnimation::RigTransformHardware
                 ss << getMatrixPaletteUniform()->getNumElements();
                 str.replace(start, toreplace.size(), ss.str());
                 _shader->setShaderSource(str);
-                osg::notify(osg::INFO) << "Shader " << str << std::endl;
+                // osg::notify(osg::INFO) << "Shader " << str << std::endl;
             }
 
             program->addShader(_shader.get());
@@ -136,11 +139,11 @@ struct AnimationManagerFinder : public osg::NodeVisitor
     osg::ref_ptr<osgAnimation::BasicAnimationManager> _am;
     AnimationManagerFinder() : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {}
     void apply(osg::Node& node) {
-        if (_am.valid()){
+        if (_am.valid()) {
             osgAnimation::Animation * anim=_am->getRegisteredAnimation(0);
             OSG_WARN<<"aim0"<<anim->getName()<<std::endl;
             return;
-            }
+        }
         if (node.getUpdateCallback()) {
             osgAnimation::BasicAnimationManager* b = dynamic_cast<osgAnimation::BasicAnimationManager*>(node.getUpdateCallback());
             if (b) {
@@ -166,8 +169,25 @@ struct SetupRigGeometry : public osg::NodeVisitor
     {
         if (_hardware) {
             osgAnimation::RigGeometry* rig = dynamic_cast<osgAnimation::RigGeometry*>(&geom);
-            if (rig)
+            if (rig){
                 rig->setRigTransformImplementation(new MyRigTransformHardware());
+                osgAnimation::MorphGeometry* morph = dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry());
+                if(morph){
+                    morph->setMorphTransformImplementation(new osgAnimation::MorphTransformHardware);
+//while(rig->getUpdateCallback())rig->removeUpdateCallback(rig->getUpdateCallback());
+                    osg::ref_ptr<osg::Geometry > sgeom=new osg::Geometry;
+                    sgeom->setUseVertexBufferObjects(true);
+                    sgeom->setVertexArray(morph->getVertexArray());
+                    sgeom->setNormalArray(morph->getNormalArray());
+for(int i=0;i<morph->getNumTexCoordArrays();++i)
+    sgeom->setTexCoordArray(i,morph->getTexCoordArray(i));
+for(int i=0;i<morph->getNumPrimitiveSets();++i)
+    sgeom->addPrimitiveSet(morph->getPrimitiveSet(i));                //geom->setVertexArray(morph->getVertexArray());
+                //    rig->setSourceGeometry(sgeom);
+                }
+
+
+            }
         }
 
 #if 0
@@ -186,25 +206,26 @@ osg::Group* createCharacterInstance(osg::Group* character, bool hardware)
     else
         c = osg::clone(character, osg::CopyOp::DEEP_COPY_ALL);
 
-AnimationManagerFinder animfinder;
-c->accept(animfinder);
-if(animfinder._am.valid()){
-    osgAnimation::AnimationManagerBase* animationManager = dynamic_cast<osgAnimation::AnimationManagerBase*>(animfinder._am.get());
+    AnimationManagerFinder animfinder;
+    c->accept(animfinder);
+    if(animfinder._am.valid()) {
+        osgAnimation::AnimationManagerBase* animationManager = dynamic_cast<osgAnimation::AnimationManagerBase*>(animfinder._am.get());
 
-    osgAnimation::BasicAnimationManager* anim = dynamic_cast<osgAnimation::BasicAnimationManager*>(animationManager);
-    const osgAnimation::AnimationList& list = animationManager->getAnimationList();
-    int v = getRandomValueinRange(list.size());
-    if (list[v]->getName() == std::string("MatIpo_ipo")) {
+        osgAnimation::BasicAnimationManager* anim = dynamic_cast<osgAnimation::BasicAnimationManager*>(animationManager);
+        const osgAnimation::AnimationList& list = animationManager->getAnimationList();
+        int v = getRandomValueinRange(list.size());
+        //if (list[v]->getName() == std::string("MatIpo_ipo"))
+        {
+            anim->playAnimation(list[v].get());
+            v = (v + 1)%list.size();
+        }
+
         anim->playAnimation(list[v].get());
-        v = (v + 1)%list.size();
+    } else
+    {
+        osg::notify(osg::FATAL) << "no AnimationManagerBase found, updateCallback need to animate elements" << std::endl;
+        exit(-1);
     }
-
-    anim->playAnimation(list[v].get());
-}else
-{
-            osg::notify(osg::FATAL) << "no AnimationManagerBase found, updateCallback need to animate elements" << std::endl;
-            exit(-1);
- }
     SetupRigGeometry switcher(hardware);
     c->accept(switcher);
 
@@ -222,7 +243,9 @@ int main (int argc, char* argv[])
 
     bool hardware = true;
     int maxChar = 10;
-    while (psr.read("--software")) { hardware = false; }
+    while (psr.read("--software")) {
+        hardware = false;
+    }
     while (psr.read("--number", maxChar)) {}
 
 
@@ -267,7 +290,6 @@ int main (int argc, char* argv[])
     viewer.addEventHandler(new osgViewer::ScreenCaptureHandler);
 
     viewer.setSceneData(scene.get());
-
     viewer.realize();
 
     double xChar = maxChar;
@@ -286,6 +308,7 @@ int main (int argc, char* argv[])
     }
     std::cout << "created " << xChar * yChar << " instance"  << std::endl;
 
+    osgDB::writeNodeFile(*scene.get(),"testHW.osgb");
 
     return viewer.run();
 }

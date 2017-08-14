@@ -16,6 +16,7 @@
 #include <osg/Notify>
 #include <iostream>
 #include <algorithm>
+#include <set>
 
 using namespace osgAnimation;
 
@@ -23,9 +24,18 @@ void VertexInfluenceSet::addVertexInfluence(const VertexInfluence& v) { _bone2Ve
 const VertexInfluenceSet::VertexIndexToBoneWeightMap& VertexInfluenceSet::getVertexToBoneList() const { return _vertex2Bones;}
 // this class manage VertexInfluence database by mesh
 // reference bones per vertex ...
+struct invweight_ordered
+{
+    inline bool operator() (const VertexInfluenceSet::BoneWeight& bw1, const VertexInfluenceSet::BoneWeight& bw2)
+    {
+        return (bw1.getWeight() > bw2.getWeight());
+    }
+};
 void VertexInfluenceSet::buildVertex2BoneList()
 {
     _vertex2Bones.clear();
+    typedef std::set<BoneWeight ,invweight_ordered>  BoneWeightOrdered;
+    std::map<int,BoneWeightOrdered >tempVec2Bones;
     for (BoneToVertexList::const_iterator it = _bone2Vertexes.begin(); it != _bone2Vertexes.end(); ++it)
     {
         const VertexInfluence& vi = (*it);
@@ -37,10 +47,16 @@ void VertexInfluenceSet::buildVertex2BoneList()
             float weight = viw.second;
             if (vi.getName().empty())
                 OSG_WARN << "VertexInfluenceSet::buildVertex2BoneList warning vertex " << index << " is not assigned to a bone" << std::endl;
-            _vertex2Bones[index].push_back(BoneWeight(vi.getName(), weight));
+            tempVec2Bones[index].insert(BoneWeight(vi.getName(), weight));
         }
     }
 
+    //copy tempVec2Bones to _vertex2Bones
+    for(std::map<int,BoneWeightOrdered>::iterator iti = tempVec2Bones.begin(); iti != tempVec2Bones.end(); ++iti){
+        BoneWeightList& destbonelist=_vertex2Bones[iti->first];
+        for(BoneWeightOrdered::iterator itbw = iti->second.begin();itbw != iti->second.end(); ++itbw)
+            destbonelist.push_back(*itbw);
+    }
     // normalize weight per vertex
     for (VertexIndexToBoneWeightMap::iterator it = _vertex2Bones.begin(); it != _vertex2Bones.end(); ++it)
     {

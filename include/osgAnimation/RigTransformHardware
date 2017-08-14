@@ -66,7 +66,7 @@ namespace osgAnimation
         int getNumBonesPerVertex() const;
         int getNumVertexes() const;
 
-        bool createPalette(int nbVertexes, BoneMap boneMap, const VertexInfluenceSet::VertexIndexToBoneWeightMap& vertexIndexToBoneWeightMap);
+        bool createPalette(int nbVertexes,const BoneMap& boneMap, const VertexInfluenceSet::VertexIndexToBoneWeightMap& vertexIndexToBoneWeightMap);
 
         virtual void operator()(RigGeometry&);
         void setShader(osg::Shader*);
@@ -79,12 +79,12 @@ namespace osgAnimation
 
         bool init(RigGeometry&);
 
-        BoneWeightAttribList createVertexAttribList();
+        void createVertexAttribList(VertexIndexWeightList &_vertexIndexMatrixWeightList);
         osg::Uniform* createVertexUniform();
 
         int _bonesPerVertex;
         int _nbVertexes;
-        VertexIndexWeightList _vertexIndexMatrixWeightList;
+
         BonePalette _bonePalette;
         BoneNamePaletteIndex _boneNameToPalette;
         BoneWeightAttribList _boneWeightAttribArrays;

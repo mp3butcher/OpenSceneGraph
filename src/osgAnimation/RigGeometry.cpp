@@ -83,11 +83,11 @@ RigGeometry::RigGeometry(const RigGeometry& b, const osg::CopyOp& copyop) :
 const osg::Matrix& RigGeometry::getMatrixFromSkeletonToGeometry() const { return _matrixFromSkeletonToGeometry; }
 const osg::Matrix& RigGeometry::getInvMatrixFromSkeletonToGeometry() const { return _invMatrixFromSkeletonToGeometry;}
 
-
+/*
 void RigGeometry::drawImplementation(osg::RenderInfo& renderInfo) const
 {
     osg::Geometry::drawImplementation(renderInfo);
-}
+}*/
 
 void RigGeometry::buildVertexInfluenceSet()
 {
@@ -134,45 +134,45 @@ void RigGeometry::update()
 
 void RigGeometry::copyFrom(osg::Geometry& from)
 {
-    bool copyToSelf = (this==&from);
+    if (this==&from) return;
 
     osg::Geometry& target = *this;
 
-    if (!copyToSelf) target.setStateSet(from.getStateSet());
+    target.setStateSet(from.getStateSet());
 
     // copy over primitive sets.
-    if (!copyToSelf) target.getPrimitiveSetList() = from.getPrimitiveSetList();
+    target.getPrimitiveSetList() = from.getPrimitiveSetList();
 
     if (from.getVertexArray())
     {
-        if (!copyToSelf) target.setVertexArray(from.getVertexArray());
+        target.setVertexArray(from.getVertexArray());
     }
 
     if (from.getNormalArray())
     {
-        if (!copyToSelf) target.setNormalArray(from.getNormalArray());
+        target.setNormalArray(from.getNormalArray());
     }
 
     if (from.getColorArray())
     {
-        if (!copyToSelf) target.setColorArray(from.getColorArray());
+        target.setColorArray(from.getColorArray());
     }
 
     if (from.getSecondaryColorArray())
     {
-        if (!copyToSelf) target.setSecondaryColorArray(from.getSecondaryColorArray());
+        target.setSecondaryColorArray(from.getSecondaryColorArray());
     }
 
     if (from.getFogCoordArray())
     {
-        if (!copyToSelf) target.setFogCoordArray(from.getFogCoordArray());
+        target.setFogCoordArray(from.getFogCoordArray());
     }
 
     for(unsigned int ti=0;ti<from.getNumTexCoordArrays();++ti)
     {
         if (from.getTexCoordArray(ti))
         {
-            if (!copyToSelf) target.setTexCoordArray(ti,from.getTexCoordArray(ti));
+            target.setTexCoordArray(ti,from.getTexCoordArray(ti));
         }
     }
 
@@ -182,19 +182,11 @@ void RigGeometry::copyFrom(osg::Geometry& from)
         osg::Array* array = arrayList[vi].get();
         if (array)
         {
-            if (!copyToSelf) target.setVertexAttribArray(vi,array);
+            target.setVertexAttribArray(vi,array);
         }
     }
 }
 
-const VertexInfluenceSet& RigGeometry::getVertexInfluenceSet() const { return _vertexInfluenceSet;}
 
-const Skeleton* RigGeometry::getSkeleton() const { return _root.get(); }
-Skeleton* RigGeometry::getSkeleton() { return _root.get(); }
-void RigGeometry::setSkeleton(Skeleton* root) { _root = root;}
-RigTransform* RigGeometry::getRigTransformImplementation() { return _rigTransformImplementation.get(); }
-void RigGeometry::setRigTransformImplementation(RigTransform* rig) { _rigTransformImplementation = rig; }
 
-osg::Geometry* RigGeometry::getSourceGeometry() { return _geometry.get(); }
-const osg::Geometry* RigGeometry::getSourceGeometry() const { return _geometry.get(); }
-void RigGeometry::setSourceGeometry(osg::Geometry* geometry) { _geometry = geometry; }
+

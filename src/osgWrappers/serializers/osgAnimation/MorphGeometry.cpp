@@ -39,7 +39,7 @@ static bool writeMorphTargets( osgDB::OutputStream& os, const osgAnimation::Morp
 REGISTER_OBJECT_WRAPPER( osgAnimation_MorphGeometry,
                          new osgAnimation::MorphGeometry,
                          osgAnimation::MorphGeometry,
-                         "osg::Object osg::Drawable osg::Geometry osgAnimation::MorphGeometry" )
+                         "osg::Object osg::Node osg::Drawable osg::Geometry osgAnimation::MorphGeometry" )
 {
     BEGIN_ENUM_SERIALIZER( Method, NORMALIZED );
         ADD_ENUM_VALUE( NORMALIZED );
@@ -48,4 +48,9 @@ REGISTER_OBJECT_WRAPPER( osgAnimation_MorphGeometry,
 
     ADD_USER_SERIALIZER( MorphTargets );  // _morphTargets
     ADD_BOOL_SERIALIZER( MorphNormals, true );  // _morphNormals
+
+    {
+            UPDATE_TO_VERSION_SCOPED( 147 )
+            ADD_OBJECT_SERIALIZER( MorphTransformImplementation, osgAnimation::MorphTransform, NULL );  // _geometry
+    }
 }

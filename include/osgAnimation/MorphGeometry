@@ -17,6 +17,8 @@
 
 #include <osgAnimation/Export>
 #include <osgAnimation/AnimationUpdateCallback>
+//#include <osgAnimation/RigTransform>
+#include <osgAnimation/MorphTransformSoftware>
 #include <osg/Geometry>
 #include <algorithm>
 
@@ -60,6 +62,10 @@ namespace osgAnimation
         virtual const char* className() const { return "MorphGeometry"; }
 
         virtual void transformSoftwareMethod();
+        // set implementation of rig method
+        void setMorphTransformImplementation(MorphTransform*);
+        MorphTransform* getMorphTransformImplementation();
+        const MorphTransform* getMorphTransformImplementation() const { return _rigTransformImplementation.get(); }
 
         /** Set the morphing method. */
         void setMethod(Method method) { _method = method; }
@@ -111,7 +117,8 @@ namespace osgAnimation
         }
 
         /** Set the MorphGeometry dirty.*/
-        void dirty() { _dirty = true; }
+        inline void dirty(bool b=true) { _dirty = b; }
+        inline bool isDirty()const { return _dirty; }
 
         /** Get the list of MorphTargets.*/
         const MorphTargetList& getMorphTargetList() const { return _morphTargets; }
@@ -125,15 +132,21 @@ namespace osgAnimation
         /** Return the \c MorphTarget at position \c i.*/
         inline MorphTarget& getMorphTarget( unsigned int i ) { return _morphTargets[i]; }
 
+        ///TODO perhaps use a sourcegeometry
+        inline osg::Vec3Array * getNormalSource(){return _normalSource;}
+        inline osg::Vec3Array * getVertexSource(){return _positionSource;}
+
+
     protected:
+        osg::ref_ptr<MorphTransform> _rigTransformImplementation;
         /// Do we need to recalculate the morphed geometry?
         bool _dirty;
 
         Method          _method;
         MorphTargetList _morphTargets;
 
-        std::vector<osg::Vec3> _positionSource;
-        std::vector<osg::Vec3> _normalSource;
+        osg::ref_ptr<osg::Vec3Array> _positionSource;
+        osg::ref_ptr<osg::Vec3Array> _normalSource;
 
         /// Do we also morph between normals?
         bool _morphNormals;
@@ -195,7 +208,15 @@ namespace osgAnimation
             if (!geom)
                 return;
 
-            geom->transformSoftwareMethod();
+            if (!geom->getMorphTransformImplementation())
+            {
+                geom->setMorphTransformImplementation( new MorphTransformSoftware);
+            }
+
+            MorphTransform& implementation = *geom->getMorphTransformImplementation();
+            (implementation)(*geom);
+
+            //geom->transformSoftwareMethod();
         }
     };
 

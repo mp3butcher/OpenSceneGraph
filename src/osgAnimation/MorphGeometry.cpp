@@ -23,6 +23,7 @@ using namespace osgAnimation;
 MorphGeometry::MorphGeometry() :
     _dirty(false),
     _method(NORMALIZED),
+    _positionSource(new osg::Vec3Array),_normalSource(new osg::Vec3Array),
     _morphNormals(true)
 {
     setUseDisplayList(false);
@@ -35,6 +36,7 @@ MorphGeometry::MorphGeometry(const osg::Geometry& b) :
     osg::Geometry(b, osg::CopyOp::DEEP_COPY_ARRAYS),
     _dirty(false),
     _method(NORMALIZED),
+    _positionSource(new osg::Vec3Array),_normalSource(new osg::Vec3Array),
     _morphNormals(true)
 {
     setUseDisplayList(false);
@@ -56,6 +58,8 @@ MorphGeometry::MorphGeometry(const MorphGeometry& b, const osg::CopyOp& copyop) 
     setUseVertexBufferObjects(true);
 }
 
+MorphTransform* MorphGeometry::getMorphTransformImplementation() { return _rigTransformImplementation.get(); }
+void MorphGeometry::setMorphTransformImplementation(MorphTransform* rig) { _rigTransformImplementation = rig; }
 
 void MorphGeometry::transformSoftwareMethod()
 {
@@ -63,7 +67,7 @@ void MorphGeometry::transformSoftwareMethod()
     {
         // See if we have an internal optimized geometry
         osg::Geometry* morphGeometry = this;
-
+/*
         osg::Vec3Array* pos = dynamic_cast<osg::Vec3Array*>(morphGeometry->getVertexArray());
 
         if(pos)
@@ -191,7 +195,7 @@ void MorphGeometry::transformSoftwareMethod()
 
             dirtyBound();
 
-        }
+        }*/
         _dirty = false;
     }
 }
@@ -200,7 +204,7 @@ UpdateMorph::UpdateMorph(const UpdateMorph& apc,const osg::CopyOp& copyop) :
     osg::Object(apc, copyop),
     osg::Callback(apc, copyop),
     AnimationUpdateCallback<osg::NodeCallback>(apc, copyop)
-{
+{_targetNames=apc._targetNames;
 }
 
 UpdateMorph::UpdateMorph(const std::string& name) : AnimationUpdateCallback<osg::NodeCallback>(name)
