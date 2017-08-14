@@ -1726,22 +1726,22 @@ Simplifier::Simplifier(double sampleRatio, double maximumError, double maximumLe
             _sampleRatio(sampleRatio),
             _maximumError(maximumError),
             _maximumLength(maximumLength),
-            _triStrip(true),
-            _smoothing(true)
+            _triStrip(false),
+            _smoothing(false)
 
 {
 }
 
-void Simplifier::simplify(osg::Geometry& geometry)
+osg::UIntArray *Simplifier::simplify(osg::Geometry& geometry)
 {
     // pass an empty list of indices to simply(Geometry,IndexList)
     // so that this one method handle both cases of non protected indices
     // and specified indices.
-    IndexList emptyList;
-    simplify(geometry,emptyList);
+   IndexList emptyList;
+   return simplify(geometry,emptyList);
 }
 
-void Simplifier::simplify(osg::Geometry& geometry, const IndexList& protectedPoints)
+osg::UIntArray *Simplifier::simplify(osg::Geometry& geometry, const IndexList& protectedPoints)
 {
     OSG_INFO<<"++++++++++++++simplifier************"<<std::endl;
 
@@ -1807,5 +1807,9 @@ void Simplifier::simplify(osg::Geometry& geometry, const IndexList& protectedPoi
         osgUtil::TriStripVisitor stripper;
         stripper.stripify(geometry);
     }
+    osg::ref_ptr<osg::UIntArray> newmapping=new osg::UIntArray;
+    for(EdgeCollapse::PointList::iterator itp=ec._originalPointList.begin(); itp != ec._originalPointList.end(); ++itp)
+        newmapping->push_back((*itp)->_index);
+    return newmapping.release();
 
 }
