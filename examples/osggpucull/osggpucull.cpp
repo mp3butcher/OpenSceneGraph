@@ -191,10 +191,14 @@ struct IndirectTarget
     }
     void endRegister(unsigned int index, unsigned int rowsPerInstance, GLenum pixelFormat, GLenum type, GLint internalFormat, bool useMultiDrawArraysIndirect )
     {
+
         indirectCommandTextureBuffer = new osg::TextureBuffer(indirectCommands);
         indirectCommandTextureBuffer->setInternalFormat( GL_R32I );
+    #ifndef JUVAL
         indirectCommandTextureBuffer->bindToImageUnit(index, osg::Texture::READ_WRITE);
+    #endif
         indirectCommandTextureBuffer->setUnRefImageDataAfterApply(false);
+
 
 
         // add proper primitivesets to geometryAggregators
@@ -267,7 +271,10 @@ struct IndirectTarget
     }
 
     osg::ref_ptr< osg::DefaultIndirectCommandDrawArrays >        indirectCommands;
+#ifdef JUVAL
+#else
     osg::ref_ptr<osg::TextureBuffer>                                indirectCommandTextureBuffer;
+#endif
     osg::ref_ptr< AggregateGeometryVisitor >                        geometryAggregator;
     osg::ref_ptr<osg::Program>                                      drawProgram;
     osg::ref_ptr< osg::TextureBuffer >                              instanceTarget;
@@ -1152,7 +1159,9 @@ osg::Geometry* buildGPUCullGeometry( const std::vector<DynamicInstance>& instanc
 
         bbox.expandBy( it->getPosition() );
     }
+#ifdef JUVAL
 
+#endif
     osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
     geom->setVertexArray(vertexArray);
     geom->setVertexAttribArray(10, attrib10, osg::Array::BIND_PER_VERTEX);
@@ -1356,6 +1365,7 @@ void createDynamicRendering( osg::Group* root, GPUCullData& gpuData, osg::Buffer
     }
 
     // all data about instances is stored in texture buffer ( compare it with static rendering )
+ #if 1
     osg::Image* instancesImage = new osg::Image;
     instancesImage->setImage( instances->getTotalDataSize() / sizeof(osg::Vec4f), 1, 1, GL_RGBA32F_ARB, GL_RGBA, GL_FLOAT, (unsigned char*)instances->getDataPointer(), osg::Image::NO_DELETE );
 
@@ -1371,7 +1381,15 @@ void createDynamicRendering( osg::Group* root, GPUCullData& gpuData, osg::Buffer
     dynamicInstancesDataSize->set( (int)(sizeof(DynamicInstance) / sizeof(osg::Vec4f)) );
 
     // all instance "pointers" are stored in a single geometry rendered with cull shader
+   osg::ref_ptr<osg::Geometry> instanceGeometry = buildGPUCullGeometry( instances->getData()  );
+#else
+
+
+    osg::VertexBufferObject *instancesBuffer =new osg::VertexBufferObject;
     osg::ref_ptr<osg::Geometry> instanceGeometry = buildGPUCullGeometry( instances->getData()  );
+
+
+#endif
     osg::ref_ptr<osg::Geode> instanceGeode = new osg::Geode;
     instanceGeode->addDrawable(instanceGeometry.get());
     if( exportInstanceObjects )
@@ -1379,7 +1397,13 @@ void createDynamicRendering( osg::Group* root, GPUCullData& gpuData, osg::Buffer
 
     // update callback that animates dynamic objects
     instanceGeometry->setUpdateCallback( new AnimateObjectsCallback( instances, instancesImage, bbox, objectQuantity ) );
+ #ifdef JUVAL
+
+    instanceGeometry->setDrawCallback( new TFCallback();
+#else
     instanceGeometry->setDrawCallback( new InvokeMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT) );
+#endif
+
     root->addChild( instanceGeode.get() );
     // instance geode is connected to cull shader with all necessary data ( all indirect commands, all
     // indirect targets, necessary OpenGL modes etc. )
@@ -1388,6 +1412,9 @@ void createDynamicRendering( osg::Group* root, GPUCullData& gpuData, osg::Buffer
         instanceGeode->getOrCreateStateSet()->setAttributeAndModes( gpuData.instanceTypesUBB.get() );
         osg::ref_ptr<ResetTexturesCallback> resetTexturesCallback = new ResetTexturesCallback;
         osg::ref_ptr<osg::Program> cullProgram = createProgram( "dynamic_cull", SHADER_DYNAMIC_CULL_VERTEX, SHADER_DYNAMIC_CULL_FRAGMENT );
+#ifdef JUVAL
+        cullProgram->addShader(new osg:Shader(osg::Shader::GEOMETRY,SHADER_DYNAMIC_CULL_GEOMETRY)));
+#endif
         cullProgram->addBindUniformBlock("instanceTypesData", 1);
         instanceGeode->getOrCreateStateSet()->setAttributeAndModes( cullProgram.get(), osg::StateAttribute::ON );
 
