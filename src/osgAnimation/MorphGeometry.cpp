@@ -66,8 +66,8 @@ void MorphGeometry::transformSoftwareMethod()
     if (_dirty)
     {
         // See if we have an internal optimized geometry
-        osg::Geometry* morphGeometry = this;
-/*
+ /*       osg::Geometry* morphGeometry = this;
+
         osg::Vec3Array* pos = dynamic_cast<osg::Vec3Array*>(morphGeometry->getVertexArray());
 
         if(pos)

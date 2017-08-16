@@ -12,6 +12,7 @@ SET(TARGET_H
     ${HEADER_PATH}/ConvertVec
     ${HEADER_PATH}/CubeMapGenerator
     ${HEADER_PATH}/CullVisitor
+    ${HEADER_PATH}/EdgeCollapse
     ${HEADER_PATH}/DelaunayTriangulator
     ${HEADER_PATH}/DisplayRequirementsVisitor
     ${HEADER_PATH}/DrawElementTypeSimplifier
@@ -57,6 +58,7 @@ SET(TARGET_H
 SET(TARGET_SRC
     CubeMapGenerator.cpp
     CullVisitor.cpp
+    EdgeCollapse.cpp
     DelaunayTriangulator.cpp
     DisplayRequirementsVisitor.cpp
     DrawElementTypeSimplifier.cpp

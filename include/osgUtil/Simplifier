@@ -19,6 +19,7 @@
 #include <osg/Geometry>
 
 #include <osgUtil/Export>
+#include <osgUtil/EdgeCollapse>
 
 namespace osgUtil {
 
@@ -104,15 +105,18 @@ class OSGUTIL_EXPORT Simplifier : public osg::NodeVisitor
 
         /** simply the geometry.*/
         /** return new vertex mapping*/
-        osg::UIntArray * simplify(osg::Geometry& geometry);
+        virtual void simplify(osg::Geometry& geometry);
 
         typedef std::vector<unsigned int> IndexList; /// a list of point indices
 
         /** simply the geometry, whilst protecting key points from being modified.*/
         /** return new vertex mapping*/
-        osg::UIntArray * simplify(osg::Geometry& geometry, const IndexList& protectedPoints);
+        virtual void simplify(osg::Geometry& geometry, const IndexList& protectedPoints);
 
-
+        ///override for EdgeCollapse special case
+        virtual EdgeCollapse::Point* computeInterpolatedPoint(EdgeCollapse::Edge* edge,float r);
+        virtual void OnCollapseEdge(EdgeCollapse::Edge* /*edge*/, EdgeCollapse::Point* /*pNew*/){}
+        virtual void OnDivideEdge(EdgeCollapse::Edge* /*edge*/, EdgeCollapse::Point* /*pNew*/){}
     protected:
 
         double _sampleRatio;

@@ -15,6 +15,7 @@
 #include <iostream>
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
+#include <osgUtil/Simplifier>
 #include <osgViewer/ViewerEventHandlers>
 #include <osgGA/TrackballManipulator>
 #include <osgGA/FlightManipulator>
@@ -35,6 +36,9 @@
 #include <osgAnimation/BoneMapVisitor>
 
 #include <sstream>
+
+
+#include <assert.h>
 
 
 static unsigned int getRandomValueinRange(unsigned int v)
@@ -155,10 +159,226 @@ struct AnimationManagerFinder : public osg::NodeVisitor
         traverse(node);
     }
 };
+
+class RigSimplifier: public osgUtil::Simplifier {
+
+public:
+    RigSimplifier(double sampleRatio=1.0,float weighttreshold=0.05f, double maximumError=FLT_MAX, double maximumLength=0.0):osgUtil::Simplifier(sampleRatio, maximumError, maximumLength),_weighttreshold(weighttreshold) {}
+    osgAnimation::RigGeometry* rig;
+    unsigned int oldverticesize;
+    unsigned int newindex;
+    float _weighttreshold;
+    //typedef std::pair<osgAnimation::VertexInfluence*,osgAnimation::VertexInfluence::iterator > VecandInfIt;
+    typedef std::pair<osgAnimation::VertexInfluence*,float > VecandInfIt;
+    typedef std::pair<std::string,VecandInfIt > BoneVecandInfIt;
+    std::vector< std::vector<  BoneVecandInfIt> > index2influences;
+
+    typedef std::map<std::string,float> Bone2Weight;
+    typedef std::map<osg::ref_ptr<osgUtil::EdgeCollapse::Point> ,Bone2Weight > Point2BoneWeight;
+    Point2BoneWeight tempPoints;
+
+    virtual void simplify(osg::Geometry& geometry) {
+        osgUtil::Simplifier::simplify(geometry);
+    }
+    virtual void simplify(osg::Geometry& geom, const IndexList& protectedPoints)
+    {
+        rig=dynamic_cast<osgAnimation::RigGeometry*>(&geom);
+
+        ///construct index2influence
+        oldverticesize = newindex = rig->getSourceGeometry()->getVertexArray()->getNumElements();
+        index2influences.resize(oldverticesize);
+        osgAnimation::VertexInfluenceMap & imap=*rig->getInfluenceMap();
+        for(osgAnimation::VertexInfluenceMap::iterator mapit=imap.begin(); mapit!=imap.end(); ++mapit) {
+            osgAnimation::VertexInfluence &curvecinf=mapit->second;
+            for(osgAnimation::VertexInfluence::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end(); ++curinf) {
+                osgAnimation:: VertexIndexWeight& inf=*curinf;
+                index2influences[inf.first].push_back(BoneVecandInfIt(mapit->first, VecandInfIt(&curvecinf, inf.second) ));
+            }
+        }
+
+        ///copy/paste from original Simplifier
+        bool downSample = requiresDownSampling();
+
+        osgUtil::EdgeCollapse ec(this);
+        ec.setComputeErrorMetricUsingLength(!downSample);
+        ec.setGeometry(rig->getSourceGeometry(), protectedPoints);
+        ec.updateErrorMetricForAllEdges();
+
+        unsigned int numOriginalPrimitives = ec._triangleSet.size();
+
+
+        if (downSample)
+        {
+            while (!ec._edgeSet.empty() &&
+                    continueSimplification((*ec._edgeSet.begin())->getErrorMetric() , numOriginalPrimitives, ec._triangleSet.size()) &&
+                    ec.collapseMinimumErrorEdge())
+            {
+                //OSG_INFO<<"   Collapsed edge ec._triangleSet.size()="<<ec._triangleSet.size()<<" error="<<(*ec._edgeSet.begin())->getErrorMetric()<<" vs "<<getMaximumError()<<std::endl;
+            }
+
+            OSG_INFO<<"******* AFTER EDGE COLLAPSE *********"<<ec._triangleSet.size()<<std::endl;
+        }
+        else
+        {
+
+            // up sampling...
+            while (!ec._edgeSet.empty() &&
+                    continueSimplification((*ec._edgeSet.rbegin())->getErrorMetric() , numOriginalPrimitives, ec._triangleSet.size()) &&
+                    //               ec._triangleSet.size() < targetNumTriangles  &&
+                    ec.divideLongestEdge())
+            {
+                //OSG_INFO<<"   Edge divided ec._triangleSet.size()="<<ec._triangleSet.size()<<" error="<<(*ec._edgeSet.rbegin())->getErrorMetric()<<" vs "<<getMaximumError()<<std::endl;
+            }
+            OSG_INFO<<"******* AFTER EDGE DIVIDE *********"<<ec._triangleSet.size()<<std::endl;
+        }
+
+        OSG_INFO<<"Number of triangle errors after edge collapse= "<<ec.testAllTriangles()<<std::endl;
+        OSG_INFO<<"Number of edge errors before edge collapse= "<<ec.testAllEdges()<<std::endl;
+        OSG_INFO<<"Number of point errors after edge collapse= "<<ec.testAllPoints()<<std::endl;
+        OSG_INFO<<"Number of triangles= "<<ec._triangleSet.size()<<std::endl;
+        OSG_INFO<<"Number of points= "<<ec._pointSet.size()<<std::endl;
+        OSG_INFO<<"Number of edges= "<<ec._edgeSet.size()<<std::endl;
+        OSG_INFO<<"Number of boundary edges= "<<ec.computeNumBoundaryEdges()<<std::endl;
+
+        if (!ec._edgeSet.empty())
+        {
+            OSG_INFO<<std::endl<<"Simplifier, in = "<<numOriginalPrimitives<<"\tout = "<<ec._triangleSet.size()<<"\terror="<<(*ec._edgeSet.begin())->getErrorMetric()<<"\tvs "<<getMaximumError()<<std::endl<<std::endl;
+            OSG_INFO<<           "        !ec._edgeSet.empty()  = "<<!ec._edgeSet.empty()<<std::endl;
+            OSG_INFO<<           "        continueSimplification(,,)  = "<<continueSimplification((*ec._edgeSet.begin())->getErrorMetric() , numOriginalPrimitives, ec._triangleSet.size())<<std::endl;
+        }
+
+
+        std::vector<uint> old2new;
+        for(unsigned int i=0; i<newindex; ++i)old2new.push_back(0xffffffff);
+        unsigned int cpt=0;
+        for(osgUtil::EdgeCollapse::PointSet::iterator itp=ec._pointSet.begin(); itp != ec._pointSet.end(); ++itp)
+            old2new[(*itp)->_index]=cpt++;
+        ///NB: copyback modify _index for reindexation so pick the oldone before
+        ///
+        ec.copyBackToGeometry();
+
+        /*  if (_smoothing)
+          {
+              osgUtil::SmoothingVisitor::smooth(geometry);
+          }
+
+          if (_triStrip)
+          {
+              osgUtil::TriStripVisitor stripper;
+              stripper.stripify(geometry);
+          }*/
+
+        ///post simplifier : change Influences according ec points old and new indices
+
+        // osgAnimation::VertexInfluenceMap & imap=*rig->getInfluenceMap();
+        for(osgAnimation::VertexInfluenceMap::iterator mapit=imap.begin(); mapit!=imap.end(); ++mapit) {
+            osgAnimation::VertexInfluence &curvecinf=mapit->second;
+            for(osgAnimation::VertexInfluence::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end();) {
+                osgAnimation:: VertexIndexWeight& inf=*curinf;
+                if(old2new[inf.first]!=0xffffffff) {
+                    inf.first=old2new[inf.first];
+                    ++curinf;
+                } else {
+                    curinf=curvecinf.erase(curinf);
+                }
+            }
+        }
+        rig->buildVertexInfluenceSet();
+
+    }
+
+    virtual void OnCollapseEdge(osgUtil::EdgeCollapse::Edge* edge, osgUtil::EdgeCollapse::Point* pNew) {
+        //onCollapseEdge
+        Bone2Weight & pnewinfs=tempPoints[pNew];
+        pNew->_index = newindex++;
+        index2influences.resize(newindex);
+        for(Bone2Weight::iterator infit=pnewinfs.begin(); infit!=pnewinfs.end(); ++infit) {
+            osgAnimation::VertexInfluence &bonevec= (*rig->getInfluenceMap())[infit->first];
+            bonevec.push_back( osgAnimation:: VertexIndexWeight(pNew->_index , infit->second ) );
+            index2influences[pNew->_index].push_back(BoneVecandInfIt(infit->first, VecandInfIt(&bonevec, infit->second ) ));
+        }
+    }
+    //virtual bool divideEdge(osgUtil::EdgeCollapse::Edge* edge, osgUtil::EdgeCollapse::Point* pNew){}
+    virtual osgUtil::EdgeCollapse::Point* computeInterpolatedPoint(osgUtil::EdgeCollapse::Edge* edge,float r) {
+
+        osgUtil::EdgeCollapse::Point* p1 = edge->_p1.get();
+        osgUtil::EdgeCollapse::Point* p2 = edge->_p2.get();
+
+        if (p1==0 || p2==0)
+        {
+            OSG_NOTICE<<"Error computeInterpolatedPoint("<<edge<<",r) p1 and/or p2==0"<<std::endl;
+            return 0;
+        }
+
+        osgUtil::EdgeCollapse::Point* point = new osgUtil::EdgeCollapse::Point;
+        //point->_index = newindex++;
+        float r1 = 1.0f-r;
+        float r2 = r;
+
+        point->_vertex = p1->_vertex * r1 + p2->_vertex * r2;
+        unsigned int s = osg::minimum(p1->_attributes.size(),p2->_attributes.size());
+        for(unsigned int i=0; i<s; ++i)
+        {
+            point->_attributes.push_back(p1->_attributes[i]*r1 + p2->_attributes[i]*r2);
+        }
+
+        //create new influences for new Point combining influences of p1 and p2
+
+        // index2influences.push_back( std::vector<  BoneVecandInfIt> ());
+        std::vector<  BoneVecandInfIt> & p1i=index2influences[p1->_index];
+        std::vector<  BoneVecandInfIt> & p2i=index2influences[p2->_index];
+        bool found=false;
+        for( std::vector<  BoneVecandInfIt>::iterator iit=p1i.begin(); iit!=p1i.end(); ++iit) {
+            found=false;
+            for( std::vector<  BoneVecandInfIt>::iterator iit2=p2i.begin(); iit2!=p2i.end(); ++iit2) {
+                if( iit->first==iit2->first) {
+                    ///same bone so interpolate
+                    osgAnimation::VertexInfluence &bonevec= (*rig->getInfluenceMap())[iit->first];
+                    if( iit->second.second *r1
+                            +iit2->second.second*r2>_weighttreshold)
+                        tempPoints[point][iit->first]=  iit->second.second *r1
+                                                        +iit2->second.second*r2;
+                    found=true;
+                    break;
+                }
+            }
+
+            if(!found) {
+                ///not found  in both so simply copy p1inf
+                osgAnimation::VertexInfluence &bonevec= (*rig->getInfluenceMap())[iit->first];
+                if( iit->second.second *r1>_weighttreshold)
+                    tempPoints[point][iit->first]=  iit->second.second*r1 ;
+            }
+
+        }
+        for( std::vector<  BoneVecandInfIt>::iterator iit2=p2i.begin(); iit2!=p2i.end(); ++iit2) {
+            found=false;
+            for( std::vector<  BoneVecandInfIt>::iterator iit=p1i.begin(); iit!=p1i.end(); ++iit) {
+                if( iit->first==iit2->first) {
+                    ///already done earlier
+                    found=true;
+                    break;
+                }
+            }
+
+            if(!found) {
+                ///not found  in both so simply copy p2inf
+                osgAnimation::VertexInfluence &bonevec= (*rig->getInfluenceMap())[iit2->first];
+                if( iit2->second.second*r2>_weighttreshold)tempPoints[point][iit2->first]=  iit2->second.second*r2;
+            }
+
+        }
+        return point;
+    }
+};
+
 struct SetupRigGeometry : public osg::NodeVisitor
 {
     bool _hardware;
-    SetupRigGeometry( bool hardware = true) : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN), _hardware(hardware) {}
+    float _simplifierRatio;
+    float _simplifierWeightTreshold;
+    SetupRigGeometry(float simplifierRatio=0.1,float simplifierWeightTreshold=0.05, bool hardware = true) : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN), _hardware(hardware)
+        ,_simplifierRatio(simplifierRatio),_simplifierWeightTreshold(simplifierWeightTreshold) {}
 
     void apply(osg::Geode& geode)
     {
@@ -169,21 +389,73 @@ struct SetupRigGeometry : public osg::NodeVisitor
     {
         if (_hardware) {
             osgAnimation::RigGeometry* rig = dynamic_cast<osgAnimation::RigGeometry*>(&geom);
-            if (rig){
+            if (rig) {
+#if 1
+                //simplify
+                osg::ref_ptr<RigSimplifier> simp=new RigSimplifier(_simplifierRatio,_simplifierWeightTreshold);
+
+
+                // osg::ref_ptr<osg::UIntArray> res=
+                if(!dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry()))
+                    simp->simplify (*((osg::Geometry*)rig)) ;
+                else {
+
+                }
+
+
+
+#endif
                 rig->setRigTransformImplementation(new MyRigTransformHardware());
                 osgAnimation::MorphGeometry* morph = dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry());
-                if(morph){
+                if(morph) {
+#if 0
+                    for(int i=0; i<morph->getMorphTargetList().size(); i++)
+                    {
+                        OSG_WARN<<"morphsimplify"<<i<<std::endl;
+                        osg::ref_ptr<osgUtil::Simplifier> simp=new osgUtil::Simplifier(_simplifierRatio);
+                        if(  morph->getMethod()!=osgAnimation::MorphGeometry::RELATIVE)
+                            simp->simplify(*  morph->getMorphTarget(i).getGeometry());
+                        else {
+                            osg::ref_ptr<osg::Geometry> ge=new osg::Geometry;
+                            osg::Vec3Array* v=new osg::Vec3Array();
+                            osg::Vec3Array* n=new osg::Vec3Array();
+                            ge->setVertexArray(v);
+                            ge->setNormalArray(n);
+                            osg::Vec3Array* mtv=(osg::Vec3Array*)morph->getMorphTarget(i).getGeometry()->getVertexArray();
+                            osg::Vec3Array* mtn=(osg::Vec3Array*)morph->getMorphTarget(i).getGeometry()->getNormalArray();
+                         /*  osg::Vec3Array* ovs=(osg::Vec3Array*)morph->getVertexArray();
+                            osg::Vec3Array* ons=(osg::Vec3Array*)morph->getNormalArray();*/
+                             osg::Vec3Array* ovs=(osg::Vec3Array*)morph->getVertexSource();
+                            osg::Vec3Array* ons=(osg::Vec3Array*)morph->getNormalSource();
+
+                            for(unsigned int j=0; j< ovs->getNumElements(); ++j) {
+                                v->push_back( (*ovs)[j]+(*mtv)[j]);
+                                n->push_back((*ons)[j]+(*mtn)[j]);
+                            }
+
+                            simp->simplify(*ge.get());
+                            morph->getMorphTarget(i).setGeometry(ge);
+
+                        }
+
+                    }
+                    if(  morph->getMethod()!=osgAnimation::MorphGeometry::RELATIVE)
+                        morph->setMethod(osgAnimation::MorphGeometry::NORMALIZED);
+                    //osg::ref_ptr<osgUtil::Simplifier> simp=new osgUtil::Simplifier(_simplifierRatio);
+
+                    osg::ref_ptr<RigSimplifier> simp2=new RigSimplifier(_simplifierRatio,_simplifierWeightTreshold);
+                if(morph->getMorphTarget(0).getGeometry()->getVertexArray()->getNumElements()!=
+                       morph->getVertexSource() ->getNumElements()){
+                    morph->setVertexArray(morph->getVertexSource());
+                    morph->setNormalArray(morph->getNormalSource());
+                    simp2->simplify(*rig);
+                    morph->setVertexSource((osg::Vec3Array*)morph->getVertexArray());
+                    morph->setNormalSource((osg::Vec3Array*)morph->getNormalArray());
+                    morph->setVertexArray(0);
+                    morph->setNormalArray(0);}
+#endif
                     morph->setMorphTransformImplementation(new osgAnimation::MorphTransformHardware);
-//while(rig->getUpdateCallback())rig->removeUpdateCallback(rig->getUpdateCallback());
-                    osg::ref_ptr<osg::Geometry > sgeom=new osg::Geometry;
-                    sgeom->setUseVertexBufferObjects(true);
-                    sgeom->setVertexArray(morph->getVertexArray());
-                    sgeom->setNormalArray(morph->getNormalArray());
-for(int i=0;i<morph->getNumTexCoordArrays();++i)
-    sgeom->setTexCoordArray(i,morph->getTexCoordArray(i));
-for(int i=0;i<morph->getNumPrimitiveSets();++i)
-    sgeom->addPrimitiveSet(morph->getPrimitiveSet(i));                //geom->setVertexArray(morph->getVertexArray());
-                //    rig->setSourceGeometry(sgeom);
+
                 }
 
 
@@ -198,7 +470,7 @@ for(int i=0;i<morph->getNumPrimitiveSets();++i)
     }
 };
 
-osg::Group* createCharacterInstance(osg::Group* character, bool hardware)
+osg::Group* createCharacterInstance(osg::Group* character, bool hardware,float simplifierRatio=0.01,float simplifierWeightTreshold=0.05)
 {
     osg::ref_ptr<osg::Group> c ;
     if (hardware)
@@ -226,7 +498,7 @@ osg::Group* createCharacterInstance(osg::Group* character, bool hardware)
         osg::notify(osg::FATAL) << "no AnimationManagerBase found, updateCallback need to animate elements" << std::endl;
         exit(-1);
     }
-    SetupRigGeometry switcher(hardware);
+    SetupRigGeometry switcher(simplifierRatio, simplifierWeightTreshold,hardware);
     c->accept(switcher);
 
     return c.release();
@@ -242,11 +514,15 @@ int main (int argc, char* argv[])
     osgViewer::Viewer viewer(psr);
 
     bool hardware = true;
-    int maxChar = 10;
+    int maxChar = 1;
+    float ratio=0.1;
+    float threshold=0.05;
     while (psr.read("--software")) {
         hardware = false;
     }
     while (psr.read("--number", maxChar)) {}
+    while (psr.read("--ratio", ratio)) {}
+    while (psr.read("--threshold", threshold)) {}
 
 
     osg::ref_ptr<osg::Group> root = dynamic_cast<osg::Group*>(osgDB::readNodeFiles(psr));
@@ -297,7 +573,7 @@ int main (int argc, char* argv[])
     for (double  i = 0.0; i < xChar; i++) {
         for (double  j = 0.0; j < yChar; j++) {
 
-            osg::ref_ptr<osg::Group> c = createCharacterInstance(root.get(), hardware);
+            osg::ref_ptr<osg::Group> c = createCharacterInstance(root.get(), hardware,ratio,threshold);
             osg::MatrixTransform* tr = new osg::MatrixTransform;
             tr->setMatrix(osg::Matrix::translate( 2.0 * (i - xChar * .5),
                                                   0.0,

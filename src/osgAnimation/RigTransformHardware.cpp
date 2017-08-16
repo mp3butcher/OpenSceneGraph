@@ -248,11 +248,11 @@ bool RigTransformHardware::init(RigGeometry& geom)
 
     osg::ref_ptr<osg::Program> program ;
     osg::ref_ptr<osg::Shader> vertexshader;
-    osg::ref_ptr<osg::StateSet> ss = geom.getOrCreateStateSet();
+    osg::ref_ptr<osg::StateSet> stateset = geom.getOrCreateStateSet();
     //grab geom source program and vertex shader if _shader is not setted
-    if(!_shader.valid() && (program = (osg::Program*)ss->getAttribute(osg::StateAttribute::PROGRAM)))
+    if(!_shader.valid() && (program = (osg::Program*)stateset->getAttribute(osg::StateAttribute::PROGRAM)))
     {
-        for(int i=0;i<program->getNumShaders();++i)
+        for(unsigned int i=0;i<program->getNumShaders();++i)
             if(program->getShader(i)->getType()==osg::Shader::VERTEX)
                 vertexshader=program->getShader(i);
     }else {
@@ -260,11 +260,11 @@ bool RigTransformHardware::init(RigGeometry& geom)
         program->setName("HardwareSkinning");
     }
     //set default source if _shader is not user setted
-    if (!vertexshader.valid())
+    if (!vertexshader.valid()){
         if (!_shader.valid())
             vertexshader = osg::Shader::readShaderFile(osg::Shader::VERTEX,"skinning.vert");
         else vertexshader=_shader;
-
+    }
     if (!vertexshader.valid()) {
         OSG_WARN << "RigTransformHardware can't load VertexShader" << std::endl;
         return false;
@@ -300,9 +300,9 @@ bool RigTransformHardware::init(RigGeometry& geom)
     }
     program->addShader(vertexshader.get());
 
-    ss->addUniform(getMatrixPaletteUniform());
-    ss->addUniform(new osg::Uniform("nbBonesPerVertex", getNumBonesPerVertex()));
-    if(!ss->getAttribute(osg::StateAttribute::PROGRAM))ss->setAttributeAndModes(program.get());
+    stateset->addUniform(getMatrixPaletteUniform());
+    stateset->addUniform(new osg::Uniform("nbBonesPerVertex", getNumBonesPerVertex()));
+    if(!stateset->getAttribute(osg::StateAttribute::PROGRAM))stateset->setAttributeAndModes(program.get());
 
     _needInit = false;
     return true;

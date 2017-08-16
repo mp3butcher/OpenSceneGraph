@@ -1,0 +1,322 @@
+/* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2006 Robert Osfield
+ *
+ * This library is open source and may be redistributed and/or modified under
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * OpenSceneGraph Public License for more details.
+*/
+#ifndef OSGUTIL_CONNECTIVITYSTRUCT_H
+#define OSGUTIL_CONNECTIVITYSTRUCT_H
+#include <vector>
+#include <list>
+#include <map>
+#include <set>
+#include <osg/TriangleIndexFunctor>
+
+#include <osg/ref_ptr>
+#include <osg/Referenced>
+#include <osg/Geometry>
+#include <osg/Plane>
+
+#include <osgUtil/Export>
+
+namespace osgUtil {
+
+    class Simplifier;
+    class EdgeCollapse
+    {
+    public:
+#if 1
+    typedef float error_type;
+#else
+    typedef double error_type;
+#endif
+        struct dereference_less
+        {
+            template<class T, class U>
+            inline bool operator() (const T& lhs,const U& rhs) const
+            {
+                return *lhs < *rhs;
+            }
+        };
+        struct Point;
+        struct Edge;
+        struct Triangle;
+
+
+        typedef std::list< osg::ref_ptr<Triangle> >                                 TriangleList;
+        typedef std::set< osg::ref_ptr<Triangle> >                                  TriangleSet;
+        typedef std::vector<float>                                                  FloatList;
+
+        struct Point : public osg::Referenced
+        {
+            Point(): _protected(false), _index(0) {}
+
+            bool _protected;
+
+            unsigned int _index;
+            unsigned int _newindex;
+
+            osg::Vec3           _vertex;
+            FloatList           _attributes;
+            TriangleSet         _triangles;
+
+            void clear()
+            {
+                _attributes.clear();
+                _triangles.clear();
+            }
+
+            bool operator < ( const Point& rhs) const
+            {
+                if (_vertex < rhs._vertex) return true;
+                if (rhs._vertex < _vertex) return false;
+
+                return _attributes < rhs._attributes;
+            }
+
+            bool isBoundaryPoint() const;
+
+        };
+
+        struct Edge : public osg::Referenced
+        {
+            Edge(): _errorMetric(0.0), _maximumDeviation(1.0),_p1(0),_p2(0),_proposedPoint(0) {}
+
+            void clear()
+            {
+                _p1 = 0;
+                _p2 = 0;
+                _triangles.clear();
+            }
+
+
+
+            TriangleSet _triangles;
+
+            float _errorMetric;
+            float _maximumDeviation;
+            osg::ref_ptr<Point> _p1;
+            osg::ref_ptr<Point> _p2;
+            osg::ref_ptr<Point> _proposedPoint;
+
+            void setErrorMetric(float errorMetric) {
+                _errorMetric = errorMetric;
+            }
+            float getErrorMetric() const {
+                return _errorMetric;
+            }
+
+            bool operator < ( const Edge& rhs) const ;
+
+            bool operator == ( const Edge& rhs) const
+            {
+                if (&rhs==this) return true;
+                if (*this<rhs) return false;
+                if (rhs<*this) return false;
+                return true;
+            }
+
+            bool operator != ( const Edge& rhs) const
+            {
+                if (&rhs==this) return false;
+                if (*this<rhs) return true;
+                if (rhs<*this) return true;
+                return false;
+            }
+
+            void addTriangle(Triangle* triangle)
+            {
+                _triangles.insert(triangle);
+                // if (_triangles.size()>2) OSG_NOTICE<<"Warning too many triangles ("<<_triangles.size()<<") sharing edge "<<std::endl;
+            }
+
+            bool isBoundaryEdge() const
+            {
+                return _triangles.size()<=1;
+            }
+
+            bool isAdjacentToBoundary() const
+            {
+                return isBoundaryEdge() || _p1->isBoundaryPoint() || _p2->isBoundaryPoint();
+            }
+
+
+            void updateMaxNormalDeviationOnEdgeCollapse();
+
+            float getMaxNormalDeviationOnEdgeCollapse() const {
+                return _maximumDeviation;
+            }
+
+        };
+
+        struct Triangle : public osg::Referenced
+        {
+            Triangle():_p1(0), _p2(0), _p3(0), _e1(0),_e2(0),_e3(0){}
+
+            void clear()
+            {
+                _p1 = 0;
+                _p2 = 0;
+                _p3 = 0;
+
+                _e1 = 0;
+                _e2 = 0;
+                _e3 = 0;
+            }
+
+              bool operator < (const Triangle& rhs) const;
+
+
+            void setOrderedPoints(Point* p1, Point* p2, Point* p3);
+
+            void update()
+            {
+                _plane.set(_p1->_vertex,_p2->_vertex,_p3->_vertex);
+
+            }
+
+            osg::Plane computeNewPlaneOnEdgeCollapse(Edge* edge,Point* pNew) const
+            {
+                const Point* p1 = (_p1==edge->_p1 || _p1==edge->_p2) ? pNew : _p1.get();
+                const Point* p2 = (_p2==edge->_p1 || _p2==edge->_p2) ? pNew : _p2.get();
+                const Point* p3 = (_p3==edge->_p1 || _p3==edge->_p2) ? pNew : _p3.get();
+
+                return osg::Plane(p1->_vertex,p2->_vertex,p3->_vertex);
+            }
+
+            // note return 1 - dotproduct, so that deviation is in the range of 0.0 to 2.0, where 0 is coincident, 1.0 is 90 degrees, and 2.0 is 180 degrees.
+            float computeNormalDeviationOnEdgeCollapse(Edge* edge,Point* pNew) const
+            {
+                const Point* p1 = (_p1==edge->_p1 || _p1==edge->_p2) ? pNew : _p1.get();
+                const Point* p2 = (_p2==edge->_p1 || _p2==edge->_p2) ? pNew : _p2.get();
+                const Point* p3 = (_p3==edge->_p1 || _p3==edge->_p2) ? pNew : _p3.get();
+
+                osg::Vec3 new_normal = (p2->_vertex - p1->_vertex) ^ (p3->_vertex - p2->_vertex);
+                new_normal.normalize();
+
+                float result = 1.0 - (new_normal.x() * _plane[0] + new_normal.y() * _plane[1] + new_normal.z() * _plane[2]);
+                return result;
+            }
+
+            float distance(const osg::Vec3& vertex) const
+            {
+                return float(_plane[0])*float(vertex.x())+
+                       float(_plane[1])*float(vertex.y())+
+                       float(_plane[2])*float(vertex.z())+
+                       float(_plane[3]);
+            }
+
+            bool isBoundaryTriangle() const
+            {
+                return (_e1->isBoundaryEdge() || _e2->isBoundaryEdge() ||  _e3->isBoundaryEdge());
+            }
+
+
+            osg::ref_ptr<Point> _p1;
+            osg::ref_ptr<Point> _p2;
+            osg::ref_ptr<Point> _p3;
+
+            osg::ref_ptr<Edge> _e1;
+            osg::ref_ptr<Edge> _e2;
+            osg::ref_ptr<Edge> _e3;
+
+            osg::Plane _plane;
+
+        };
+
+
+
+
+        EdgeCollapse(Simplifier * caller):
+            _geometry(0),
+            _computeErrorMetricUsingLength(false),
+            _simplifier(caller){}
+
+        ~EdgeCollapse();
+
+        void setGeometry(osg::Geometry* geometry, const std::vector<unsigned int>& protectedPoints);
+        osg::Geometry* getGeometry() { return _geometry; }
+
+        void setComputeErrorMetricUsingLength(bool flag) { _computeErrorMetricUsingLength = flag; }
+        bool getComputeErrorMetricUsingLength() const { return _computeErrorMetricUsingLength; }
+
+        unsigned int getNumOfTriangles() { return _triangleSet.size(); }
+
+        Point* computeInterpolatedPoint(Edge* edge,float r) const;
+        Point* computeOptimalPoint(Edge* edge) const;
+
+        error_type computeErrorMetric(Edge* edge,Point* point) const;
+
+        void updateErrorMetricForEdge(Edge* edge);
+        void updateErrorMetricForAllEdges();
+
+        bool collapseMinimumErrorEdge();
+
+        bool divideLongestEdge();
+
+        void copyBackToGeometry();
+
+
+        typedef std::set<osg::ref_ptr<Edge>,dereference_less >                      EdgeSet;
+        typedef std::set< osg::ref_ptr<Point>,dereference_less >                    PointSet;
+        typedef std::vector< osg::ref_ptr<Point> >                                  PointList;
+        typedef std::map< osg::ref_ptr<Triangle>, unsigned int, dereference_less >  TriangleMap;
+
+
+        Triangle* addTriangle(unsigned int p1, unsigned int p2, unsigned int p3);
+
+        Triangle* addTriangle(Point* p1, Point* p2, Point* p3);
+        void removeTriangle(Triangle* triangle);
+
+        void replaceTrianglePoint(Triangle* triangle, Point* pOriginal, Point* pNew);
+        unsigned int testTriangle(Triangle* triangle);
+
+        unsigned int testAllTriangles();
+        Edge* addEdge(Triangle* triangle, Point* p1, Point* p2);
+        void removeEdge(Triangle* triangle, Edge* edge);
+
+        Edge* replaceEdgePoint(Edge* edge, Point* pOriginal, Point* pNew);
+
+        bool collapseEdge(Edge* edge, Point* pNew);
+        bool divideEdge(Edge* edge, Point* pNew);
+
+        unsigned int testEdge(Edge* edge);
+        unsigned int testAllEdges();
+
+        unsigned int computeNumBoundaryEdges();
+
+
+        Point* addPoint(Triangle* triangle, unsigned int p1);
+
+        Point* addPoint(Triangle* triangle, Point* point);
+
+        void removePoint(Triangle* triangle, Point* point);
+
+        unsigned int testPoint(Point* point);
+
+
+        unsigned int testAllPoints();
+
+    //protected:
+
+        typedef std::vector< osg::ref_ptr<osg::Array> > ArrayList;
+
+        osg::Geometry*                  _geometry;
+
+        bool                            _computeErrorMetricUsingLength;
+        EdgeSet                         _edgeSet;
+        TriangleSet                     _triangleSet;
+        PointSet                        _pointSet;
+        PointList                       _originalPointList;
+        Simplifier *                    _simplifier;
+
+    };
+
+}
+#endif

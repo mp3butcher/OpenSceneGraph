@@ -36,6 +36,24 @@ static bool writeMorphTargets( osgDB::OutputStream& os, const osgAnimation::Morp
     return true;
 }
 
+#define ADD_ARRAYDATA_FUNCTIONS( ORIGINAL_PROP, PROP ) \
+    static bool check##ORIGINAL_PROP( const osgAnimation::MorphGeometry& geom ) \
+    { return geom.get##PROP()!=0; } \
+    static bool read##ORIGINAL_PROP( osgDB::InputStream& is, osgAnimation::MorphGeometry& geom ) { \
+        is >> is.BEGIN_BRACKET; \
+        osg::Array* array =is.readArray(); \
+        geom.set##PROP((osg::Vec3Array*)array); \
+        is >> is.END_BRACKET; \
+        return true; \
+    } \
+    static bool write##ORIGINAL_PROP( osgDB::OutputStream& os, const osgAnimation::MorphGeometry& geom ) { \
+        os << os.BEGIN_BRACKET << std::endl; \
+        os.writeArray( geom.get##PROP()); \
+        os << os.END_BRACKET << std::endl; \
+        return true; \
+    }
+ADD_ARRAYDATA_FUNCTIONS( VertexData, VertexSource )
+ADD_ARRAYDATA_FUNCTIONS( NormalData, NormalSource )
 REGISTER_OBJECT_WRAPPER( osgAnimation_MorphGeometry,
                          new osgAnimation::MorphGeometry,
                          osgAnimation::MorphGeometry,
@@ -48,6 +66,9 @@ REGISTER_OBJECT_WRAPPER( osgAnimation_MorphGeometry,
 
     ADD_USER_SERIALIZER( MorphTargets );  // _morphTargets
     ADD_BOOL_SERIALIZER( MorphNormals, true );  // _morphNormals
+    ADD_USER_SERIALIZER( VertexData );  // VertexSource
+    ADD_USER_SERIALIZER( NormalData );  // NormalSource
+
 
     {
             UPDATE_TO_VERSION_SCOPED( 147 )

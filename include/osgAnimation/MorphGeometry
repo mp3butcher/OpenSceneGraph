@@ -17,7 +17,6 @@
 
 #include <osgAnimation/Export>
 #include <osgAnimation/AnimationUpdateCallback>
-//#include <osgAnimation/RigTransform>
 #include <osgAnimation/MorphTransformSoftware>
 #include <osg/Geometry>
 #include <algorithm>
@@ -133,8 +132,10 @@ namespace osgAnimation
         inline MorphTarget& getMorphTarget( unsigned int i ) { return _morphTargets[i]; }
 
         ///TODO perhaps use a sourcegeometry
-        inline osg::Vec3Array * getNormalSource(){return _normalSource;}
-        inline osg::Vec3Array * getVertexSource(){return _positionSource;}
+        inline osg::Vec3Array * getNormalSource()const{return _normalSource;}
+        inline osg::Vec3Array * getVertexSource()const{return _positionSource;}
+        inline void setNormalSource(osg::Vec3Array *n){ _normalSource=n;}
+        inline void setVertexSource(osg::Vec3Array *v){ _positionSource=v;}
 
 
     protected:
