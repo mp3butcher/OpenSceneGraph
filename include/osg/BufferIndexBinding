@@ -20,6 +20,7 @@
 #include <osg/Export>
 #include <osg/BufferObject>
 #include <osg/StateAttribute>
+#include <osg/Camera>
 
 #ifndef GL_TRANSFORM_FEEDBACK_BUFFER
     #define GL_TRANSFORM_FEEDBACK_BUFFER      0x8C8E
@@ -42,38 +43,44 @@ class OSG_EXPORT BufferBinding : public StateAttribute
 {
  protected:
     BufferBinding(GLenum target);
-    BufferBinding(GLenum target, BufferObject* bo);
+    BufferBinding(GLenum target, BufferData* bo);
     BufferBinding(const BufferBinding& rhs, const CopyOp& copyop=CopyOp::SHALLOW_COPY);
  public:
 
-    GLenum getTarget() const { return _target; }
 
-    void setBufferObject(BufferObject *bo) { _bufferObject = bo; }
-    /** Get the buffer object to be bound.
-     */
-    const BufferObject* getBufferObject() const { return _bufferObject.get(); }
-    BufferObject* getBufferObject(){ return _bufferObject.get(); }
 
     virtual void apply(State& state) const;
 
- protected:
-    virtual ~BufferBinding();
-    const GLenum _target;
-    ref_ptr<BufferObject> _bufferObject;
+
 };
 
-class OSG_EXPORT BufferIndexBinding : public BufferBinding
+class OSG_EXPORT BufferIndexBinding : public StateAttribute
 {
  protected:
     BufferIndexBinding(GLenum target, GLuint index);
-    BufferIndexBinding(GLenum target, GLuint index, BufferObject* bo, GLintptr offset,
-                       GLsizeiptr size);
+    BufferIndexBinding(GLenum target, GLuint index, BufferData* bo, GLintptr offset=0,
+                       GLsizeiptr size=0);
     BufferIndexBinding(const BufferIndexBinding& rhs, const CopyOp& copyop=CopyOp::SHALLOW_COPY);
  public:
     // The member value is part of the key to this state attribute in
     // the State class. Using the index target, we can separately
     // track the bindings for many different index targets.
     virtual unsigned getMember() const { return static_cast<unsigned int>(_index); }
+    GLenum getTarget() const { return _target; }
+    ///enable arbitrary BufferBinding (user is responsible for _target mismatch with bufferdata
+    /// what can be done is setting wrong _target and use the one of bd if not subclassed
+    void setTarget(GLenum t){_target=t;}
+
+    inline void setBufferData(BufferData *bo) {
+        if(_bufferData == bo)return;
+        _bufferData = bo;
+        if(!bo->getBufferObject())bo->setBufferObject(new VertexBufferObject());
+        if(_size==0)_size=_bufferData->getTotalDataSize();
+    }
+    /** Get the buffer object to be bound.
+     */
+    const BufferData* getBufferData() const { return _bufferData.get(); }
+    BufferData* getBufferData(){ return _bufferData.get(); }
 
     /** Get the index target.
      */
@@ -84,7 +91,7 @@ class OSG_EXPORT BufferIndexBinding : public BufferBinding
     void setIndex(GLuint index);
 
 
-    /** Set the starting offset into the buffer object for data for
+    /** Set the starting offset into the buffer data for
     the indexed target. Note: the required  alignment on the offset
     may be quite large (e.g., 256 bytes on NVidia 8600M). This
     should be checked with glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT...).
@@ -92,16 +99,16 @@ class OSG_EXPORT BufferIndexBinding : public BufferBinding
     void setOffset(GLintptr offset) { _offset = offset; }
     GLintptr getOffset() const { return _offset; }
 
-    /** Set the size of data for the indexed target.
+    /** Set the size override of bufferdata binded for the indexed target.
      */
     void setSize(GLsizeiptr size) { _size = size; }
     GLsizeiptr getSize() const { return _size; }
-
     virtual void apply(State& state) const;
 
  protected:
     virtual ~BufferIndexBinding();
-
+    /*const*/ GLenum _target;
+    ref_ptr<BufferData> _bufferData;
     GLuint _index;
     GLintptr _offset;
     GLsizeiptr _size;
@@ -120,7 +127,7 @@ class OSG_EXPORT UniformBufferBinding : public BufferIndexBinding
      *  @param offset offset into buffer object
      *  @param size size of data in buffer object
      */
-    UniformBufferBinding(GLuint index, BufferObject* bo, GLintptr offset, GLsizeiptr size);
+    UniformBufferBinding(GLuint index, BufferData* bo, GLintptr offset, GLsizeiptr size);
     UniformBufferBinding(const UniformBufferBinding& rhs, const CopyOp& copyop=CopyOp::SHALLOW_COPY);
     META_StateAttribute(osg, UniformBufferBinding, UNIFORMBUFFERBINDING);
 
@@ -130,7 +137,7 @@ class OSG_EXPORT UniformBufferBinding : public BufferIndexBinding
 
         COMPARE_StateAttribute_Parameter(_target)
         COMPARE_StateAttribute_Parameter(_index)
-        COMPARE_StateAttribute_Parameter(_bufferObject)
+        COMPARE_StateAttribute_Parameter(_bufferData)
         COMPARE_StateAttribute_Parameter(_offset)
         COMPARE_StateAttribute_Parameter(_size)
         return 0;
@@ -143,7 +150,7 @@ class OSG_EXPORT TransformFeedbackBufferBinding : public BufferIndexBinding
 {
  public:
     TransformFeedbackBufferBinding(GLuint index = 0);
-    TransformFeedbackBufferBinding(GLuint index, BufferObject* bo, GLintptr offset, GLsizeiptr size);
+    TransformFeedbackBufferBinding(GLuint index, BufferData* bo, GLintptr offset=0, GLsizeiptr size=0);
     TransformFeedbackBufferBinding(const TransformFeedbackBufferBinding& rhs, const CopyOp& copyop=CopyOp::SHALLOW_COPY);
     META_StateAttribute(osg, TransformFeedbackBufferBinding, TRANSFORMFEEDBACKBUFFERBINDING);
 
@@ -153,7 +160,7 @@ class OSG_EXPORT TransformFeedbackBufferBinding : public BufferIndexBinding
 
         COMPARE_StateAttribute_Parameter(_target)
         COMPARE_StateAttribute_Parameter(_index)
-        COMPARE_StateAttribute_Parameter(_bufferObject)
+        COMPARE_StateAttribute_Parameter(_bufferData)
         COMPARE_StateAttribute_Parameter(_offset)
         COMPARE_StateAttribute_Parameter(_size)
         return 0;
@@ -172,7 +179,7 @@ class OSG_EXPORT AtomicCounterBufferBinding : public BufferIndexBinding
      *  @param offset offset into buffer object
      *  @param size size of data in buffer object
      */
-    AtomicCounterBufferBinding(GLuint index, BufferObject* bo, GLintptr offset, GLsizeiptr size);
+    AtomicCounterBufferBinding(GLuint index, BufferData* bo, GLintptr offset=0, GLsizeiptr size=0);
     AtomicCounterBufferBinding(const AtomicCounterBufferBinding& rhs, const CopyOp& copyop=CopyOp::SHALLOW_COPY);
     META_StateAttribute(osg, AtomicCounterBufferBinding, ATOMICCOUNTERBUFFERBINDING);
 
@@ -184,7 +191,7 @@ class OSG_EXPORT AtomicCounterBufferBinding : public BufferIndexBinding
 
         COMPARE_StateAttribute_Parameter(_target)
         COMPARE_StateAttribute_Parameter(_index)
-        COMPARE_StateAttribute_Parameter(_bufferObject)
+        COMPARE_StateAttribute_Parameter(_bufferData)
         COMPARE_StateAttribute_Parameter(_offset)
         COMPARE_StateAttribute_Parameter(_size)
         return 0;
@@ -201,7 +208,7 @@ class OSG_EXPORT ShaderStorageBufferBinding : public BufferIndexBinding
      *  @param offset offset into buffer object
      *  @param size size of data in buffer object
      */
-    ShaderStorageBufferBinding(GLuint index, BufferObject* bo, GLintptr offset, GLsizeiptr size);
+    ShaderStorageBufferBinding(GLuint index, BufferData* bo, GLintptr offset=0, GLsizeiptr size=0);
     ShaderStorageBufferBinding(const ShaderStorageBufferBinding& rhs, const CopyOp& copyop=CopyOp::SHALLOW_COPY);
     META_StateAttribute(osg, ShaderStorageBufferBinding, SHADERSTORAGEBUFFERBINDING);
 
@@ -210,7 +217,7 @@ class OSG_EXPORT ShaderStorageBufferBinding : public BufferIndexBinding
         COMPARE_StateAttribute_Types(ShaderStorageBufferBinding, bb)
         COMPARE_StateAttribute_Parameter(_target)
         COMPARE_StateAttribute_Parameter(_index)
-        COMPARE_StateAttribute_Parameter(_bufferObject)
+        COMPARE_StateAttribute_Parameter(_bufferData)
         COMPARE_StateAttribute_Parameter(_offset)
         COMPARE_StateAttribute_Parameter(_size)
         return 0;
@@ -218,28 +225,63 @@ class OSG_EXPORT ShaderStorageBufferBinding : public BufferIndexBinding
 };
 
 
-class OSG_EXPORT DrawIndirectBufferBinding : public BufferBinding
-{
- public:
-    DrawIndirectBufferBinding();
-    /** Create a binding for a uniform buffer index target.
-     *  @param bo associated buffer object
-     */
-    DrawIndirectBufferBinding( BufferObject* bo);
+///read back From
+class BufferBindingReadBack : public Camera::DrawCallback{
+public:
+    BufferBindingReadBack(BufferIndexBinding*bb):_bb(bb){}
 
-    DrawIndirectBufferBinding(const DrawIndirectBufferBinding& rhs, const CopyOp& copyop=CopyOp::SHALLOW_COPY);
-    META_StateAttribute(osg, DrawIndirectBufferBinding, INDIRECTDRAWBUFFERBINDING);
-
-    virtual void apply(State& state) const;
-
-    virtual int compare(const StateAttribute& bb) const
-    {
-        COMPARE_StateAttribute_Types(DrawIndirectBufferBinding, bb)
-        COMPARE_StateAttribute_Parameter(_target)
-        COMPARE_StateAttribute_Parameter(_bufferObject)
-        return 0;
-    }
+    virtual void operator () (osg::RenderInfo& renderInfo) const;
+protected:
+    osg::ref_ptr<BufferIndexBinding> _bb;
 };
+
+///read back BufferData from VRAM
+class BufferDataReadBack : public Camera::DrawCallback{
+public:
+    BufferDataReadBack(BufferData*bd):_bd(bd){}
+
+    virtual void operator () (osg::RenderInfo& renderInfo) const;
+    void readback(osg::RenderInfo& renderInfo) const;
+protected:
+    osg::ref_ptr<BufferData> _bd;
+};
+///Update callback in wich registered BufferData is RAM/VRAM synchronized on a READ/WRITE POLICY
+class SyncBufferDataUpdateCallback : public osg::NodeCallback{
+public:
+    SyncBufferDataUpdateCallback(BufferData* bd): _bd(bd),gpuproduced(false),cpuproduced(false),_CpuAccess(READ_ONLY),_GpuAccess(READ_ONLY){}
+
+    enum BufferDataAccess{
+        READ_ONLY,  //
+        READ_WRITE  //
+    };
+    ///enable SyncBufferUpload (read back only if draw thread have upload dirty data
+    inline void setRamAccess(BufferDataAccess a){_CpuAccess=a;}
+    inline BufferDataAccess getRamAccess(BufferDataAccess a)const{return _CpuAccess;}
+    ///enable SyncBufferReadBack if READ_WRITE
+    inline void setVRamAccess(BufferDataAccess a){_GpuAccess=a;}
+    inline BufferDataAccess getVRamAccess()const{return _GpuAccess;}
+
+    /** first time: find mother camera and add a ActivableBuffeDataReadBack */
+    virtual void operator()(Node* node, NodeVisitor* nv);
+    ///called by the Camera read back callback
+    void UpdateGPUflags(const BufferDataReadBack*,RenderInfo*);
+    BufferData* getBufferData(){return _bd.get();}
+    /// user override return true if _bufferdata have been updated
+    virtual bool synctraversal(Node* node, NodeVisitor* nv){}
+
+
+
+protected:
+    virtual ~SyncBufferDataUpdateCallback();
+    bool gpuproduced,cpuproduced;
+    BufferDataAccess _CpuAccess;
+    BufferDataAccess _GpuAccess;
+    OpenThreads::Mutex _lock;
+    osg::observer_ptr<osg::Camera> _cam;
+    osg::observer_ptr<BufferData> _bd;
+    Camera::DrawCallback *_dcb;
+};
+
 
 
 } // namespace osg

@@ -22,30 +22,17 @@ GLsizei_ptrSERIALIZER(osg::BufferIndexBinding,Size)
 GLsizei_ptrSERIALIZER(osg::BufferIndexBinding,Offset)
 
 
-namespace wrap_osgBufferBinding
-{
-
-    REGISTER_OBJECT_WRAPPER( BufferBinding,
-                             /*new osg::BufferIndexBinding*/NULL,
-                             osg::BufferBinding,
-                             "osg::Object osg::StateAttribute osg::BufferBinding" )
-    {
-        ADD_OBJECT_SERIALIZER( BufferObject, osg::BufferObject, NULL );  // _bufferObject
-    ///have add setter and const qualifiers
-        //   ADD_GLENUM_SERIALIZER( Target,GLenum, GL_BUFFER);  // _target
-    }
-}
-
 namespace wrap_osgBufferIndexBinding
 {
 
 REGISTER_OBJECT_WRAPPER( BufferIndexBinding,
                          /*new osg::BufferIndexBinding*/NULL,
                          osg::BufferIndexBinding,
-                         "osg::Object osg::StateAttribute osg::BufferBinding osg::BufferIndexBinding" )
+                         "osg::Object osg::StateAttribute osg::BufferIndexBinding" )
 {
 ///have add setter and const qualifiers
-    //   ADD_GLENUM_SERIALIZER( Target,GLenum, GL_BUFFER);  // _target
+       ADD_GLENUM_SERIALIZER( Target,GLenum, GL_BUFFER);  // _target
+    ADD_OBJECT_SERIALIZER( BufferData, osg::BufferData, NULL );  // _bufferObject
     ADD_GLUINT_SERIALIZER( Index, 0);  // _index
 
     //special serializer for property type GLsizei_ptr...assume can't be more than max unsigned int
@@ -59,7 +46,7 @@ namespace wrap_osgUniformBufferBinding
 REGISTER_OBJECT_WRAPPER( UniformBufferBinding,
                          new osg::UniformBufferBinding,
                          osg::UniformBufferBinding,
-                         "osg::Object osg::StateAttribute osg::BufferBinding osg::BufferIndexBinding osg::UniformBufferBinding" )
+                         "osg::Object osg::StateAttribute osg::BufferIndexBinding osg::UniformBufferBinding" )
 {
 }
 }
@@ -69,27 +56,18 @@ namespace wrap_osgTransformFeedbackBufferBinding
 REGISTER_OBJECT_WRAPPER( TransformFeedbackBufferBinding,
                          new osg::TransformFeedbackBufferBinding,
                          osg::TransformFeedbackBufferBinding,
-                         "osg::Object osg::StateAttribute osg::BufferBinding osg::BufferIndexBinding osg::TransformFeedbackBufferBinding" )
+                         "osg::Object osg::StateAttribute osg::BufferIndexBinding osg::TransformFeedbackBufferBinding" )
 {
 }
 }
-namespace wrap_osgDrawIndirectBufferBinding
-{
 
-REGISTER_OBJECT_WRAPPER( DrawIndirectBufferBinding,
-                         new osg::DrawIndirectBufferBinding,
-                         osg::DrawIndirectBufferBinding,
-                         "osg::Object osg::StateAttribute osg::BufferBinding osg::DrawIndirectBufferBinding" )
-{
-}
-}
 namespace wrap_osgAtomicCounterBufferBinding
 {
 
 REGISTER_OBJECT_WRAPPER( AtomicCounterBufferBinding,
                          new osg::AtomicCounterBufferBinding,
                          osg::AtomicCounterBufferBinding,
-                         "osg::Object osg::StateAttribute osg::BufferBinding osg::BufferIndexBinding osg::AtomicCounterBufferBinding" )
+                         "osg::Object osg::StateAttribute osg::BufferIndexBinding osg::AtomicCounterBufferBinding" )
 {
 }
 }
@@ -99,7 +77,7 @@ namespace wrap_osgShaderStorageBufferBinding
 REGISTER_OBJECT_WRAPPER( ShaderStorageBufferBinding,
                          new osg::ShaderStorageBufferBinding,
                          osg::ShaderStorageBufferBinding,
-                         "osg::Object osg::StateAttribute osg::BufferBinding osg::BufferIndexBinding osg::ShaderStorageBufferBinding" )
+                         "osg::Object osg::StateAttribute osg::BufferIndexBinding osg::ShaderStorageBufferBinding" )
 {
 }
 }

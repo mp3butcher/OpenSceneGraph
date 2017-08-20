@@ -14,66 +14,36 @@
 */
 
 #include <osg/BufferIndexBinding>
-#include <osg/State>
+#include <osg/RenderInfo>
 
 #include <string.h> // for memcpy
 
 #ifndef GL_DRAW_INDIRECT_BUFFER
-    #define GL_DRAW_INDIRECT_BUFFER 0x8F3F
+#define GL_DRAW_INDIRECT_BUFFER 0x8F3F
 #endif
 
 namespace osg {
 
-BufferBinding::BufferBinding(GLenum target)
-    : _target(target), _bufferObject(0)
-{
-}
 
-BufferBinding::BufferBinding(GLenum target, BufferObject* bo)
-    : _target(target), _bufferObject(bo)
-{
-}
-
-BufferBinding::BufferBinding(const BufferBinding& rhs, const CopyOp& copyop)
-    : StateAttribute(rhs, copyop),
-      _target(rhs._target),
-      _bufferObject(static_cast<BufferObject*>(copyop(rhs._bufferObject.get())))
-{
-}
-
-BufferBinding::~BufferBinding()
-{
-}
-
-void BufferBinding::apply(State& state) const
-{
-    if (_bufferObject.valid())
-    {
-        GLBufferObject* glObject
-            = _bufferObject->getOrCreateGLBufferObject(state.getContextID());
-        if (!glObject->_extensions->isUniformBufferObjectSupported)
-            return;
-        if (glObject->isDirty()) glObject->compileBuffer();
-        glObject->_extensions->glBindBuffer (_target, glObject->getGLObjectID());
-    }
-}
 
 BufferIndexBinding::BufferIndexBinding(GLenum target, GLuint index)
-    :BufferBinding(target), _index(index), _offset(0), _size(0)
+    :_target(target), _bufferData(0), _index(index), _offset(0), _size(0)
 {
 }
 
-BufferIndexBinding::BufferIndexBinding(GLenum target, GLuint index, BufferObject* bo,
+BufferIndexBinding::BufferIndexBinding(GLenum target, GLuint index, BufferData* bo,
                                        GLintptr offset, GLsizeiptr size)
-    : BufferBinding(target,bo), _index(index), _offset(offset), _size(size)
+    : _target(target), _index(index), _offset(offset), _size(size)
 {
+    setBufferData(bo);
 }
 
-BufferIndexBinding::BufferIndexBinding(const BufferIndexBinding& rhs, const CopyOp& copyop)
-    : BufferBinding(rhs, copyop),
-      _index(rhs._index),
-      _offset(rhs._offset),
-      _size(rhs._size)
+BufferIndexBinding::BufferIndexBinding(const BufferIndexBinding& rhs, const CopyOp& copyop):StateAttribute(rhs,copyop),
+    _target(rhs._target),
+    _bufferData(static_cast<BufferData*>(copyop(rhs._bufferData.get()))),
+    _index(rhs._index),
+    _offset(rhs._offset),
+    _size(rhs._size)
 {
 }
 
@@ -92,15 +62,13 @@ void BufferIndexBinding::setIndex(unsigned int index)
 
 void BufferIndexBinding::apply(State& state) const
 {
-    if (_bufferObject.valid())
+    if (_bufferData.valid())
     {
         GLBufferObject* glObject
-            = _bufferObject->getOrCreateGLBufferObject(state.getContextID());
-        if (!glObject->_extensions->isUniformBufferObjectSupported)
-            return;
+            = _bufferData->getBufferObject()->getOrCreateGLBufferObject(state.getContextID());
         if (glObject->isDirty()) glObject->compileBuffer();
         glObject->_extensions->glBindBufferRange(_target, _index,
-                                                 glObject->getGLObjectID(), _offset, _size);
+                glObject->getGLObjectID(), glObject->getOffset(_bufferData->getBufferIndex())+_offset, _size-_offset);
     }
 }
 
@@ -110,30 +78,30 @@ UniformBufferBinding::UniformBufferBinding()
 }
 
 UniformBufferBinding::UniformBufferBinding(GLuint index)
-  : BufferIndexBinding(GL_UNIFORM_BUFFER, index)
+    : BufferIndexBinding(GL_UNIFORM_BUFFER, index)
 {
 }
 
-UniformBufferBinding::UniformBufferBinding(GLuint index, BufferObject* bo, GLintptr offset,
-                                           GLsizeiptr size)
+UniformBufferBinding::UniformBufferBinding(GLuint index, BufferData* bo, GLintptr offset,
+        GLsizeiptr size)
     : BufferIndexBinding(GL_UNIFORM_BUFFER, index, bo, offset, size)
 {
 
 }
 
 UniformBufferBinding::UniformBufferBinding(const UniformBufferBinding& rhs,
-                                           const CopyOp& copyop)
+        const CopyOp& copyop)
     : BufferIndexBinding(rhs, copyop)
 {
 }
 
 
 TransformFeedbackBufferBinding::TransformFeedbackBufferBinding(GLuint index)
-  : BufferIndexBinding(GL_TRANSFORM_FEEDBACK_BUFFER, index)
+    : BufferIndexBinding(GL_TRANSFORM_FEEDBACK_BUFFER, index)
 {
 }
 
-TransformFeedbackBufferBinding::TransformFeedbackBufferBinding(GLuint index, BufferObject* bo, GLintptr offset, GLsizeiptr size)
+TransformFeedbackBufferBinding::TransformFeedbackBufferBinding(GLuint index, BufferData* bo, GLintptr offset, GLsizeiptr size)
     : BufferIndexBinding(GL_TRANSFORM_FEEDBACK_BUFFER, index, bo, offset, size)
 {
 
@@ -146,11 +114,11 @@ TransformFeedbackBufferBinding::TransformFeedbackBufferBinding(const TransformFe
 
 
 AtomicCounterBufferBinding::AtomicCounterBufferBinding(GLuint index)
-  : BufferIndexBinding(GL_ATOMIC_COUNTER_BUFFER, index)
+    : BufferIndexBinding(GL_ATOMIC_COUNTER_BUFFER, index)
 {
 }
 
-AtomicCounterBufferBinding::AtomicCounterBufferBinding(GLuint index, BufferObject* bo, GLintptr offset, GLsizeiptr size)
+AtomicCounterBufferBinding::AtomicCounterBufferBinding(GLuint index, BufferData* bo, GLintptr offset, GLsizeiptr size)
     : BufferIndexBinding(GL_ATOMIC_COUNTER_BUFFER, index, bo, offset, size)
 {
 
@@ -163,9 +131,9 @@ AtomicCounterBufferBinding::AtomicCounterBufferBinding(const AtomicCounterBuffer
 
 void AtomicCounterBufferBinding::readData(osg::State & state, osg::UIntArray & uintArray) const
 {
-    if (!_bufferObject) return;
+    if (!_bufferData) return;
 
-    GLBufferObject* bo = _bufferObject->getOrCreateGLBufferObject( state.getContextID() );
+    GLBufferObject* bo = _bufferData->getBufferObject()->getOrCreateGLBufferObject( state.getContextID() );
     if (!bo) return;
 
 
@@ -176,7 +144,7 @@ void AtomicCounterBufferBinding::readData(osg::State & state, osg::UIntArray & u
         bo->_extensions->glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, bo->getGLObjectID());
 
     GLubyte* src = (GLubyte*)bo->_extensions->glMapBuffer(GL_ATOMIC_COUNTER_BUFFER,
-                                                          GL_READ_ONLY_ARB);
+                   GL_READ_ONLY_ARB);
     if(src)
     {
         size_t size = osg::minimum<int>(_size, uintArray.getTotalDataSize());
@@ -194,7 +162,7 @@ ShaderStorageBufferBinding::ShaderStorageBufferBinding(GLuint index)
 {
 }
 
-ShaderStorageBufferBinding::ShaderStorageBufferBinding(GLuint index, BufferObject* bo, GLintptr offset, GLsizeiptr size)
+ShaderStorageBufferBinding::ShaderStorageBufferBinding(GLuint index, BufferData* bo, GLintptr offset, GLsizeiptr size)
     : BufferIndexBinding(GL_SHADER_STORAGE_BUFFER, index, bo, offset, size)
 {
 
@@ -204,35 +172,145 @@ ShaderStorageBufferBinding::ShaderStorageBufferBinding(const ShaderStorageBuffer
     : BufferIndexBinding(rhs, copyop)
 {
 }
+void BufferBindingReadBack::operator () (osg::RenderInfo& renderInfo) const {
 
 
-DrawIndirectBufferBinding::DrawIndirectBufferBinding( )
-  : BufferBinding(GL_DRAW_INDIRECT_BUFFER)
-{
-}
-void DrawIndirectBufferBinding::apply(State& state) const
-{
-    if (_bufferObject.valid())
-    {
-        GLBufferObject* glObject
-            = _bufferObject->getOrCreateGLBufferObject(state.getContextID());
-        if (!glObject->_extensions->isUniformBufferObjectSupported)
-            return;
-        //  if (glObject->isDirty()) glObject->compileBuffer(); assuming buffer is GPU generated
-        glObject->_extensions->glBindBuffer (_target, glObject->getGLObjectID());
+//TODO: Forbid write access to bufferdata from other thread (update)
+    osg::BufferData * bd=const_cast<BufferData*>(_bb->getBufferData());
+
+    GLBufferObject* glObject
+        = bd->getBufferObject()->getOrCreateGLBufferObject(renderInfo.getContextID());
+    if (glObject->isDirty()) glObject->compileBuffer();
+    glObject->_extensions->glBindBuffer(_bb->getTarget(), glObject->getGLObjectID());
+//TODO manage persistance mapping
+    GLubyte* src ;
+    if(_bb->getTarget()==GL_ATOMIC_COUNTER_BUFFER ) {
+        src= (GLubyte*)glObject->_extensions->glMapBuffer(_bb->getTarget()
+                ,GL_READ_ONLY_ARB);
+        memcpy(const_cast<GLvoid*>(bd->getDataPointer()),src+( glObject->getOffset(bd->getBufferIndex())+_bb->getOffset()),_bb->getSize()-_bb->getOffset());
     }
+    else {
+        src= (GLubyte*)glObject->_extensions->glMapBufferRange(_bb->getTarget(),
+                glObject->getOffset(bd->getBufferIndex())+_bb->getOffset(), _bb->getSize()- _bb->getOffset()
+                ,GL_READ_ONLY_ARB);
+        renderInfo.getState()->checkGLErrors("start of BufferBindingReadBack::mappbuferrange()");
+        memcpy(const_cast<GLvoid*>(bd->getDataPointer()),src,_bb->getSize());
+    }
+    glObject->_extensions->glUnmapBuffer(_bb->getTarget());
+
+
+
 }
-DrawIndirectBufferBinding::DrawIndirectBufferBinding(  BufferObject* bo)
-    : BufferBinding(GL_DRAW_INDIRECT_BUFFER, bo)
+void BufferDataReadBack::operator () (osg::RenderInfo& renderInfo) const {
+    readback(renderInfo);
+}
+void BufferDataReadBack::readback (osg::RenderInfo& renderInfo) const {
+
+
+//TODO: Forbid write access to bufferdata from other thread (update)
+    osg::BufferData * bd=const_cast<BufferData*>(_bd.get());
+
+    GLBufferObject* glObject
+        = bd->getBufferObject()->getOrCreateGLBufferObject(renderInfo.getContextID());
+    if (glObject->isDirty()) glObject->compileBuffer();
+    glObject->_extensions->glBindBuffer(bd->getBufferObject()->getTarget(), glObject->getGLObjectID());
+//TODO manage persistance mapping
+    GLubyte* src ;
+    if(bd->getBufferObject()->getTarget()==GL_ATOMIC_COUNTER_BUFFER ) {
+        src= (GLubyte*)glObject->_extensions->glMapBuffer(bd->getBufferObject()->getTarget()
+                ,GL_READ_ONLY_ARB);
+        memcpy(const_cast<GLvoid*>(bd->getDataPointer()),src+( glObject->getOffset(bd->getBufferIndex())),_bd->getTotalDataSize());
+    }
+    else {
+        src= (GLubyte*)glObject->_extensions->glMapBufferRange(bd->getBufferObject()->getTarget(),
+                glObject->getOffset(bd->getBufferIndex()), _bd->getTotalDataSize()
+                ,GL_READ_ONLY_ARB);
+        memcpy(const_cast<GLvoid*>(bd->getDataPointer()),src, _bd->getTotalDataSize());
+    }
+    glObject->_extensions->glUnmapBuffer(bd->getBufferObject()->getTarget());
+
+
+
+}
+class SyncBufferDataReadBack : public BufferDataReadBack{
+public:
+    SyncBufferDataReadBack(SyncBufferDataUpdateCallback*bd):BufferDataReadBack(bd->getBufferData()),updateCB(bd){}
+
+    virtual void operator () (osg::RenderInfo& renderInfo) const{
+
+        updateCB->UpdateGPUflags(this,&renderInfo);
+
+    }
+protected:
+    virtual ~SyncBufferDataReadBack(){
+        ///
+    }
+//mutable observer_ptr<SyncBufferDataUpdateCallback> updateCB;
+    SyncBufferDataUpdateCallback* updateCB;
+};
+
+struct FindNearestCamera : public osg::NodeVisitor
 {
+    osg::ref_ptr<Camera> _root;
+    FindNearestCamera() : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_PARENTS) {}
+    void apply(osg::Transform& node)
+    {
+        if (_root.valid())
+            return;
+        _root = dynamic_cast<Camera*>(&node);
+        traverse(node);
+    }
+};
+///
+SyncBufferDataUpdateCallback::~SyncBufferDataUpdateCallback(){
 
+    if(_cam.valid())
+        _cam->removePostDrawCallback(_dcb);
 }
 
-DrawIndirectBufferBinding::DrawIndirectBufferBinding(const DrawIndirectBufferBinding& rhs,
-                                           const CopyOp& copyop)
-    : BufferBinding(rhs, copyop)
-{
+void SyncBufferDataUpdateCallback::operator()(Node* node, NodeVisitor* nv){
+
+    if(_GpuAccess==READ_WRITE && !_cam.valid() ){
+        FindNearestCamera fnc;
+        node->accept(fnc);
+        if(fnc._root.valid())
+        _cam=fnc._root;
+        _dcb=new SyncBufferDataReadBack(this);
+        _cam->addPostDrawCallback(_dcb );
+    }
+/*   osg::ref_ptr<osg::Camera> threadsafecam;
+   if(_cam.lock(threadsafecam )){
+       ///thread safe access to camera
+      // threadsafecam->
+   }
+*/
+    _lock.lock();
+
+    if(_GpuAccess==READ_WRITE){
+        if(gpuproduced){
+             synctraversal( node,  nv);
+             gpuproduced=false;
+        }
+    }else
+         synctraversal( node,  nv);
+
+    if(_CpuAccess==READ_WRITE)
+        cpuproduced=true;
+
+    _lock.unlock();
 }
 
+///called by the Camera read back callback
+void SyncBufferDataUpdateCallback::UpdateGPUflags(const BufferDataReadBack* cb,RenderInfo*ri){
+    _lock.lock();
 
+    if(_CpuAccess==READ_WRITE){
+        if(!gpuproduced)(*cb).readback(*ri);
+        cpuproduced=false;
+    }else if(!gpuproduced)(*cb).readback(*ri);
+
+    //if(_GCpuAccess==READ_WRITE)
+        gpuproduced=true;
+    _lock.unlock();
+}
 } // namespace osg
