@@ -38,6 +38,12 @@
 #include <X11/extensions/Xrandr.h>
 #endif
 
+#ifdef OSGVIEWER_USE_XINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
+
+#include <sstream>
+#include <cstdlib>
 #include <unistd.h>
 
 using namespace osgViewer;
@@ -322,13 +328,10 @@ bool GraphicsWindowX11::createVisualInfo()
         typedef std::vector<int> Attributes;
         Attributes attributes;
 
-        attributes.push_back(GLX_USE_GL);
+        attributes.push_back(GLX_RENDER_TYPE); attributes.push_back(GLX_RGBA_BIT);
 
-        attributes.push_back(GLX_RGBA);
-
-        if (_traits->doubleBuffer) attributes.push_back(GLX_DOUBLEBUFFER);
-
-        if (_traits->quadBufferStereo) attributes.push_back(GLX_STEREO);
+        if (_traits->doubleBuffer) { attributes.push_back(GLX_DOUBLEBUFFER); attributes.push_back(True); }
+        if (_traits->quadBufferStereo) { attributes.push_back(GLX_STEREO); attributes.push_back(True); }
 
         attributes.push_back(GLX_RED_SIZE); attributes.push_back(_traits->red);
         attributes.push_back(GLX_GREEN_SIZE); attributes.push_back(_traits->green);
@@ -336,11 +339,9 @@ bool GraphicsWindowX11::createVisualInfo()
         attributes.push_back(GLX_DEPTH_SIZE); attributes.push_back(_traits->depth);
 
         if (_traits->alpha) { attributes.push_back(GLX_ALPHA_SIZE); attributes.push_back(_traits->alpha); }
-
         if (_traits->stencil) { attributes.push_back(GLX_STENCIL_SIZE); attributes.push_back(_traits->stencil); }
 
         #if defined(GLX_SAMPLE_BUFFERS) && defined (GLX_SAMPLES)
-
             if (_traits->sampleBuffers) { attributes.push_back(GLX_SAMPLE_BUFFERS); attributes.push_back(_traits->sampleBuffers); }
             if (_traits->samples) { attributes.push_back(GLX_SAMPLES); attributes.push_back(_traits->samples); }
 
@@ -352,7 +353,13 @@ bool GraphicsWindowX11::createVisualInfo()
 
         attributes.push_back(None);
 
-        _visualInfo = glXChooseVisual( _display, _traits->screenNum, &(attributes.front()) );
+        int numFbConfigs = 0;
+        GLXFBConfig* fbConfigs = glXChooseFBConfig(_display, _traits->screenNum, attributes.data(), &numFbConfigs);
+        if(numFbConfigs > 0) {
+          _fbConfig = fbConfigs[0];
+        }
+
+        _visualInfo = glXGetVisualFromFBConfig(_display, _fbConfig);
     #endif
     }
 
@@ -382,23 +389,95 @@ bool GraphicsWindowX11::checkAndSendEventFullScreenIfNeeded(Display* display, in
     Atom netWMStateAtom = XInternAtom(display, "_NET_WM_STATE", True);
     Atom netWMStateFullscreenAtom = XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", True);
 
+    OSG_NOTICE<<"GraphicsWindowX11::checkAndSendEventFullScreenIfNeeded()"<<std::endl;
+
     if (netWMStateAtom != None && netWMStateFullscreenAtom != None)
     {
-        XEvent xev;
-        xev.xclient.type = ClientMessage;
-        xev.xclient.serial = 0;
-        xev.xclient.send_event = True;
-        xev.xclient.window = _window;
-        xev.xclient.message_type = netWMStateAtom;
-        xev.xclient.format = 32;
-        xev.xclient.data.l[0] = isFullScreen ? 1 : 0;
-        xev.xclient.data.l[1] = netWMStateFullscreenAtom;
-        xev.xclient.data.l[2] = 0;
+        // set up full screen
+        {
+            XEvent xev;
+            xev.xclient.type = ClientMessage;
+            xev.xclient.serial = 0;
+            xev.xclient.send_event = True;
+            xev.xclient.window = _window;
+            xev.xclient.message_type = netWMStateAtom;
+            xev.xclient.format = 32;
+            xev.xclient.data.l[0] = isFullScreen ? 1 : 0;
+            xev.xclient.data.l[1] = netWMStateFullscreenAtom;
+            xev.xclient.data.l[2] = 0;
 
-        XSendEvent(display, RootWindow(display, DefaultScreen(display)),
-                    False,  SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+            XSendEvent(display, RootWindow(display, DefaultScreen(display)),
+                        False,  SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+        }
+
+#ifdef OSGVIEWER_USE_XINERAMA
+
+        // Span all monitors
+        if( isFullScreen && XineramaIsActive( display ) )
+        {
+            int numMonitors;
+            XineramaScreenInfo* xi = XineramaQueryScreens( display, &numMonitors );
+            enum {
+                TopMost,
+                BottomMost,
+                LeftMost,
+                RightMost
+            };
+            uint32_t span[4] = { 0, 0, 0, 0 };
+            int32_t minx =  2147483647; // INT_MAX
+            int32_t maxx = -2147483648; // INT_MIN
+            int32_t miny =  2147483647; // INT_MAX
+            int32_t maxy = -2147483648; // INT_MIN
+
+            for( int i = 0; i < numMonitors; i++ )
+            {
+                if( xi[i].x_org < minx )
+                {
+                    span[LeftMost] = xi[i].screen_number;
+                    minx = xi[i].x_org;
+                }
+
+                if( xi[i].x_org > maxx )
+                {
+                    span[RightMost] = xi[i].screen_number;
+                    maxx = xi[i].x_org;
+                }
+
+                if( xi[i].y_org < miny )
+                {
+                    span[TopMost] = xi[i].screen_number;
+                    miny = xi[i].y_org;
+                }
+
+                if( xi[i].y_org > maxy )
+                {
+                    span[BottomMost] = xi[i].screen_number;
+                    maxy = xi[i].y_org;
+                }
+            }
+            XFree(xi);
+
+            Atom fullmons = XInternAtom(display, "_NET_WM_FULLSCREEN_MONITORS", True);
+            if( fullmons != None )
+            {
+                XEvent xev;
+                xev.type = ClientMessage;
+                xev.xclient.window = _window;
+                xev.xclient.message_type = fullmons;
+                xev.xclient.format = 32;
+                xev.xclient.data.l[0] = span[TopMost];
+                xev.xclient.data.l[1] = span[BottomMost];
+                xev.xclient.data.l[2] = span[LeftMost];
+                xev.xclient.data.l[3] = span[RightMost];
+                xev.xclient.data.l[4] = 0;
+
+                XSendEvent( display, DefaultRootWindow(display), False, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+            }
+        }
+#endif
         return true;
     }
+
     return false;
 }
 
@@ -816,8 +895,58 @@ void GraphicsWindowX11::init()
         checkEGLError("after eglCreateContext()");
 
     #else
+        if( OSG_GL3_FEATURES || (_traits->glContextProfileMask & GLX_CONTEXT_CORE_PROFILE_BIT_ARB) )
+        {
+            typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
+            glXCreateContextAttribsARBProc glXCreateContextAttribsARB = 0;
+            bool supportsProfiles = false;
 
-        _context = glXCreateContext( _display, _visualInfo, sharedContext, True );
+            std::string buf;
+            std::stringstream glxExtSS(std::string(glXQueryExtensionsString(_display, _traits->screenNum)));
+            while(glxExtSS >> buf) {
+              if(buf == "GLX_ARB_create_context") {
+                glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc) glXGetProcAddress((const GLubyte*)"glXCreateContextAttribsARB");
+              } else if(buf == "GLX_ARB_create_context_profile") {
+                supportsProfiles = true;
+              }
+            }
+
+            if(glXCreateContextAttribsARB) {
+
+                OSG_NOTIFY( osg::INFO ) << "Attempting to create GL context:" << std::endl;
+                OSG_NOTIFY( osg::INFO ) << " * version: " << _traits->glContextVersion << std::endl;
+                OSG_NOTIFY( osg::INFO ) << " * context flags: " << _traits->glContextFlags << std::endl;
+                OSG_NOTIFY( osg::INFO ) << " * profile: " << _traits->glContextProfileMask << std::endl;
+
+                std::vector<int> contextAttributes;
+
+                std::size_t pos = _traits->glContextVersion.find(".");
+                int majorVersion = std::atoi(_traits->glContextVersion.substr(0, pos).c_str());
+                int minorVersion = pos == std::string::npos ? 0 : std::atoi(_traits->glContextVersion.substr(pos + 1).c_str());
+
+                contextAttributes.push_back(GLX_CONTEXT_MAJOR_VERSION_ARB);
+                contextAttributes.push_back(majorVersion);
+                contextAttributes.push_back(GLX_CONTEXT_MINOR_VERSION_ARB);
+                contextAttributes.push_back(minorVersion);
+
+                // If asking for OpenGL 3.2 or newer we should also specify a profile
+                if (majorVersion >= 3 && minorVersion >= 2 && supportsProfiles && _traits->glContextProfileMask != 0) {
+                    contextAttributes.push_back(GLX_CONTEXT_PROFILE_MASK_ARB);
+                    contextAttributes.push_back(_traits->glContextProfileMask);
+                }
+                if(_traits->glContextFlags != 0) {
+                    contextAttributes.push_back(GLX_CONTEXT_FLAGS_ARB);
+                    contextAttributes.push_back(_traits->glContextFlags);
+                }
+                contextAttributes.push_back(None);
+
+                _context = glXCreateContextAttribsARB( _display, _fbConfig, sharedContext, True, contextAttributes.data() );
+            } else {
+                _context = glXCreateContext( _display, _visualInfo, sharedContext, True );
+            }
+        } else {
+            _context = glXCreateContext( _display, _visualInfo, sharedContext, True );
+        }
 
         if (!_context)
         {
@@ -1328,6 +1457,7 @@ bool GraphicsWindowX11::checkEvents()
                     bool isModifier = keyMapGetKey(modMap, key);
                     if (!isModifier) forceKey(key, eventTime, false);
                 }
+                needNewWindowSize = true;
 
                 // release modifier keys
                 for (unsigned int key = 8; key < 256; key++)
@@ -1367,6 +1497,7 @@ bool GraphicsWindowX11::checkEvents()
                     bool isPressed = keyMapGetKey(keyMap, key);
                     if (!isPressed) forceKey(key, eventTime, false);
                 }
+                needNewWindowSize = true;
 
                 // press/release modifier keys
                 for (unsigned int key = 8; key < 256; key++)
