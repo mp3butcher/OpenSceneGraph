@@ -573,7 +573,7 @@ void Geometry::setUseVertexBufferObjects(bool flag)
     typedef std::vector<osg::VertexBufferObject*>  VertexBufferObjectList;
     typedef std::vector<osg::ElementBufferObject*>  ElementBufferObjectList;
 
-    /*if (_useVertexBufferObjects)*/
+    if (_useVertexBufferObjects)
     {
         if (!arrayList.empty())
         {
@@ -628,7 +628,6 @@ void Geometry::setUseVertexBufferObjects(bool flag)
             }
         }
     }
-    /*
     else
     {
         for(ArrayList::iterator vitr = arrayList.begin();
@@ -647,7 +646,7 @@ void Geometry::setUseVertexBufferObjects(bool flag)
             if (elements->getElementBufferObject()) elements->setElementBufferObject(0);
         }
     }
-    */
+
 }
 
 void Geometry::dirtyGLObjects()
