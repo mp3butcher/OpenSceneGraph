@@ -487,7 +487,8 @@ class OSG_EXPORT BufferObject : public Object
 
 class OSG_EXPORT BufferData : public Object
 {
-    public:
+public:
+    friend class BufferObject;
 
         BufferData():
             Object(true),
@@ -523,7 +524,6 @@ class OSG_EXPORT BufferData : public Object
         BufferObject* getBufferObject() { return _bufferObject.get(); }
         const BufferObject* getBufferObject() const { return _bufferObject.get(); }
 
-        void setBufferIndex(unsigned int index) { _bufferIndex = index; }
         unsigned int getBufferIndex() const { return _bufferIndex; }
 
         GLBufferObject* getGLBufferObject(unsigned int contextID) const { return _bufferObject.valid() ? _bufferObject->getGLBufferObject(contextID) : 0; }
@@ -583,6 +583,7 @@ class OSG_EXPORT BufferData : public Object
         }
 protected:
 
+        void setBufferIndex(unsigned int index) { _bufferIndex = index; }
         virtual ~BufferData();
 
         unsigned int                    _modifiedCount;
