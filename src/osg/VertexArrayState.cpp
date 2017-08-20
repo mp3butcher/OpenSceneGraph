@@ -60,7 +60,7 @@ PerContextVertexArrayState * VertexArrayState::getPCVertexArrayState(State&state
 	if (vas = _pcvas[state.getContextID()])return vas;
 	vas = _pcvas[state.getContextID()] = new PerContextVertexArrayState(&state);
 
-	/*if (getVertexArray()) vas->assignVertexArrayDispatcher();
+    / * if (getVertexArray()) vas->assignVertexArrayDispatcher();
 	if (getColorArray()) vas->assignColorArrayDispatcher();
 	if (getNormalArray()) vas->assignNormalArrayDispatcher();
 	if (getSecondaryColorArray()) vas->assignSecondaryColorArrayDispatcher();
@@ -69,7 +69,7 @@ PerContextVertexArrayState * VertexArrayState::getPCVertexArrayState(State&state
 	if (!getTexCoordArrayList().empty()) vas->assignTexCoordArrayDispatcher(getTexCoordArrayList().size());
 	if (!getVertexAttribArrayList().empty()) vas->assignVertexAttribArrayDispatcher(getVertexAttribArrayList().size());
 
-	if (state.useVertexArrayObject(/*_useVertexArrayObject* /false))
+    if (state.useVertexArrayObject(/ *_useVertexArrayObject* /false))
 	{
 	// OSG_NOTICE<<"  Setup PerContextVertexArrayState to use VAO "<<vas<<std::endl;
 
