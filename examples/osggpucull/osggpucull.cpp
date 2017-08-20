@@ -293,7 +293,7 @@ struct GPUCullData
         instanceTypesUBO = new osg::UniformBufferObject;
 //        instanceTypesUBO->setUsage( GL_STREAM_DRAW );
         instanceTypes->setBufferObject( instanceTypesUBO.get() );
-        instanceTypesUBB = new osg::UniformBufferBinding(1, instanceTypesUBO.get(), 0, 0);
+        instanceTypesUBB = new osg::UniformBufferBinding(1, instanceTypes.get(), 0, 0);
 
     }
     void setUseMultiDrawArraysIndirect( bool value )

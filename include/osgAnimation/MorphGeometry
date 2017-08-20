@@ -60,7 +60,6 @@ namespace osgAnimation
         virtual const char* libraryName() const { return "osgAnimation"; }
         virtual const char* className() const { return "MorphGeometry"; }
 
-        virtual void transformSoftwareMethod();
         // set implementation of rig method
         void setMorphTransformImplementation(MorphTransform*);
         MorphTransform* getMorphTransformImplementation();

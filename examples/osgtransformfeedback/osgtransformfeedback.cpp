@@ -116,12 +116,12 @@ static const char* geomSource =
     "#extension GL_EXT_geometry_shader4 : enable\n"
     "#extension GL_ARB_gpu_shader5  : enable\n"
     "#extension GL_ARB_enhanced_layouts  : enable\n"
-"layout(points) in;\n"
+    "layout(points) in;\n"
 //"layout(points, max_vertices = 1) out;\n"
 #if 1
 
-"layout(stream = 0) out vec4 out1;  \n"
-"layout(stream = 1) out vec4 out2;  \n"
+    "layout(stream = 0) out vec4 out1;  \n"
+    "layout(stream = 1) out vec4 out2;  \n"
 
 #else
     " varying  vec4 out1;\n"
@@ -133,23 +133,23 @@ static const char* geomSource =
     "{\n"
     "    vec4 v =vec4( gl_PositionIn[0].xyz,1);\n"
     " out1 =  v + vec4(u_anim1,0.,0.,0.);//  gl_Position = v + vec4(u_anim1,0.,0.,0.); \n"
-        "  EmitStreamVertex(0);\n"
-        ";\n"
+    "  EmitStreamVertex(0);\n"
+    ";\n"
     " out2 =  v_color[0] + vec4(0,0.,u_anim1,0.);// addblue \n"
     "  EmitStreamVertex(1);\n"";\n"
     "   out1 =  v - vec4(u_anim1,0.,0.,0.); // gl_Position = v - vec4(u_anim1,0.,0.,0.);  \n"
-"  EmitStreamVertex(0);\n"";\n"
+    "  EmitStreamVertex(0);\n"";\n"
     " out2 =  v_color[0] + vec4(0,0.,u_anim1,0.);// addblue \n"
-"  EmitStreamVertex(1);\n"";\n"
+    "  EmitStreamVertex(1);\n"";\n"
     "\n"
     "   out1=  v + vec4(0.,1.0-u_anim1,0.,0.);// gl_Position = v + vec4(0.,1.0-u_anim1,0.,0.); \n"
-"  EmitStreamVertex(0);\n""EndPrimitive();\n"
+    "  EmitStreamVertex(0);\n""EndPrimitive();\n"
     " out2 =  v_color[0] + vec4(0,0.,u_anim1,0.);// addblue \n"
-"  EmitStreamVertex(1);\n"";\n"
+    "  EmitStreamVertex(1);\n"";\n"
     "   out1 =  v - vec4(0.,1.0-u_anim1,0.,0.); //gl_Position = v - vec4(0.,1.0-u_anim1,0.,0.); \n"
-"  EmitStreamVertex(0);\n"";\n"
+    "  EmitStreamVertex(0);\n"";\n"
     " out2 =  v_color[0] + vec4(0,0.,u_anim1,0.);// addblue \n"
-"  EmitStreamVertex(1);\n"";\n"
+    "  EmitStreamVertex(1);\n"";\n"
     "}\n"
 };
 
@@ -189,8 +189,8 @@ osg::Program* createRenderShader()
 }
 class QueryBufferObjectIndexBinding:public osg::BufferIndexBinding {
 public:
-    QueryBufferObjectIndexBinding(int index=0):osg::BufferIndexBinding(GL_QUERY_BUFFER, index) {
-        setBufferObject(new osg::VertexBufferObject());
+    QueryBufferObjectIndexBinding(int index ,osg::BufferData*bd):osg::BufferIndexBinding(GL_QUERY_BUFFER, index,bd) {
+
     }
 };
 ///////////////////////////////////////////////////////////////////////////
@@ -235,16 +235,16 @@ public:
 
         // Perform  query for each stream
         //TODO perhaps: retrieve _nbstreamout automatiquelly :
-    ///1)via state.getPCP.getProgram().getTransormFeedBackVaryings
-    ///!!!-...ignoring specials varyings gl_XXX -gl_NextBuffer and gl_SkipCompopents- !!!
-    ///2)via  retrieving the number of TransformFeedbackBufferBinding applied on the state (don't know how)
-   const osg::StateAttribute *sa=0;
-    for(osg::State::AttributeMap::const_iterator it=renderInfo.getState()->getAttributeMap().begin();it!=renderInfo.getState()->getAttributeMap().end();it++ )
-{
-const osg::State::AttributeStack &a=(*(it)).second;
-if(!a.attributeVec.empty())sa=a.attributeVec[0].first;
+        ///1)via state.getPCP.getProgram().getTransormFeedBackVaryings
+        ///!!!-...ignoring specials varyings gl_XXX -gl_NextBuffer and gl_SkipCompopents- !!!
+        ///2)via  retrieving the number of TransformFeedbackBufferBinding applied on the state (don't know how)
+        const osg::StateAttribute *sa=0;
+        for(osg::State::AttributeMap::const_iterator it=renderInfo.getState()->getAttributeMap().begin(); it!=renderInfo.getState()->getAttributeMap().end(); it++ )
+        {
+            const osg::State::AttributeStack &a=(*(it)).second;
+            if(!a.attributeVec.empty())sa=a.attributeVec[0].first;
 
-}
+        }
         for(int streamid=0; streamid<_nbstreamout; streamid++)
             ext->glBeginQueryIndexed(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN,streamid, _querystuff[contextID]._queries[streamid]);
 
@@ -254,11 +254,11 @@ if(!a.attributeVec.empty())sa=a.attributeVec[0].first;
 
         for(int streamid=0; streamid<_nbstreamout; streamid++)
             ext->glEndQueryIndexed(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN,streamid);
-    #define QUERYBUFFER
-    #ifdef QUERYBUFFER
+#define QUERYBUFFER
+#ifdef QUERYBUFFER
         // Get query results to buffer object
-///		glBindBuffer(GL_QUERY_BUFFER, _queryBufferObjectBinding);
-//_queryBufferObjectBinding->apply(*renderInfo.getState());
+        ///		glBindBuffer(GL_QUERY_BUFFER, _queryBufferObjectBinding);
+        //_queryBufferObjectBinding->apply(*renderInfo.getState());
         osg::GLBufferObject* glObject
             = _queryBufferObjectBinding->getOrCreateGLBufferObject(renderInfo.getState()->getContextID());
         if (!glObject->_extensions->isUniformBufferObjectSupported)
@@ -270,18 +270,18 @@ if(!a.attributeVec.empty())sa=a.attributeVec[0].first;
 
         GLshort stride=1;///in case of TFB target is also the Query Object target (indirectdraw command)
         for(GLuint streamid=0; streamid<_nbstreamout; streamid++)	{
-         //   std::cerr<<"retrieving result for query no"<<streamid<<std::endl;
-       //     ext->glGetQueryObjectuiv(_querystuff[contextID]._queries[streamid], GL_QUERY_RESULT, (( GLuint *)( NULL+sizeof(GLuint)* (streamid*stride) )));
+            //   std::cerr<<"retrieving result for query no"<<streamid<<std::endl;
+            //     ext->glGetQueryObjectuiv(_querystuff[contextID]._queries[streamid], GL_QUERY_RESULT, (( GLuint *)( NULL+sizeof(GLuint)* (streamid*stride) )));
             ext->glGetQueryObjectuiv(_querystuff[contextID]._queries[streamid], GL_QUERY_RESULT, (( GLuint *)( NULL )));
         }
 #else
- for(GLuint streamid=0; streamid<_nbstreamout; streamid++)	{
+        for(GLuint streamid=0; streamid<_nbstreamout; streamid++)	{
             GLuint result;
             ext->glGetQueryObjectuiv(_querystuff[contextID]._queries[streamid], GL_QUERY_RESULT, &result);
             std::cerr<<"retrieving result for query no"<<streamid <<": "<<result<<std::endl;
 
         }
-        #endif
+#endif
 
         // Bind query result buffer as uniform buffer
         //glBindBufferBase(GL_UNIFORM_BUFFER, 0, queryBuffer);
@@ -359,10 +359,10 @@ int main( int , char** )
         *        uint  baseInstance;*/
         osg::ref_ptr<osg::DefaultIndirectCommandDrawArrays> ida=new osg::DefaultIndirectCommandDrawArrays();
 
-        ida->push_back(osg::DrawArraysIndirectCommand(numprimgen/2,//count fed by queryobjects
-        1,//num instance
-        0,//first,
-        0));//baseInstance
+        ida->push_back(osg::DrawArraysIndirectCommand(0,//count fed by queryobjects
+                       1,//num instance
+                       0,//first,
+                       0));//baseInstance
         da->setIndirectCommandArray(ida);
 
         querybuffer=ida->getBufferObject();
@@ -377,8 +377,8 @@ int main( int , char** )
 
     TransformFeedbackDrawCallback *tr=new  TransformFeedbackDrawCallback(2);
 
-     #ifndef INDIRECTDRAW
-      osg::VertexBufferObject * querybuffer=new osg::VertexBufferObject;
+#ifndef INDIRECTDRAW
+    osg::VertexBufferObject * querybuffer=new osg::VertexBufferObject;
     osg::Vec4iArray * fakeresult=new osg::Vec4iArray();
     fakeresult->push_back(osg::Vec4i(0,0,0,0));
     fakeresult->push_back(osg::Vec4i(0,0,0,0));
@@ -386,19 +386,19 @@ int main( int , char** )
     fakeresult->push_back(osg::Vec4i(0,0,0,0));
     fakeresult->push_back(osg::Vec4i(0,0,0,0));
     fakeresult->setBufferObject(querybuffer);
-    #endif
+#endif
     tr->setQueryBufferObject(querybuffer);
 
     osg::TransformFeedbackBufferBinding *tfbb=new   osg::TransformFeedbackBufferBinding (0);
-    tfbb->setBufferObject(somePointsRenderer->getVertexArray()->getVertexBufferObject());
+    tfbb->setBufferData(somePointsRenderer->getVertexArray());
     osg::TransformFeedbackBufferBinding *tfbb2=new   osg::TransformFeedbackBufferBinding (1);
-    tfbb2->setBufferObject(somePointsRenderer->getColorArray()->getVertexBufferObject());
+    tfbb2->setBufferData(somePointsRenderer->getColorArray());
 
     osg::BufferObject *rendererBO=somePointsRenderer->getVertexArray()->getBufferObject();
 
-    tfbb->setSize(somePointsRenderer->getVertexArray()->getTotalDataSize());
+   /* tfbb->setSize(somePointsRenderer->getVertexArray()->getTotalDataSize());
     tfbb2->setSize(somePointsRenderer->getColorArray()->getTotalDataSize());
-    tfbb2->setOffset(tfbb->getSize());
+    tfbb2->setOffset(tfbb->getSize());*/
 
     somePointsGenerator->setDrawCallback(tr);
 

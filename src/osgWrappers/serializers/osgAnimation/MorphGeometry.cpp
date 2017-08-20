@@ -54,6 +54,25 @@ static bool writeMorphTargets( osgDB::OutputStream& os, const osgAnimation::Morp
     }
 ADD_ARRAYDATA_FUNCTIONS( VertexData, VertexSource )
 ADD_ARRAYDATA_FUNCTIONS( NormalData, NormalSource )
+
+struct FinishedObjectReadFillSourceIfRequiredCallback : public osgDB::FinishedObjectReadCallback
+{
+    virtual void objectRead(osgDB::InputStream&, osg::Object& obj)
+    {
+
+        osgAnimation::MorphGeometry& geometry = static_cast<osgAnimation::MorphGeometry&>(obj);
+        if((!geometry.getVertexSource() ||geometry.getVertexSource()->getNumElements()==0)
+           && dynamic_cast<osg::Vec3Array* >(geometry.getVertexArray())){
+            geometry.setVertexSource((osg::Vec3Array* )geometry.getVertexArray()->clone(osg::CopyOp::DEEP_COPY_ALL));
+        }
+        if((!geometry.getNormalSource() ||geometry.getNormalSource()->getNumElements()==0)
+           && geometry.getNormalArray()){
+            geometry.setNormalSource((osg::Vec3Array* )geometry.getNormalArray()->clone(osg::CopyOp::DEEP_COPY_ALL));
+        }
+}
+
+};
+
 REGISTER_OBJECT_WRAPPER( osgAnimation_MorphGeometry,
                          new osgAnimation::MorphGeometry,
                          osgAnimation::MorphGeometry,
@@ -74,4 +93,6 @@ REGISTER_OBJECT_WRAPPER( osgAnimation_MorphGeometry,
             UPDATE_TO_VERSION_SCOPED( 147 )
             ADD_OBJECT_SERIALIZER( MorphTransformImplementation, osgAnimation::MorphTransform, NULL );  // _geometry
     }
+
+    wrapper->addFinishedObjectReadCallback( new FinishedObjectReadFillSourceIfRequiredCallback() );
 }

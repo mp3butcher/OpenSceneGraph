@@ -31,34 +31,61 @@
 
 #include <iostream>
 
+#define  OSGREADBACK 1
+#ifndef OSGREADBACK
 
-class AdaptNumPixelUniform : public osg::Camera::DrawCallback
+class AdaptNumPixelUniform : public osg::BufferBindingReadBack
 {
     public:
-        AdaptNumPixelUniform()
+        AdaptNumPixelUniform(osg::AtomicCounterBufferBinding * acbb):osg::BufferBindingReadBack(acbb)
         {
-            _atomicCounterArray = new osg::UIntArray;
-            _atomicCounterArray->push_back(0);
+            //_atomicCounterArray = new osg::UIntArray;
+           // _atomicCounterArray->push_back(0);
         }
 
         virtual void operator () (osg::RenderInfo& renderInfo) const
         {
-            _acbb->readData(*renderInfo.getState(), *_atomicCounterArray);
+            osg::BufferBindingReadBack::operator () (renderInfo) ;
+            //_acbb->readData(*renderInfo.getState(), *_atomicCounterArray);
+             osg::UIntArray * _atomicCounterArray=dynamic_cast<osg::UIntArray *>(_bb->getBufferData());
+
             unsigned int numPixel = osg::maximum(1u, _atomicCounterArray->front());
 
             if ((renderInfo.getView()->getFrameStamp()->getFrameNumber() % 10) == 0)
             {
-                OSG_INFO << "osgatomiccounter : draw " << numPixel << " pixels." << std::endl;
+                OSG_WARN << "osgatomiccounter : draw " << numPixel << " pixels." << std::endl;
             }
 
             _invNumPixelUniform->set( 1.0f / static_cast<float>(numPixel) );
         }
 
         osg::ref_ptr<osg::Uniform> _invNumPixelUniform;
-        osg::ref_ptr<osg::UIntArray> _atomicCounterArray;
+       // osg::ref_ptr<osg::UIntArray> _atomicCounterArray;
         osg::ref_ptr<osg::AtomicCounterBufferBinding> _acbb;
 };
+#else
 
+class ReadBackAndResetCallback : public osg::SyncBufferDataUpdateCallback{
+public:
+    ReadBackAndResetCallback(osg::BufferData*bd):osg::SyncBufferDataUpdateCallback(bd){this->setRamAccess(osg::SyncBufferDataUpdateCallback::READ_WRITE);
+                                                                                      setVRamAccess(osg::SyncBufferDataUpdateCallback::READ_WRITE);
+                                                              }
+    virtual bool synctraversal(osg::Node *,osg::NodeVisitor*){
+
+        osg::UIntArray * array=dynamic_cast<  osg::UIntArray*>(_bd.get());
+        unsigned int numPixel = osg::maximum(1u, array->front());
+
+       // if ((renderInfo.getView()->getFrameStamp()->getFrameNumber() % 10) == 0)
+        {
+            OSG_WARN << "osgatomiccounter : draw " << numPixel << " pixels." << std::endl;
+        }
+        (*array)[0]=0;
+        _bd->dirty();
+
+    }
+
+};
+#endif
 
 osg::Program * createProgram()
 {
@@ -108,10 +135,11 @@ class ResetAtomicCounter : public osg::StateAttributeCallback
             osg::AtomicCounterBufferBinding * acbb = dynamic_cast<osg::AtomicCounterBufferBinding *>(sa);
             if (acbb)
             {
-                osg::AtomicCounterBufferObject * acbo = dynamic_cast<osg::AtomicCounterBufferObject*>(acbb->getBufferObject());
-                if (acbo && acbo->getBufferData(0))
+                osg::UIntArray * acbo = dynamic_cast<osg::UIntArray*> (acbb->getBufferData());
+                if (acbo )
                 {
-                    acbo->getBufferData(0)->dirty();
+                    (*acbo)[0]=0;
+                    acbo->dirty();
                 }
             }
         }
@@ -207,24 +235,29 @@ int main(int argc, char** argv)
     acboBlue->setUsage(GL_STREAM_COPY);
     atomicCounterArrayBlue->setBufferObject(acboBlue.get());
 
-    osg::ref_ptr<osg::AtomicCounterBufferBinding> acbbRedAndGreen = new osg::AtomicCounterBufferBinding(0, acboRedAndGreen.get(), 0, sizeof(GLuint)*3);
+    osg::ref_ptr<osg::AtomicCounterBufferBinding> acbbRedAndGreen = new osg::AtomicCounterBufferBinding(0, atomicCounterArrayRedAndGreen.get(), 0, sizeof(GLuint)*3);
     ss->setAttributeAndModes(acbbRedAndGreen.get());
 
-    osg::ref_ptr<osg::AtomicCounterBufferBinding> acbbBlue = new osg::AtomicCounterBufferBinding(2, acboBlue.get(), 0, sizeof(GLuint));
+    osg::ref_ptr<osg::AtomicCounterBufferBinding> acbbBlue = new osg::AtomicCounterBufferBinding(2, atomicCounterArrayBlue.get(), 0, sizeof(GLuint));
     ss->setAttributeAndModes(acbbBlue.get());
-
-    acbbRedAndGreen->setUpdateCallback(new ResetAtomicCounter);
-    acbbBlue->setUpdateCallback(new ResetAtomicCounter);
-
     osg::ref_ptr<osg::Uniform> invNumPixelUniform = new osg::Uniform("invNumPixel", 1.0f/(800.0f*600.0f));
     ss->addUniform( invNumPixelUniform.get() );
 
-    AdaptNumPixelUniform * drawCallback = new AdaptNumPixelUniform;
+    acbbRedAndGreen->setUpdateCallback(new ResetAtomicCounter);
+
+
+#ifndef OSGREADBACK
+    acbbBlue->setUpdateCallback(new ResetAtomicCounter);
+    AdaptNumPixelUniform * drawCallback = new AdaptNumPixelUniform(acbbBlue);
     drawCallback->_invNumPixelUniform = invNumPixelUniform;
-    drawCallback->_acbb = acbbBlue;
+    //drawCallback->_acbb = acbbBlue;
 
     viewer.getCamera()->setFinalDrawCallback(drawCallback);
+#else
+    ReadBackAndResetCallback *readbackandreset=new ReadBackAndResetCallback(atomicCounterArrayBlue);
+           loadedModel->addUpdateCallback( readbackandreset);
 
+#endif
     // optimize the scene graph, remove redundant nodes and state etc.
     osgUtil::Optimizer optimizer;
     optimizer.optimize(loadedModel.get());

@@ -203,8 +203,6 @@ class OSG_EXPORT StateAttribute : public Object
 
             SHADERSTORAGEBUFFERBINDING,
 
-            INDIRECTDRAWBUFFERBINDING,
-
             VIEWPORTINDEXED,
             DEPTHRANGEINDEXED,
             SCISSORINDEXED,

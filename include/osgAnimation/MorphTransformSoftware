@@ -29,12 +29,15 @@ namespace osgAnimation
     class OSGANIMATION_EXPORT MorphTransformSoftware : public MorphTransform
     {
     public:
-        MorphTransformSoftware(){}
-        MorphTransformSoftware(const MorphTransformSoftware& rts,const osg::CopyOp& copyop): MorphTransform(rts, copyop){}
+        MorphTransformSoftware():_needInit(true){}
+        MorphTransformSoftware(const MorphTransformSoftware& rts,const osg::CopyOp& copyop): MorphTransform(rts, copyop), _needInit(true){}
 
         META_Object(osgAnimation,MorphTransformSoftware)
 
+        bool init(MorphGeometry&);
         virtual void operator()(MorphGeometry&);
+    protected:
+        bool _needInit;
 
     };
 }

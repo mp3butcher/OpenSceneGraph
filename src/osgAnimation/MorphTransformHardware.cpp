@@ -48,6 +48,7 @@ bool MorphTransformHardware::init(MorphGeometry& geom)
     osg::Vec3Array & vertexSource = *(geom.getVertexSource());
     osg::Vec3Array& normalSource = *(geom.getNormalSource());
 
+    geom.setDataVariance(osg::Object::STATIC);
     ///check for correct morph configuration (blender exporter doesn't set sources so assume morphgeom arrays are sources:/)
     if(pos)
     {

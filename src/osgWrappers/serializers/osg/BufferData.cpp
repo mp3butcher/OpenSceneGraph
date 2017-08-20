@@ -2,7 +2,7 @@
 #include <osgDB/ObjectWrapper>
 #include <osgDB/InputStream>
 #include <osgDB/OutputStream>
-
+#include <assert.h>
 
 class BufferData_serializer_BufferData:public osg::BufferData
 {
@@ -26,7 +26,10 @@ static bool readBufferObject( osgDB::InputStream& is, osg::BufferData& bd )
     BufferData_serializer_BufferData &localbd  =static_cast<BufferData_serializer_BufferData&>(bd);
     osg::ref_ptr<osg::Object> obj = is.readObject();
     osg::BufferObject* bo = dynamic_cast<osg::BufferObject*>( obj.get() );
-    if ( bo ) localbd.setBufferObjectWithoutAddingBD2BO(bo);
+
+    if ( bo ) localbd.setBufferObject(bo);
+
+    //if ( bo ) localbd.setBufferObjectWithoutAddingBD2BO(bo);
     return true;
 }
 
@@ -37,6 +40,7 @@ static bool writeBufferObject( osgDB::OutputStream& os, const osg::BufferData& b
     else os << (osg::BufferObject*)NULL;
     return true;
 }
+/*
 static bool checkBufferIndex( const osg::BufferData& bd )
 {
     return true;
@@ -47,6 +51,7 @@ static bool readBufferIndex( osgDB::InputStream& is, osg::BufferData& bd )
     unsigned int index;
     is >> index;
     bd.setBufferIndex(index);
+    //assert<bd.getBufferObject()->getBufferData(index)==&bd>;
     return true;
 }
 
@@ -57,7 +62,7 @@ static bool writeBufferIndex( osgDB::OutputStream& os, const osg::BufferData& bd
     else os << 0u;
     return true;
 }
-
+*/
 REGISTER_OBJECT_WRAPPER( BufferData,
                          0,
                          osg::BufferData,
@@ -66,6 +71,6 @@ REGISTER_OBJECT_WRAPPER( BufferData,
     {
         UPDATE_TO_VERSION_SCOPED( 147 )
         ADD_USER_SERIALIZER(BufferObject);
-        ADD_USER_SERIALIZER(BufferIndex);
+       // ADD_USER_SERIALIZER(BufferIndex);
     }
 }

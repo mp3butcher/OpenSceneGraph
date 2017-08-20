@@ -37,7 +37,7 @@ OutputStream::OutputStream( const osgDB::Options* options )
         _useRobustBinaryFormat = false;
     if ( options->getPluginStringData("SchemaData")=="true" )
         _useSchemaData = true;
-    if ( options->getPluginStringData("WriteBufferObjectConfiguration")=="true" )
+    if ( options->getPluginStringData("WriteBufferObjectConfiguration")=="false" )
         _writeBufferObjectConfiguration = true;
     if ( !options->getPluginStringData("SchemaFile").empty() )
         _schemaName = options->getPluginStringData("SchemaFile");
