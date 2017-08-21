@@ -16,6 +16,7 @@ SET(TARGET_H
     ${HEADER_PATH}/DelaunayTriangulator
     ${HEADER_PATH}/DisplayRequirementsVisitor
     ${HEADER_PATH}/DrawElementTypeSimplifier
+    ${HEADER_PATH}/DrawElementTransform
     ${HEADER_PATH}/EdgeCollector
     ${HEADER_PATH}/Export
     ${HEADER_PATH}/GLObjectsVisitor
@@ -62,6 +63,7 @@ SET(TARGET_SRC
     DelaunayTriangulator.cpp
     DisplayRequirementsVisitor.cpp
     DrawElementTypeSimplifier.cpp
+    DrawElementTransform.cpp
     EdgeCollector.cpp
     GLObjectsVisitor.cpp
     HalfWayMapGenerator.cpp

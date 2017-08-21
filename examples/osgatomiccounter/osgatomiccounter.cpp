@@ -226,6 +226,13 @@ int main(int argc, char** argv)
 
     osg::ref_ptr<osg::UIntArray> atomicCounterArrayBlue = new osg::UIntArray;
     atomicCounterArrayBlue->push_back(0);
+    atomicCounterArrayBlue->push_back(0);
+    atomicCounterArrayBlue->push_back(0);
+    atomicCounterArrayBlue->push_back(0);
+    atomicCounterArrayBlue->push_back(0);
+    atomicCounterArrayBlue->push_back(0);
+    atomicCounterArrayBlue->push_back(0);
+    atomicCounterArrayBlue->push_back(0);
 
     osg::ref_ptr<osg::AtomicCounterBufferObject> acboRedAndGreen = new osg::AtomicCounterBufferObject;
     acboRedAndGreen->setUsage(GL_STREAM_COPY);
