@@ -185,6 +185,7 @@ struct IndirectTarget
     }
     void endRegister(unsigned int index, unsigned int rowsPerInstance, GLenum pixelFormat, GLenum type, GLint internalFormat, bool useMultiDrawArraysIndirect )
     {
+
         osg::DrawIndirectBufferObject * indirectCommandbuffer=new osg::DrawIndirectBufferObject();
         indirectCommandbuffer->setUsage(GL_DYNAMIC_DRAW);
         indirectCommands->setBufferObject(indirectCommandbuffer);
@@ -221,7 +222,6 @@ struct IndirectTarget
             geometryAggregator->getAggregatedGeometry()->addPrimitiveSet(mdi );
 
         }
-
 
         geometryAggregator->getAggregatedGeometry()->setUseDisplayList(false);
         geometryAggregator->getAggregatedGeometry()->setUseVertexBufferObjects(true);
@@ -286,7 +286,7 @@ struct GPUCullData
         instanceTypesUBO = new osg::UniformBufferObject;
 //        instanceTypesUBO->setUsage( GL_STREAM_DRAW );
         instanceTypes->setBufferObject( instanceTypesUBO.get() );
-        instanceTypesUBB = new osg::UniformBufferBinding(1, instanceTypesUBO.get(), 0, 0);
+        instanceTypesUBB = new osg::UniformBufferBinding(1, instanceTypes.get(), 0, 0);
 
     }
     void setUseMultiDrawArraysIndirect( bool value )
