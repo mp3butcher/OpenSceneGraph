@@ -1,6 +1,7 @@
 /* -*-c++-*- OpenSceneGraph - Copyright (C) 1998-2006 Robert Osfield
  * Copyright (C) 2010 Tim Moore
  * Copyright (C) 2012 David Callu
+ * Copyright (C) 2017 Julien Valentin
  *
  * This library is open source and may be redistributed and/or modified under
  * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or
@@ -23,8 +24,6 @@
 #endif
 
 namespace osg {
-
-
 
 BufferIndexBinding::BufferIndexBinding(GLenum target, GLuint index)
     :_target(target), _bufferData(0), _index(index), _offset(0), _size(0)
@@ -313,4 +312,5 @@ void SyncBufferDataUpdateCallback::UpdateGPUflags(const BufferDataReadBack* cb,R
         gpuproduced=true;
     _lock.unlock();
 }
+
 } // namespace osg

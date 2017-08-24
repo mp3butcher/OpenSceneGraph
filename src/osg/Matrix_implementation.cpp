@@ -747,10 +747,20 @@ bool Matrix_implementation::transpose(const Matrix_implementation&mat){
        Matrix_implementation tm(mat);
        return transpose(tm);
     }
-    unsigned int i,j;
-    for (i=0; i<4; ++i)
-        for (j=0; j<4; ++j)
-           _mat[i][j]=mat._mat[j][i];
+
+    _mat[0][1]=mat._mat[1][0];
+    _mat[0][2]=mat._mat[2][0];
+    _mat[0][3]=mat._mat[3][0];
+    _mat[1][0]=mat._mat[0][1];
+    _mat[1][2]=mat._mat[2][1];
+    _mat[1][3]=mat._mat[3][1];
+    _mat[2][0]=mat._mat[0][2];
+    _mat[2][1]=mat._mat[1][2];
+    _mat[2][3]=mat._mat[3][2];
+    _mat[3][0]=mat._mat[0][3];
+    _mat[3][1]=mat._mat[1][3];
+    _mat[3][2]=mat._mat[2][3];
+
     return true;
 }
 
@@ -759,10 +769,14 @@ bool Matrix_implementation::transpose3x3(const Matrix_implementation&mat){
        Matrix_implementation tm(mat);
        return transpose3x3(tm);
     }
-    unsigned int i,j;
-    for (i=0; i<3; ++i)
-        for (j=0; j<3; ++j)
-           _mat[i][j]=mat._mat[j][i];
+
+    _mat[0][1]=mat._mat[1][0];
+    _mat[0][2]=mat._mat[2][0];
+    _mat[1][0]=mat._mat[0][1];
+    _mat[1][2]=mat._mat[2][1];
+    _mat[2][0]=mat._mat[0][2];
+    _mat[2][1]=mat._mat[1][2];
+
     return true;
 }
 

@@ -36,6 +36,7 @@
 #include <osgViewer/Viewer>
 #include <osgViewer/ViewerEventHandlers>
 #include <osg/BufferTemplate>
+#include <osg/PrimitiveSetIndirect>
 #include "ShapeToGeometry.h"
 #include "AggregateGeometryVisitor.h"
 #if 0
@@ -44,7 +45,6 @@
 #include <osg/PrimitiveSetIndirect>
 #endif
 #include "GpuCullShaders.h"
-
 
 
 // each instance type may have max 8 LODs ( if you change
@@ -180,14 +180,17 @@ struct IndirectTarget
     IndirectTarget()
         : maxTargetQuantity(0)
     {
+
         indirectCommands    = new osg::DefaultIndirectCommandDrawArrays;
         indirectCommands->getBufferObject()->setUsage(GL_DYNAMIC_DRAW);
+
     }
     IndirectTarget( AggregateGeometryVisitor* agv, osg::Program* program )
         : geometryAggregator(agv), drawProgram(program), maxTargetQuantity(0)
     {
         indirectCommands    = new osg::DefaultIndirectCommandDrawArrays;
         indirectCommands->getBufferObject()->setUsage(GL_DYNAMIC_DRAW);
+
     }
     void endRegister(unsigned int index, unsigned int rowsPerInstance, GLenum pixelFormat, GLenum type, GLint internalFormat, bool useMultiDrawArraysIndirect )
     {
@@ -205,19 +208,22 @@ struct IndirectTarget
         if( !useMultiDrawArraysIndirect ) // use glDrawArraysIndirect()
         {
             std::vector<osg::DrawArraysIndirect*> newPrimitiveSets;
-
             for(unsigned int j=0;j<indirectCommands->size(); ++j){
                 osg::DrawArraysIndirect *ipr=new osg::DrawArraysIndirect( GL_TRIANGLES, j );
                 ipr->setIndirectCommandArray( indirectCommands);
                 newPrimitiveSets.push_back(ipr);
                 }
 
+
             geometryAggregator->getAggregatedGeometry()->removePrimitiveSet(0,geometryAggregator->getAggregatedGeometry()->getNumPrimitiveSets() );
 
             for(unsigned int j=0;j<indirectCommands->size(); ++j)
                 geometryAggregator->getAggregatedGeometry()->addPrimitiveSet( newPrimitiveSets[j] );
-
-
+            /*DrawIndirectBufferBinding should be deprecated
+            ///attach a DrawIndirect buffer binding to the stateset for non builtin primset DrawArraysIndirect
+            osg::ref_ptr<osg::DrawIndirectBufferBinding> bb=new osg::DrawIndirectBufferBinding();
+            bb->setBufferObject(indirectCommandbuffer );
+            geometryAggregator->getAggregatedGeometry()->getOrCreateStateSet()->setAttribute(bb );*/
         }
         else // use glMultiDrawArraysIndirect()
         {
@@ -270,9 +276,12 @@ struct IndirectTarget
         stateset->setAttributeAndModes( drawProgram.get(), osg::StateAttribute::ON );
     }
 
-    osg::ref_ptr< osg::DefaultIndirectCommandDrawArrays >        indirectCommands;
+
 #ifdef JUVAL
 #else
+
+    osg::ref_ptr< osg::DefaultIndirectCommandDrawArrays >        indirectCommands;
+   // osg::ref_ptr< osg::DrawArraysIndirectCommandArray >             indirectCommands;
     osg::ref_ptr<osg::TextureBuffer>                                indirectCommandTextureBuffer;
 #endif
     osg::ref_ptr< AggregateGeometryVisitor >                        geometryAggregator;
@@ -732,9 +741,10 @@ struct ResetTexturesCallback : public osg::StateSet::Callback
             osg::TextureBuffer* tex = dynamic_cast<osg::TextureBuffer*>( stateset->getTextureAttribute(*it,osg::StateAttribute::TEXTURE) );
             if(tex==NULL)
                 continue;
-            osg::BufferData* img =const_cast<osg::BufferData*>(tex->getBufferData());
-            if(img!=NULL)
-                img->dirty();
+            osg::BufferData* drawcmds = const_cast<osg::BufferData*>(tex->getBufferData());
+            if(drawcmds!=NULL)
+                drawcmds->dirty();
+
         }
         for(it=texUnitsDirtyParams.begin(), eit=texUnitsDirtyParams.end(); it!=eit; ++it)
         {
@@ -760,7 +770,6 @@ struct InvokeMemoryBarrier : public osg::Drawable::DrawCallback
     }
     virtual void drawImplementation(osg::RenderInfo& renderInfo,const osg::Drawable* drawable) const
     {
-        //DrawIndirectGLExtensions *ext = DrawIndirectGLExtensions::getExtensions( renderInfo.getContextID(), true );
         renderInfo.getState()->get<osg::GLExtensions>()->glMemoryBarrier( _barriers );
         drawable->drawImplementation(renderInfo);
     }

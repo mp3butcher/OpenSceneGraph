@@ -619,27 +619,6 @@ class OSG_EXPORT VertexBufferObject : public BufferObject
         virtual ~VertexBufferObject();
 };
 
-class OSG_EXPORT DrawIndirectBufferObject : public BufferObject
-{
-    public:
-
-        DrawIndirectBufferObject();
-
-        /** Copy constructor using CopyOp to manage deep vs shallow copy.*/
-        DrawIndirectBufferObject(const DrawIndirectBufferObject& vbo,const CopyOp& copyop=CopyOp::SHALLOW_COPY);
-
-        META_Object(osg,DrawIndirectBufferObject);
-
-        unsigned int addArray(osg::Array* array);
-        void removeArray(osg::Array* array);
-
-        void setArray(unsigned int i, Array* array);
-        Array* getArray(unsigned int i);
-        const Array* getArray(unsigned int i) const;
-
-    protected:
-        virtual ~DrawIndirectBufferObject();
-};
 
 class DrawElements;
 class OSG_EXPORT ElementBufferObject : public BufferObject
@@ -663,6 +642,21 @@ class OSG_EXPORT ElementBufferObject : public BufferObject
     protected:
 
         virtual ~ElementBufferObject();
+};
+
+class OSG_EXPORT DrawIndirectBufferObject : public BufferObject
+{
+    public:
+
+        DrawIndirectBufferObject();
+
+        /** Copy constructor using CopyOp to manage deep vs shallow copy.*/
+        DrawIndirectBufferObject(const DrawIndirectBufferObject& vbo,const CopyOp& copyop=CopyOp::SHALLOW_COPY);
+
+        META_Object(osg,DrawIndirectBufferObject);
+
+    protected:
+        virtual ~DrawIndirectBufferObject();
 };
 
 class Image;

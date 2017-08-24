@@ -823,6 +823,9 @@ void Geometry::compileGLObjects(RenderInfo& renderInfo) const
             if ((*itr)->getBufferObject()) bufferObjects.insert((*itr)->getBufferObject());
         }
 
+        if (bufferObjects.empty())
+            return; // no buffers, nothing to compile
+
         //osg::ElapsedTime timer;
 
         // now compile any buffer objects that require it.
@@ -840,11 +843,7 @@ void Geometry::compileGLObjects(RenderInfo& renderInfo) const
 
         // OSG_NOTICE<<"Time to compile "<<timer.elapsedTime_m()<<"ms"<<std::endl;
 
-        // unbind the BufferObjects
-        extensions->glBindBuffer(GL_ARRAY_BUFFER_ARB,0);
-        extensions->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB,0);
-
-        if (state.useVertexArrayObject(_useVertexArrayObject) && !bufferObjects.empty())
+        if (state.useVertexArrayObject(_useVertexArrayObject))
         {
             PerContextVertexArrayState* vas = 0;
 #if 0
@@ -862,6 +861,10 @@ void Geometry::compileGLObjects(RenderInfo& renderInfo) const
             state.unbindVertexArrayObject();
             vas->setRequiresSetArrays(getDataVariance()==osg::Object::DYNAMIC);
         }
+
+        // unbind the BufferObjects
+        extensions->glBindBuffer(GL_ARRAY_BUFFER_ARB,0);
+        extensions->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB,0);
     }
     else
     {

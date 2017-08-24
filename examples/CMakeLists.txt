@@ -22,6 +22,7 @@ IF(DYNAMIC_OPENSCENEGRAPH)
 
     #ADD_SUBDIRECTORY(osgindirectdraw)
     ADD_SUBDIRECTORY(osgSharedVAO)
+    ADD_SUBDIRECTORY(osgsimpleMDI)
     ADD_SUBDIRECTORY(osg2cpp)
     ADD_SUBDIRECTORY(osganalysis)
     ADD_SUBDIRECTORY(osganimate)
