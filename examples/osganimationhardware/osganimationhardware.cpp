@@ -395,22 +395,26 @@ struct SetupRigGeometry : public osg::NodeVisitor
         if (_hardware) {
             osgAnimation::RigGeometry* rig = dynamic_cast<osgAnimation::RigGeometry*>(&geom);
             if (rig) {
+                rig->getInfluenceMap()->cullBoneInfluenceCountPerVertex(8);//,_simplifierWeightTreshold);
+                 //rig->getInfluenceMap()->cullBoneCountPerMesh(2);
+                //rig->buildVertexInfluenceSet();
 #if 1
                 //simplify
                 osg::ref_ptr<RigSimplifier> simp=new RigSimplifier(_simplifierRatio,_simplifierWeightTreshold);
 
 osgAnimation::MorphGeometry *morph;
                 // osg::ref_ptr<osg::UIntArray> res=
-                if(!(morph=dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry())))
-                    simp->simplify (*((osg::Geometry*)rig)) ;
-                else {
+                if(!(morph=dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry()))){
+if(_simplifierRatio<1.0f)
+                     simp->simplify (*((osg::Geometry*)rig)) ;
+                }else {
                     osg::ref_ptr<osg::Geometry> ge=new osg::Geometry();//*morph,osg::CopyOp::DEEP_COPY_ALL);
                     ge->setUseVertexArrayObject(false);
                                         ge->setUseDisplayList(true);
                     osg::Geometry& target=*ge.get();
                   osgAnimation::MorphGeometry &from=*morph;
 
-                 osgAnimation:: RigGeometry::FindNearestParentSkeleton finder;
+              /*   osgAnimation:: RigGeometry::FindNearestParentSkeleton finder;
                   if(rig->getParents().size() > 1)
                       osg::notify(osg::WARN) << "A RigGeometry should not have multi parent ( " << rig->getName() << " )" << std::endl;
                   rig->getParents()[0]->accept(finder);
@@ -421,7 +425,7 @@ osgAnimation::MorphGeometry *morph;
                       return;
                   }
                   rig->buildVertexInfluenceSet();
-                  rig->setSkeleton(finder._root.get());
+                  rig->setSkeleton(finder._root.get());*/
 
                     target.setStateSet(from.getStateSet());
 
@@ -474,19 +478,18 @@ osgAnimation::MorphGeometry *morph;
                   //  ge=(osg::Geometry*)osgDB::readNodeFile("temp_delete_it.osgb");
 
                     rig->setSourceGeometry(ge);
-rig->dirtyBound();
+
 rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware);
 //rig->setUpdateCallback(rig->getUpdateCallback()->);
-rig->dirtyDisplayList();
+//rig->dirtyDisplayList();
 rig->buildVertexInfluenceSet();
-rig->update();
-              //      simp->simplify (*((osg::Geometry*)rig)) ;
+             if(_simplifierRatio<1.0f)      simp->simplify (*((osg::Geometry*)rig)) ;
                 }
 
 
 
 #endif
-                morph = dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry());
+                morph = 0;//dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry());
                 if(morph) {
 #if 0
                     ///replace morph with classic geometry and simplify it

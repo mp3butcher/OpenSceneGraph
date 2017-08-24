@@ -41,12 +41,14 @@ bool MorphTransformSoftware::init(MorphGeometry& morphGeometry){
 
         osg::Vec3Array* normal = dynamic_cast<osg::Vec3Array*>(morphGeometry.getNormalArray());
         bool normalmorphable = morphGeometry.getMorphNormals() && normal;
-        if (normal && (!normalSource || normalSource->size() != normal->size()))
+        morphGeometry.setMorphNormals(normalmorphable);
+        if (normalmorphable && (!normalSource || normalSource->size() != normal->size()))
         {
             normalSource =(static_cast<osg::Vec3Array*>( normal->clone(osg::CopyOp::DEEP_COPY_ARRAYS)));//osg::Vec3Array(normal->begin(),normal->end());
             normal->setDataVariance(osg::Object::DYNAMIC);
         }
     }else return false;
+
     _needInit=false;
     return true;
 }

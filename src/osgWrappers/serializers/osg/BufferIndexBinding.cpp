@@ -3,6 +3,7 @@
 #include <osgDB/ObjectWrapper>
 #include <osgDB/InputStream>
 #include <osgDB/OutputStream>
+
 #define ADD_GLUINT_SERIALIZER(PROP, DEF) \
     wrapper->addSerializer( new osgDB::PropByValSerializer< MyClass, GLuint >( \
         #PROP, ((unsigned int)(DEF)), &MyClass::get##PROP, &MyClass::set##PROP), osgDB::BaseSerializer::RW_UINT )
@@ -18,6 +19,7 @@ static bool write##XXX( osgDB::OutputStream& os, const TYPE& node )\
 {\
     unsigned int size = node.get##XXX();    os << size << std::endl;    return true;\
 }
+
 GLsizei_ptrSERIALIZER(osg::BufferIndexBinding,Size)
 GLsizei_ptrSERIALIZER(osg::BufferIndexBinding,Offset)
 
@@ -30,12 +32,11 @@ REGISTER_OBJECT_WRAPPER( BufferIndexBinding,
                          osg::BufferIndexBinding,
                          "osg::Object osg::StateAttribute osg::BufferIndexBinding" )
 {
-///have add setter and const qualifiers
-       ADD_GLENUM_SERIALIZER( Target,GLenum, GL_BUFFER);  // _target
+
+    ADD_GLENUM_SERIALIZER( Target,GLenum, GL_BUFFER);  // _target
     ADD_OBJECT_SERIALIZER( BufferData, osg::BufferData, NULL );  // _bufferObject
     ADD_GLUINT_SERIALIZER( Index, 0);  // _index
 
-    //special serializer for property type GLsizei_ptr...assume can't be more than max unsigned int
     ADD_USER_SERIALIZER(Size);
     ADD_USER_SERIALIZER(Offset);
 }

@@ -742,6 +742,30 @@ inline T SGL_ABS(T a)
 #define SGL_SWAP(a,b,temp) ((temp)=(a),(a)=(b),(b)=(temp))
 #endif
 
+bool Matrix_implementation::transpose(const Matrix_implementation&mat){
+    if (&mat==this) {
+       Matrix_implementation tm(mat);
+       return transpose(tm);
+    }
+    unsigned int i,j;
+    for (i=0; i<4; ++i)
+        for (j=0; j<4; ++j)
+           _mat[i][j]=mat._mat[j][i];
+    return true;
+}
+
+bool Matrix_implementation::transpose3x3(const Matrix_implementation&mat){
+    if (&mat==this) {
+       Matrix_implementation tm(mat);
+       return transpose3x3(tm);
+    }
+    unsigned int i,j;
+    for (i=0; i<3; ++i)
+        for (j=0; j<3; ++j)
+           _mat[i][j]=mat._mat[j][i];
+    return true;
+}
+
 bool Matrix_implementation::invert_4x4( const Matrix_implementation& mat )
 {
     if (&mat==this) {
@@ -763,7 +787,7 @@ bool Matrix_implementation::invert_4x4( const Matrix_implementation& mat )
     for(i=0;i<4;i++)
     {
        big=0.0;
-       for (j=0; j<4; j++)
+       for (j=0; j<4; ++j)
           if (ipiv[j] != 1)
              for (k=0; k<4; k++)
              {
@@ -781,7 +805,7 @@ bool Matrix_implementation::invert_4x4( const Matrix_implementation& mat )
              }
        ++(ipiv[icol]);
        if (irow != icol)
-          for (l=0; l<4; l++) SGL_SWAP(operator()(irow,l),
+          for (l=0; l<4; ++l) SGL_SWAP(operator()(irow,l),
                                        operator()(icol,l),
                                        temp);
 
@@ -792,13 +816,13 @@ bool Matrix_implementation::invert_4x4( const Matrix_implementation& mat )
 
        pivinv = 1.0/operator()(icol,icol);
        operator()(icol,icol) = 1;
-       for (l=0; l<4; l++) operator()(icol,l) *= pivinv;
-       for (ll=0; ll<4; ll++)
+       for (l=0; l<4; ++l) operator()(icol,l) *= pivinv;
+       for (ll=0; ll<4; ++ll)
           if (ll != icol)
           {
              dum=operator()(ll,icol);
              operator()(ll,icol) = 0;
-             for (l=0; l<4; l++) operator()(ll,l) -= operator()(icol,l)*dum;
+             for (l=0; l<4; ++l) operator()(ll,l) -= operator()(icol,l)*dum;
           }
     }
     for (int lx=4; lx>0; --lx)

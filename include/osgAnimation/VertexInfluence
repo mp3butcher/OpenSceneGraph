@@ -25,7 +25,7 @@ namespace osgAnimation
 {
 
     // first is vertex index, and second the weight, the
-    typedef std::pair<int, float> VertexIndexWeight;
+    typedef std::pair<unsigned int, float> VertexIndexWeight;
     typedef std::vector<VertexIndexWeight> VertexList;
     class OSGANIMATION_EXPORT VertexInfluence : public VertexList
     {
@@ -48,6 +48,10 @@ namespace osgAnimation
             std::map<std::string, VertexInfluence>(org),
             osg::Object(org, copyop)
         {}
+        ///cull weakest influences in order to fit targetted numbonepervertex
+        void cullBoneInfluenceCountPerVertex(unsigned int maxnumbonepervertex, float minweight=0, bool renormalize=true);
+        ///cull weakest bones in order to fit targetted numbonepermesh
+        void cullBoneCountPerMesh(unsigned int numbonepermesh);
     };
 
 
@@ -62,27 +66,33 @@ namespace osgAnimation
         {
         public:
             BoneWeight(const std::string& name, float weight) : _boneName(name), _weight(weight) {}
+            BoneWeight(const BoneWeight &bw2) : _boneName(bw2._boneName), _weight(bw2._weight) {}
             const std::string& getBoneName() const { return _boneName; }
             float getWeight() const { return _weight; }
             void setWeight(float weight) { _weight = weight; }
             bool operator==(const BoneWeight& b) const { return (_boneName == b.getBoneName() && _weight == b.getWeight()); }
+            //default order : sort by weight desc and bonename if equal
+            /*bool operator<(const BoneWeight& bw2)const{        if (_weight > bw2._weight)return true;
+            if (_weight < bw2._weight)return false;
+            return(_boneName<bw2._boneName);
+                                                     }*/
         protected:
             std::string _boneName;
             float _weight;
         };
 
         typedef std::vector<BoneWeight> BoneWeightList;
-        typedef std::map<int,BoneWeightList> VertexIndexToBoneWeightMap;
+        typedef std::map<unsigned int,BoneWeightList> VertexIndexToBoneWeightMap;
 
         class UniqVertexSetToBoneSet
         {
         public:
             void setBones(BoneWeightList& bones) { _bones = bones;}
             const BoneWeightList& getBones() const { return _bones;}
-            std::vector<int>& getVertexes() { return _vertexes;}
-            const std::vector<int>& getVertexes() const { return _vertexes;}
+            std::vector<unsigned  int>& getVertexes() { return _vertexes;}
+            const std::vector<unsigned  int>& getVertexes() const { return _vertexes;}
         protected:
-            std::vector<int> _vertexes;
+            std::vector<unsigned int> _vertexes;
             BoneWeightList _bones; // here we could limit matrix operation by caching (weight * matrix)
         };
 

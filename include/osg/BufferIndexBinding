@@ -39,20 +39,6 @@ class State;
 // Common implementation superclass
 
 
-class OSG_EXPORT BufferBinding : public StateAttribute
-{
- protected:
-    BufferBinding(GLenum target);
-    BufferBinding(GLenum target, BufferData* bo);
-    BufferBinding(const BufferBinding& rhs, const CopyOp& copyop=CopyOp::SHALLOW_COPY);
- public:
-
-
-
-    virtual void apply(State& state) const;
-
-
-};
 
 class OSG_EXPORT BufferIndexBinding : public StateAttribute
 {
@@ -127,7 +113,7 @@ class OSG_EXPORT UniformBufferBinding : public BufferIndexBinding
      *  @param offset offset into buffer object
      *  @param size size of data in buffer object
      */
-    UniformBufferBinding(GLuint index, BufferData* bo, GLintptr offset, GLsizeiptr size);
+    UniformBufferBinding(GLuint index, BufferData* bo, GLintptr offset=0, GLsizeiptr size=0);
     UniformBufferBinding(const UniformBufferBinding& rhs, const CopyOp& copyop=CopyOp::SHALLOW_COPY);
     META_StateAttribute(osg, UniformBufferBinding, UNIFORMBUFFERBINDING);
 
@@ -256,7 +242,7 @@ public:
     };
     ///enable SyncBufferUpload (read back only if draw thread have upload dirty data
     inline void setRamAccess(BufferDataAccess a){_CpuAccess=a;}
-    inline BufferDataAccess getRamAccess(BufferDataAccess a)const{return _CpuAccess;}
+    inline BufferDataAccess getRamAccess()const{return _CpuAccess;}
     ///enable SyncBufferReadBack if READ_WRITE
     inline void setVRamAccess(BufferDataAccess a){_GpuAccess=a;}
     inline BufferDataAccess getVRamAccess()const{return _GpuAccess;}
@@ -267,18 +253,18 @@ public:
     void UpdateGPUflags(const BufferDataReadBack*,RenderInfo*);
     BufferData* getBufferData(){return _bd.get();}
     /// user override return true if _bufferdata have been updated
-    virtual bool synctraversal(Node* node, NodeVisitor* nv){}
+    virtual bool synctraversal(Node* , NodeVisitor* ){return false;}
 
 
 
 protected:
     virtual ~SyncBufferDataUpdateCallback();
+    osg::observer_ptr<BufferData> _bd;
     bool gpuproduced,cpuproduced;
     BufferDataAccess _CpuAccess;
     BufferDataAccess _GpuAccess;
     OpenThreads::Mutex _lock;
     osg::observer_ptr<osg::Camera> _cam;
-    osg::observer_ptr<BufferData> _bd;
     Camera::DrawCallback *_dcb;
 };
 

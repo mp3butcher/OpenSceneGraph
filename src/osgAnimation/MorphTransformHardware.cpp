@@ -42,57 +42,57 @@ void MorphTransformHardware::setShader(osg::Shader* shader)
     _shader = shader;
 }
 
-bool MorphTransformHardware::init(MorphGeometry& geom)
+bool MorphTransformHardware::init(MorphGeometry& morphGeometry)
 {
-    osg::Vec3Array* pos = dynamic_cast<osg::Vec3Array*>(geom.getVertexArray());
-    osg::Vec3Array & vertexSource = *(geom.getVertexSource());
-    osg::Vec3Array& normalSource = *(geom.getNormalSource());
+    osg::Vec3Array* pos = dynamic_cast<osg::Vec3Array*>(morphGeometry.getVertexArray());
 
-    geom.setDataVariance(osg::Object::STATIC);
-    ///check for correct morph configuration (blender exporter doesn't set sources so assume morphgeom arrays are sources:/)
+    osg::Vec3Array * vertexSource = (morphGeometry.getVertexSource());
+    osg::Vec3Array * normalSource = (morphGeometry.getNormalSource());
+    morphGeometry.setDataVariance(osg::Object::STATIC);
+    ///check for correct morph configuration
+    ///(blender osgexport doesn't set sources so assume morphgeom arrays are sources)
     if(pos)
     {
         ///check if source is setted correctly
-        if ( vertexSource.size() != pos->size())
+        if (!vertexSource|| vertexSource->size() != pos->size())
         {
-            vertexSource =*(static_cast<osg::Vec3Array*>( pos->clone(osg::CopyOp::DEEP_COPY_ARRAYS)));//osg::Vec3Array(pos->begin(),pos->end());
-            pos->setDataVariance(osg::Object::STATIC);
+            vertexSource =(static_cast<osg::Vec3Array*>( pos->clone(osg::CopyOp::DEEP_COPY_ARRAYS)));//osg::Vec3Array(pos->begin(),pos->end());
+            pos->setDataVariance(osg::Object::DYNAMIC);
         }
-
-        osg::Vec3Array* normal = dynamic_cast<osg::Vec3Array*>(geom.getNormalArray());
-        bool normalmorphable = geom.getMorphNormals() && normal;
+        osg::Vec3Array* normal = dynamic_cast<osg::Vec3Array*>(morphGeometry.getNormalArray());
+        bool normalmorphable = morphGeometry.getMorphNormals() && normal;
         if(!normalmorphable) {
-            OSG_WARN << "MorphTransformHardware::morph geometry "<<geom.getName()<<" without normal morphing not supported! "  << std::endl;
+            OSG_WARN << "MorphTransformHardware::morph geometry "<<morphGeometry.getName()<<" without normal morphing not supported! "  << std::endl;
             return false;
         }
-        if (normal && normalSource.size() != normal->size())
+        if (normalmorphable && (!normalSource || normalSource->size() != normal->size()))
         {
-            normalSource =*(static_cast<osg::Vec3Array*>( normal->clone(osg::CopyOp::DEEP_COPY_ARRAYS)));//osg::Vec3Array(normal->begin(),normal->end());
-            normal->setDataVariance(osg::Object::STATIC);
+            normalSource =(static_cast<osg::Vec3Array*>( normal->clone(osg::CopyOp::DEEP_COPY_ARRAYS)));//osg::Vec3Array(normal->begin(),normal->end());
+            normal->setDataVariance(osg::Object::DYNAMIC);
         }
     }
     ///end check
-    geom.setVertexArray(geom.getVertexSource());
-    geom.setNormalArray(geom.getNormalSource(),osg::Array::BIND_PER_VERTEX);
-    geom.setDataVariance(osg::Object::STATIC);
+    morphGeometry.setVertexArray(morphGeometry.getVertexSource());
+    morphGeometry.setNormalArray(morphGeometry.getNormalSource(),osg::Array::BIND_PER_VERTEX);
+    morphGeometry.setDataVariance(osg::Object::STATIC);
 
     //create one TBO for all morphtargets (pack vertex/normal)
     osg::Vec3Array *  morphTargets=new osg::Vec3Array ;
-    MorphGeometry::MorphTargetList & morphlist=geom.getMorphTargetList();
+    MorphGeometry::MorphTargetList & morphlist=morphGeometry.getMorphTargetList();
     for(MorphGeometry::MorphTargetList::const_iterator curmorph=morphlist.begin(); curmorph!=morphlist.end(); ++curmorph) {
-        const osg::Geometry * morphgeom=                curmorph->getGeometry() ;
-        const osg::Vec3Array *varray=(osg::Vec3Array*)morphgeom->getVertexArray();
-        const osg::Vec3Array *narray=(osg::Vec3Array*)morphgeom->getNormalArray();
-        if(geom.getMethod()==MorphGeometry::RELATIVE){
-            for(unsigned int i=0; i<geom.getVertexArray()->getNumElements(); ++i) {
+        const osg::Geometry * morphtargetgeom=                curmorph->getGeometry() ;
+        const osg::Vec3Array *varray=(osg::Vec3Array*)morphtargetgeom->getVertexArray();
+        const osg::Vec3Array *narray=(osg::Vec3Array*)morphtargetgeom->getNormalArray();
+        if(morphGeometry.getMethod()==MorphGeometry::RELATIVE){
+            for(unsigned int i=0; i<morphGeometry.getVertexArray()->getNumElements(); ++i) {
                 morphTargets->push_back( (*varray)[i]);
                 morphTargets->push_back( (*narray)[i]);
             }
         }else{
             //convert to RELATIVE as it involve less math in the VS than NORMALIZED
-            const osg::Vec3Array *ovarray=(osg::Vec3Array*)geom.getVertexArray();
-            const osg::Vec3Array *onarray=(osg::Vec3Array*)geom.getNormalArray();
-            for(unsigned int i=0; i<geom.getVertexArray()->getNumElements(); ++i) {
+            const osg::Vec3Array *ovarray=(osg::Vec3Array*)morphGeometry.getVertexArray();
+            const osg::Vec3Array *onarray=(osg::Vec3Array*)morphGeometry.getNormalArray();
+            for(unsigned int i=0; i<morphGeometry.getVertexArray()->getNumElements(); ++i) {
                 morphTargets->push_back( (*varray)[i]- (*ovarray)[i] );
                 morphTargets->push_back( (*narray)[i]- (*onarray)[i] );
             }
@@ -140,11 +140,11 @@ bool MorphTransformHardware::init(MorphGeometry& geom)
 
     program->addShader(_shader.get());
 
-    osg::ref_ptr<osg::StateSet> ss = geom.getOrCreateStateSet();
+    osg::ref_ptr<osg::StateSet> ss = morphGeometry.getOrCreateStateSet();
     ss->addUniform(_uniformTargetsWeight);
     ss->setTextureAttribute(MORPHTEXTUREUNIT,morphTargetsTBO);
     ss->addUniform( morphTBOHandle);
-    ss->addUniform(new osg::Uniform("nbMorphVertex", geom.getVertexArray()->getNumElements()));
+    ss->addUniform(new osg::Uniform("nbMorphVertex", morphGeometry.getVertexArray()->getNumElements()));
     if (_shader.valid())  if(!ss->getAttribute(osg::StateAttribute::PROGRAM))        ss->setAttributeAndModes(program.get());
     _needInit = false;
     return true;

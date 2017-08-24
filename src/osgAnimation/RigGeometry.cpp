@@ -58,7 +58,7 @@ RigGeometry::RigGeometry()
     _needToComputeMatrix = true;
     _matrixFromSkeletonToGeometry = _invMatrixFromSkeletonToGeometry = osg::Matrix::identity();
     // disable the computation of boundingbox for the rig mesh
-    setComputeBoundingBoxCallback(new RigComputeBoundingBoxCallback);
+    setComputeBoundingBoxCallback(new RigComputeBoundingBoxCallback(3));
 
 }
 
@@ -73,7 +73,9 @@ RigGeometry::RigGeometry(const RigGeometry& b, const osg::CopyOp& copyop) :
     _needToComputeMatrix = true;
     _matrixFromSkeletonToGeometry = _invMatrixFromSkeletonToGeometry = osg::Matrix::identity();
     // disable the computation of boundingbox for the rig mesh
-    setComputeBoundingBoxCallback(new RigComputeBoundingBoxCallback);
+
+    setUpdateCallback(new UpdateRigGeometry);
+    setComputeBoundingBoxCallback(new RigComputeBoundingBoxCallback(3));
     // we don't copy the RigImplementation yet. because the RigImplementation need to be initialized in a valid graph, with a skeleton ...
     // don't know yet what to do with a clone of a RigGeometry
 
@@ -99,9 +101,14 @@ void RigGeometry::buildVertexInfluenceSet()
     _vertexInfluenceSet.clear();
     for (osgAnimation::VertexInfluenceMap::iterator it = _vertexInfluenceMap->begin();
          it != _vertexInfluenceMap->end();
-         ++it)
-        _vertexInfluenceSet.addVertexInfluence(it->second);
+         ++it){
 
+       //for(VertexInfluence::iterator vit=it->second.begin();vit!=it->second.end();++vit)
+ if(it->first!=it->second.getName()){
+        OSG_WARN << "buildVertexInfluenceSet can't be called without VertexInfluence already set to the RigGeometry ( " << getName() << " ) " << std::endl;
+ }
+        _vertexInfluenceSet.addVertexInfluence(it->second);
+}
     _vertexInfluenceSet.buildVertex2BoneList();
     _vertexInfluenceSet.buildUniqVertexSetToBoneSetList();
     OSG_DEBUG << "uniq groups " << _vertexInfluenceSet.getUniqVertexSetToBoneSetList().size() << " for " << getName() << std::endl;

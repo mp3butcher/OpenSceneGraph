@@ -50,7 +50,7 @@ namespace osgAnimation
         };
 
         typedef std::vector<BoneWeight> BoneWeightList;
-        typedef std::vector<int> VertexList;
+        typedef std::vector<unsigned int> VertexList;
 
         class UniqBoneSetVertexSet
         {

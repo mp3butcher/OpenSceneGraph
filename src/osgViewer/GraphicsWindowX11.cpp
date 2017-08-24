@@ -2373,4 +2373,3 @@ void GraphicsWindowX11::raiseWindow()
     XFlush(display);
     XSync(display,0);
 }
-

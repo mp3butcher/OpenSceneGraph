@@ -31,7 +31,6 @@
 
 #include <osgGA/Device>
 
-#include <osgUtil/DrawElementTransform>
 #include <iostream>
 
 
@@ -175,8 +174,6 @@ int main(int argc, char** argv)
     osgUtil::Optimizer optimizer;
     optimizer.optimize(loadedModel);
 
-    osgUtil::MakeDrawElementAdjacencyVisitor fok;
-    loadedModel->accept(fok);
 	loadedModel ->getOrCreateUserDataContainer()->addUserObject(osgDB::readFile<osg::ScriptEngine>("ScriptEngine.lua"));
     viewer.setSceneData(loadedModel);
 

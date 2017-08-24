@@ -148,13 +148,13 @@ void RigTransformSoftware::initVertexSetFromBones(const BoneMap& map, const Vert
         }
         // if a bone referenced by a vertexinfluence is missed it can make the sum less than 1.0
         // so we check it and renormalize the all weight bone
-        const double threshold = 1e-4;
+        /*const double threshold = 1e-4;
         if (!_boneSetVertexSet[i].getBones().empty() &&
             (sumOfWeight < 1.0 - threshold ||  sumOfWeight > 1.0 + threshold))
         {
             for (int b = 0; b < (int)boneList.size(); b++)
                 boneList[b].setWeight(boneList[b].getWeight() / sumOfWeight);
-        }
+        }*/
         _boneSetVertexSet[i].getVertexes() = inf.getVertexes();
     }
 }
