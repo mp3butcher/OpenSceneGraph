@@ -104,10 +104,6 @@ public:
     void operator() (StateAttribute* attr, NodeVisitor* nv)
     {
         UniformBufferBinding* ubb = static_cast<UniformBufferBinding*>(attr);
-<<<<<<< HEAD
-       // UniformBufferObject* ubo            = static_cast<UniformBufferObject*>(ubb->getBufferObject());
-=======
->>>>>>> upstream/master
         FloatArray* array = static_cast<FloatArray*>(ubb->getBufferData());
         double time = nv->getFrameStamp()->getSimulationTime();
         double frac = fmod(time, 1.0);

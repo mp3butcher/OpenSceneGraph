@@ -37,14 +37,11 @@
 #include <osgViewer/ViewerEventHandlers>
 #include <osg/BufferTemplate>
 #include <osg/PrimitiveSetIndirect>
+
 #include "ShapeToGeometry.h"
 #include "AggregateGeometryVisitor.h"
-#if 0
-#include "DrawIndirectPrimitiveSet.h"
-#else
-#include <osg/PrimitiveSetIndirect>
-#endif
 #include "GpuCullShaders.h"
+
 
 
 // each instance type may have max 8 LODs ( if you change
@@ -180,10 +177,8 @@ struct IndirectTarget
     IndirectTarget()
         : maxTargetQuantity(0)
     {
-
         indirectCommands    = new osg::DefaultIndirectCommandDrawArrays;
         indirectCommands->getBufferObject()->setUsage(GL_DYNAMIC_DRAW);
-
     }
     IndirectTarget( AggregateGeometryVisitor* agv, osg::Program* program )
         : geometryAggregator(agv), drawProgram(program), maxTargetQuantity(0)
@@ -194,7 +189,6 @@ struct IndirectTarget
     }
     void endRegister(unsigned int index, unsigned int rowsPerInstance, GLenum pixelFormat, GLenum type, GLint internalFormat, bool useMultiDrawArraysIndirect )
     {
-
         indirectCommandTextureBuffer = new osg::TextureBuffer(indirectCommands);
         indirectCommandTextureBuffer->setInternalFormat( GL_R32I );
     #ifndef JUVAL
@@ -212,18 +206,13 @@ struct IndirectTarget
                 osg::DrawArraysIndirect *ipr=new osg::DrawArraysIndirect( GL_TRIANGLES, j );
                 ipr->setIndirectCommandArray( indirectCommands);
                 newPrimitiveSets.push_back(ipr);
-                }
-
+            }
 
             geometryAggregator->getAggregatedGeometry()->removePrimitiveSet(0,geometryAggregator->getAggregatedGeometry()->getNumPrimitiveSets() );
 
             for(unsigned int j=0;j<indirectCommands->size(); ++j)
                 geometryAggregator->getAggregatedGeometry()->addPrimitiveSet( newPrimitiveSets[j] );
-            /*DrawIndirectBufferBinding should be deprecated
-            ///attach a DrawIndirect buffer binding to the stateset for non builtin primset DrawArraysIndirect
-            osg::ref_ptr<osg::DrawIndirectBufferBinding> bb=new osg::DrawIndirectBufferBinding();
-            bb->setBufferObject(indirectCommandbuffer );
-            geometryAggregator->getAggregatedGeometry()->getOrCreateStateSet()->setAttribute(bb );*/
+
         }
         else // use glMultiDrawArraysIndirect()
         {
@@ -1599,3 +1588,4 @@ int main( int argc, char **argv )
 
     return viewer.run();
 }
+
