@@ -273,7 +273,7 @@ public:
                for(unsigned int i=0; i<newindex; ++i)old2new.push_back(newindex);
                unsigned int cpt=0;
                for(osgUtil::EdgeCollapse::PointList::iterator itp=ec._originalPointList.begin(); itp != ec._originalPointList.end(); ++itp)
-                   old2new[(*itp)->_index]=cpt++;
+                   old2new[(*itp)->_index]=(*itp)->_newindex;
         // osgAnimation::VertexInfluenceMap & imap=*rig->getInfluenceMap();
         for(osgAnimation::VertexInfluenceMap::iterator mapit=imap.begin(); mapit!=imap.end(); ++mapit) {
             osgAnimation::VertexInfluence &curvecinf=mapit->second;
@@ -402,6 +402,8 @@ struct SetupRigGeometry : public osg::NodeVisitor
                 //simplify
                 osg::ref_ptr<RigSimplifier> simp=new RigSimplifier(_simplifierRatio,_simplifierWeightTreshold);
 
+                const osg::BoundingBox& bb=rig->getBoundingBox();
+                //simp->setMaximumError(_simplifierRatio*(bb._max-bb._min).length()/2.0);
 osgAnimation::MorphGeometry *morph;
                 // osg::ref_ptr<osg::UIntArray> res=
                 if(!(morph=dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry()))){

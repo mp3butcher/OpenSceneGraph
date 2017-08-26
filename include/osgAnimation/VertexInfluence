@@ -105,7 +105,7 @@ namespace osgAnimation
         /** return a list of unique VertexGroups and their influences**/
         const UniqVertexGroupList& getUniqVertexGroupList() const { return _uniqVertexSetToBoneSet;}
         void addVertexInfluence(const VertexInfluence& v);
-        void buildVertex2BoneList();
+        void buildVertex2BoneList(unsigned int numvertices);
         void clear();
 
         const VertIDToBoneWeightList& getVertexToBoneList() const;

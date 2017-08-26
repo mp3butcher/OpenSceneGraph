@@ -109,7 +109,7 @@ void RigGeometry::buildVertexInfluenceSet()
  }
         _vertexInfluenceSet.addVertexInfluence(it->second);
 }
-    _vertexInfluenceSet.buildVertex2BoneList();
+    _vertexInfluenceSet.buildVertex2BoneList(getSourceGeometry()->getVertexArray()->getNumElements());
     _vertexInfluenceSet.buildUniqVertexGroupList();
     OSG_DEBUG << "uniq groups " << _vertexInfluenceSet.getUniqVertexGroupList().size() << " for " << getName() << std::endl;
 }

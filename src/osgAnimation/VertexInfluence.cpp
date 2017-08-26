@@ -40,12 +40,14 @@ struct invweight_ordered2
         return false;
     }
 };
-void VertexInfluenceSet::buildVertex2BoneList()
+void VertexInfluenceSet::buildVertex2BoneList(unsigned int numvertices)
 {
     _vertex2Bones.clear();
+    _vertex2Bones.reserve(numvertices);
+    _vertex2Bones.resize(numvertices);
     typedef std::set<BoneWeight ,invweight_ordered2>  BoneWeightOrdered;
       std::map<int,BoneWeightOrdered,std::less<int> >tempVec2Bones;
-      unsigned int maxindex=0;
+      //unsigned int maxindex=0;
       for (BoneToVertexList::const_iterator it = _bone2Vertexes.begin(); it != _bone2Vertexes.end(); ++it)
       {
           const VertexInfluence& vi = (*it);
@@ -58,20 +60,19 @@ void VertexInfluenceSet::buildVertex2BoneList()
               if (vi.getName().empty()){
                   OSG_WARN << "VertexInfluenceSet::buildVertex2BoneList warning vertex " << index << " is not assigned to a bone" << std::endl;
               }
-              if(maxindex<index)maxindex=index;
-
-              tempVec2Bones[index].insert(BoneWeight(vi.getName(), weight));;
+             // if(maxindex<index)maxindex=index;
+             _vertex2Bones[index].push_back(BoneWeight(vi.getName(), weight));
+              //tempVec2Bones[index].insert(BoneWeight(vi.getName(), weight));
           ;
           }
       }
 
-      if(tempVec2Bones.size()<maxindex+1 ){
+   /*  if(tempVec2Bones.size()<numvertices ){
           OSG_WARN << "VertexInfluenceSet::some vertices may not have defined influences " << std::endl;
 
       }
       //copy tempVec2Bones to _vertex2Bones
-      _vertex2Bones.reserve(maxindex+1);
-      _vertex2Bones.resize(maxindex+1);
+
       for(std::map<int,BoneWeightOrdered>::iterator iti = tempVec2Bones.begin(); iti != tempVec2Bones.end(); ++iti){
           BoneWeightList& destbonelist=_vertex2Bones[iti->first];
 
@@ -79,7 +80,7 @@ void VertexInfluenceSet::buildVertex2BoneList()
               destbonelist.push_back(*itbw);
             if( destbonelist.size()!=iti->second.size())
                 OSG_WARN<<"WTF"<<std::endl;
-  }
+  }*/
     // normalize weight per vertex
       unsigned int vertid=0;
     for (VertIDToBoneWeightList::iterator it = _vertex2Bones.begin(); it != _vertex2Bones.end(); ++it,++vertid)
