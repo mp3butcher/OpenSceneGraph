@@ -21,7 +21,7 @@
 using namespace osgAnimation;
 
 void VertexInfluenceSet::addVertexInfluence(const VertexInfluence& v) { _bone2Vertexes.push_back(v); }
-const VertexInfluenceSet::VertexIndexToBoneWeightMap& VertexInfluenceSet::getVertexToBoneList() const { return _vertex2Bones;}
+const VertexInfluenceSet::VertIDToBoneWeightList& VertexInfluenceSet::getVertexToBoneList() const { return _vertex2Bones;}
 // this class manage VertexInfluence database by mesh
 // reference bones per vertex ...
 struct invweight_ordered2
@@ -44,7 +44,8 @@ void VertexInfluenceSet::buildVertex2BoneList()
 {
     _vertex2Bones.clear();
     typedef std::set<BoneWeight ,invweight_ordered2>  BoneWeightOrdered;
-      std::map<int,BoneWeightOrdered >tempVec2Bones;
+      std::map<int,BoneWeightOrdered,std::less<int> >tempVec2Bones;
+      unsigned int maxindex=0;
       for (BoneToVertexList::const_iterator it = _bone2Vertexes.begin(); it != _bone2Vertexes.end(); ++it)
       {
           const VertexInfluence& vi = (*it);
@@ -57,32 +58,40 @@ void VertexInfluenceSet::buildVertex2BoneList()
               if (vi.getName().empty()){
                   OSG_WARN << "VertexInfluenceSet::buildVertex2BoneList warning vertex " << index << " is not assigned to a bone" << std::endl;
               }
-              int size=tempVec2Bones[index].size();
+              if(maxindex<index)maxindex=index;
+
               tempVec2Bones[index].insert(BoneWeight(vi.getName(), weight));;
-              if(++size!=tempVec2Bones[index].size())
-                  OSG_WARN<<"WTF"<<std::endl;
+          ;
           }
       }
 
+      if(tempVec2Bones.size()<maxindex+1 ){
+          OSG_WARN << "VertexInfluenceSet::some vertices may not have defined influences " << std::endl;
+
+      }
       //copy tempVec2Bones to _vertex2Bones
+      _vertex2Bones.reserve(maxindex+1);
+      _vertex2Bones.resize(maxindex+1);
       for(std::map<int,BoneWeightOrdered>::iterator iti = tempVec2Bones.begin(); iti != tempVec2Bones.end(); ++iti){
           BoneWeightList& destbonelist=_vertex2Bones[iti->first];
+
           for(BoneWeightOrdered::iterator itbw = iti->second.begin();itbw != iti->second.end(); ++itbw)
               destbonelist.push_back(*itbw);
             if( destbonelist.size()!=iti->second.size())
                 OSG_WARN<<"WTF"<<std::endl;
   }
     // normalize weight per vertex
-    for (VertexIndexToBoneWeightMap::iterator it = _vertex2Bones.begin(); it != _vertex2Bones.end(); ++it)
+      unsigned int vertid=0;
+    for (VertIDToBoneWeightList::iterator it = _vertex2Bones.begin(); it != _vertex2Bones.end(); ++it,++vertid)
     {
-        BoneWeightList& bones = it->second;
+        BoneWeightList& bones =*it;//->second;
         int size = bones.size();
         float sum = 0;
         for (int i = 0; i < size; i++)
             sum += bones[i].getWeight();
         if (sum < 1e-4)
         {
-            OSG_WARN << "VertexInfluenceSet::buildVertex2BoneList warning the vertex " << it->first << " seems to have 0 weight, skip normalize for this vertex" << std::endl;
+            OSG_WARN << "VertexInfluenceSet::buildVertex2BoneList warning the vertex " <<vertid << " seems to have 0 weight, skip normalize for this vertex" << std::endl;
         }
         else
         {
@@ -140,17 +149,18 @@ void VertexInfluenceSet::clear()
     _uniqVertexSetToBoneSet.clear();
 }
 
-void VertexInfluenceSet::buildUniqVertexSetToBoneSetList()
+void VertexInfluenceSet::buildUniqVertexGroupList()
 {
     _uniqVertexSetToBoneSet.clear();
 
-    typedef std::map<BoneWeightList,UniqVertexSetToBoneSet, SortByBoneWeightList> UnifyBoneGroup;
+    typedef std::map<BoneWeightList,VertexGroup, SortByBoneWeightList> UnifyBoneGroup;
     UnifyBoneGroup unifyBuffer;
 
-    for (VertexIndexToBoneWeightMap::iterator it = _vertex2Bones.begin(); it != _vertex2Bones.end(); ++it)
+    unsigned int vertexID=0;
+    for (VertIDToBoneWeightList::iterator it = _vertex2Bones.begin(); it != _vertex2Bones.end(); ++it,++vertexID)
     {
-        BoneWeightList bones = it->second;
-        int vertexIndex = it->first;
+        BoneWeightList bones = *it;//->second;
+        //int vertexIndex = it->first;
 
         // sort the vector to have a consistent key
         std::sort(bones.begin(), bones.end(), SortByNameAndWeight());
@@ -159,7 +169,7 @@ void VertexInfluenceSet::buildUniqVertexSetToBoneSetList()
         UnifyBoneGroup::iterator result = unifyBuffer.find(bones);
         if (result == unifyBuffer.end())
             unifyBuffer[bones].setBones(bones);
-        unifyBuffer[bones].getVertexes().push_back(vertexIndex);
+        unifyBuffer[bones].getVertexes().push_back(vertexID);
     }
 
     _uniqVertexSetToBoneSet.reserve(unifyBuffer.size());
@@ -171,11 +181,11 @@ void VertexInfluenceSet::buildUniqVertexSetToBoneSetList()
     }
         ///DEBUG
         /// rebuild _vertex2bone
- /*    _vertex2Bones.clear();
+    /* _vertex2Bones.clear();
     for (UnifyBoneGroup::iterator it = unifyBuffer.begin(); it != unifyBuffer.end(); ++it)
     {
         const BoneWeightList& bwl=it->first;
-        UniqVertexSetToBoneSet &vsbs=it->second;
+        VertexGroup &vsbs=it->second;
         for(std::vector<unsigned int>::iterator vertit=vsbs.getVertexes().begin();vertit!=vsbs.getVertexes().end();++vertit){
             _vertex2Bones[*vertit]=vsbs.getBones();
         }

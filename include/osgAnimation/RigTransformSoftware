@@ -159,11 +159,11 @@ namespace osgAnimation
                 }
             }
         }
-
+//virtual void prepareData(RigGeometry&);
     protected:
 
         bool init(RigGeometry&);
-        void initVertexSetFromBones(const BoneMap& map, const VertexInfluenceSet::UniqVertexSetToBoneSetList& influence);
+        void initVertexSetFromBones(const BoneMap& map, const VertexInfluenceSet::UniqVertexGroupList& influence);
         std::vector<UniqBoneSetVertexSet> _boneSetVertexSet;
 
         bool _needInit;

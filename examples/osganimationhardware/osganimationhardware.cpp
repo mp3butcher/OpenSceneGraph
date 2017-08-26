@@ -287,7 +287,7 @@ public:
                 }
             }
         }
-        rig->buildVertexInfluenceSet();
+        //rig->buildVertexInfluenceSet();
 
     }
 
@@ -395,7 +395,7 @@ struct SetupRigGeometry : public osg::NodeVisitor
         if (_hardware) {
             osgAnimation::RigGeometry* rig = dynamic_cast<osgAnimation::RigGeometry*>(&geom);
             if (rig) {
-                rig->getInfluenceMap()->cullBoneInfluenceCountPerVertex(8);//,_simplifierWeightTreshold);
+                rig->getInfluenceMap()->cullBoneInfluenceCountPerVertex(8,_simplifierWeightTreshold);
                  //rig->getInfluenceMap()->cullBoneCountPerMesh(2);
                 //rig->buildVertexInfluenceSet();
 #if 1
@@ -477,13 +477,14 @@ if(_simplifierRatio<1.0f)
            //          osgDB::writeNodeFile(*rig,"temp_delete_it.osgb");
                   //  ge=(osg::Geometry*)osgDB::readNodeFile("temp_delete_it.osgb");
 
-                    rig->setSourceGeometry(ge);
+                   if(_simplifierRatio<1.0f) rig->setSourceGeometry(ge);
+                    from.setMorphTransformImplementation(new osgAnimation::MorphTransformHardware);
 
 rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware);
 //rig->setUpdateCallback(rig->getUpdateCallback()->);
 //rig->dirtyDisplayList();
-rig->buildVertexInfluenceSet();
-             if(_simplifierRatio<1.0f)      simp->simplify (*((osg::Geometry*)rig)) ;
+//rig->buildVertexInfluenceSet();
+          //  if(_simplifierRatio<1.0f)      simp->simplify (*((osg::Geometry*)rig)) ;
                 }
 
 
@@ -601,7 +602,7 @@ rig->buildVertexInfluenceSet();
                   morph->setMorphTransformImplementation(new osgAnimation::MorphTransformHardware);
 
                 }
-rig->setRigTransformImplementation(new MyRigTransformHardware());
+rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware());
 
             }
         }

@@ -110,42 +110,75 @@ bool MorphTransformHardware::init(MorphGeometry& morphGeometry)
     _uniformTargetsWeight=new osg::Uniform(osg::Uniform::FLOAT,"morphWeights",morphlist.size());
 
 
-    osg::ref_ptr<osg::Program> program = new osg::Program;
-    program->setName("HardwareMorphing");
-    if (!_shader.valid())
-        _shader = osg::Shader::readShaderFile(osg::Shader::VERTEX,"morphing.vert");
+    osg::ref_ptr<osg::Program> program ;
+    osg::ref_ptr<osg::Shader> vertexshader;
+    osg::ref_ptr<osg::StateSet> stateset = morphGeometry.getOrCreateStateSet();
+    //grab geom source program and vertex shader if _shader is not setted
+    if(!_shader.valid() && (program = (osg::Program*)stateset->getAttribute(osg::StateAttribute::PROGRAM)))
+    {
+        for(unsigned int i=0;i<program->getNumShaders();++i)
+            if(program->getShader(i)->getType()==osg::Shader::VERTEX){
+               // vertexshader=program->getShader(i);
+                program->removeShader(vertexshader);
+            }
+    }else {
 
-    if (!_shader.valid()) {
-        OSG_WARN << "MorphTransformHardware can't load VertexShader" << std::endl;
+    }        program = new osg::Program;
+    program->setName("HardwareMorphing");
+    //set default source if _shader is not user setted
+    if (!vertexshader.valid()){
+        if (!_shader.valid())
+            vertexshader = osg::Shader::readShaderFile(osg::Shader::VERTEX,"morphing.vert");
+        else vertexshader=_shader;
+    }
+
+
+    if (!vertexshader.valid()) {
+        OSG_WARN << "RigTransformHardware can't load VertexShader" << std::endl;
         return false;
     }
 
-    // replace max morph weight by the value from uniform
+    // replace max matrix by the value from uniform
     {
-        std::string str = _shader->getShaderSource();
-        std::string toreplace = std::string("MAX_MORPHWEIGHT");
-        std::size_t start = str.find(toreplace);
-        if (std::string::npos != start) {
-            std::stringstream ss;
-            ss << _uniformTargetsWeight->getNumElements();
-            str.replace(start, toreplace.size(), ss.str());
-            _shader->setShaderSource(str);
+    std::string str = vertexshader->getShaderSource();
+    std::string toreplace = std::string("MAX_MORPHWEIGHT");
+    std::size_t start = str.find(toreplace);
+    if (std::string::npos == start){
+        ///perhaps remanance from previous init (if saved after init) so reload shader
+
+        vertexshader = osg::Shader::readShaderFile(osg::Shader::VERTEX,"morphing.vert");
+        if (!vertexshader.valid()) {
+            OSG_WARN << "RigTransformHardware can't load VertexShader" << std::endl;
+            return false;
         }
-        else
-        {
-            OSG_WARN << "MAX_MORPHWEIGHT not found in Shader! " << str << std::endl;
-        }
-        OSG_INFO << "Shader " << str << std::endl;
+        str = vertexshader->getShaderSource();
+        start = str.find(toreplace);
+    }
+    if (std::string::npos != start) {
+        std::stringstream ss;
+        ss << _uniformTargetsWeight->getNumElements();
+        str.replace(start, toreplace.size(), ss.str());
+        vertexshader->setShaderSource(str);
+    }
+    else
+    {
+        OSG_WARN << "MAX_MORPHWEIGHT not found in Shader! " << str << std::endl;
+    }
+    OSG_INFO << "Shader " << str << std::endl;
     }
 
-    program->addShader(_shader.get());
+
+
+    program->addShader(vertexshader.get());
+    //morphGeometry.setStateSet((osg::StateSet *) osg::CopyOp()(source.getOrCreateStateSet()));
 
     osg::ref_ptr<osg::StateSet> ss = morphGeometry.getOrCreateStateSet();
     ss->addUniform(_uniformTargetsWeight);
     ss->setTextureAttribute(MORPHTEXTUREUNIT,morphTargetsTBO);
     ss->addUniform( morphTBOHandle);
     ss->addUniform(new osg::Uniform("nbMorphVertex", morphGeometry.getVertexArray()->getNumElements()));
-    if (_shader.valid())  if(!ss->getAttribute(osg::StateAttribute::PROGRAM))        ss->setAttributeAndModes(program.get());
+
+    ss->setAttributeAndModes(program.get());
     _needInit = false;
     return true;
 }

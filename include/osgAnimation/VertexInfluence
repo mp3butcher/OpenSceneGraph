@@ -82,13 +82,16 @@ namespace osgAnimation
         };
 
         typedef std::vector<BoneWeight> BoneWeightList;
-        typedef std::map<unsigned int,BoneWeightList> VertexIndexToBoneWeightMap;
+     //  typedef std::map<unsigned int,BoneWeightList> VertIDToBoneWeightList;
+         typedef std::vector<BoneWeightList> VertIDToBoneWeightList;
 
-        class UniqVertexSetToBoneSet
+        class VertexGroup
         {
         public:
+            // set Influences of the VertexGroup
             void setBones(BoneWeightList& bones) { _bones = bones;}
             const BoneWeightList& getBones() const { return _bones;}
+            // set Vertex Indices of the VertexGroup
             std::vector<unsigned  int>& getVertexes() { return _vertexes;}
             const std::vector<unsigned  int>& getVertexes() const { return _vertexes;}
         protected:
@@ -96,19 +99,20 @@ namespace osgAnimation
             BoneWeightList _bones; // here we could limit matrix operation by caching (weight * matrix)
         };
 
-        typedef std::vector<UniqVertexSetToBoneSet> UniqVertexSetToBoneSetList;
-
-        const UniqVertexSetToBoneSetList& getUniqVertexSetToBoneSetList() const { return _uniqVertexSetToBoneSet;}
+        typedef std::vector<VertexGroup> UniqVertexGroupList;
+        /** construct a vector of unique VertexGroups and their influences**/
+        void buildUniqVertexGroupList();
+        /** return a list of unique VertexGroups and their influences**/
+        const UniqVertexGroupList& getUniqVertexGroupList() const { return _uniqVertexSetToBoneSet;}
         void addVertexInfluence(const VertexInfluence& v);
         void buildVertex2BoneList();
-        void buildUniqVertexSetToBoneSetList();
         void clear();
 
-        const VertexIndexToBoneWeightMap& getVertexToBoneList() const;
+        const VertIDToBoneWeightList& getVertexToBoneList() const;
     protected:
         BoneToVertexList _bone2Vertexes;
-        VertexIndexToBoneWeightMap _vertex2Bones;
-        UniqVertexSetToBoneSetList _uniqVertexSetToBoneSet;
+        VertIDToBoneWeightList _vertex2Bones;
+        UniqVertexGroupList _uniqVertexSetToBoneSet;
     };
 
 }

@@ -110,8 +110,8 @@ void RigGeometry::buildVertexInfluenceSet()
         _vertexInfluenceSet.addVertexInfluence(it->second);
 }
     _vertexInfluenceSet.buildVertex2BoneList();
-    _vertexInfluenceSet.buildUniqVertexSetToBoneSetList();
-    OSG_DEBUG << "uniq groups " << _vertexInfluenceSet.getUniqVertexSetToBoneSetList().size() << " for " << getName() << std::endl;
+    _vertexInfluenceSet.buildUniqVertexGroupList();
+    OSG_DEBUG << "uniq groups " << _vertexInfluenceSet.getUniqVertexGroupList().size() << " for " << getName() << std::endl;
 }
 
 void RigGeometry::computeMatrixFromRootSkeleton()
@@ -145,8 +145,8 @@ void RigGeometry::copyFrom(osg::Geometry& from)
 
     osg::Geometry& target = *this;
 
-    target.setStateSet(from.getStateSet());
-
+ //  target.setStateSet(from.getStateSet());
+ target.setStateSet((osg::StateSet *) osg::CopyOp()(from.getOrCreateStateSet()));
     // copy over primitive sets.
     target.getPrimitiveSetList() = from.getPrimitiveSetList();
 

@@ -153,8 +153,9 @@ namespace osgAnimation
                     osg::notify(osg::WARN) << "A RigGeometry did not find a parent skeleton for RigGeometry ( " << geom->getName() << " )" << std::endl;
                     return;
                 }
-                geom->buildVertexInfluenceSet();
                 geom->setSkeleton(finder._root.get());
+                geom->buildVertexInfluenceSet();
+                //geom->getRigTransformImplementation()->prepareData(*geom);
             }
 
             if(!geom->getSkeleton())

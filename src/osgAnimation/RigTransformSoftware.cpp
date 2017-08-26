@@ -18,6 +18,7 @@
 #include <osgAnimation/BoneMapVisitor>
 #include <osgAnimation/RigGeometry>
 
+#include <algorithm>
 using namespace osgAnimation;
 
 RigTransformSoftware::RigTransformSoftware()
@@ -33,6 +34,133 @@ RigTransformSoftware::RigTransformSoftware(const RigTransformSoftware& rts,const
 
 }
 
+// sort by name and weight
+struct SortByNameAndWeight : public std::less<VertexInfluenceSet::BoneWeight>
+{
+    bool operator()(const VertexInfluenceSet::BoneWeight& b0,
+                    const VertexInfluenceSet::BoneWeight& b1) const
+    {
+        if (b0.getBoneName() < b1.getBoneName())
+            return true;
+        else if (b0.getBoneName() > b1.getBoneName())
+            return false;
+        if (b0.getWeight() < b1.getWeight())
+            return true;
+        return false;
+    }
+};
+
+struct SortByBoneWeightList : public std::less<VertexInfluenceSet::BoneWeightList>
+{
+    bool operator()(const VertexInfluenceSet::BoneWeightList& b0,
+                    const VertexInfluenceSet::BoneWeightList& b1) const
+    {
+        if (b0.size() < b1.size())
+            return true;
+        else if (b0.size() > b1.size())
+            return false;
+
+        int size = b0.size();
+        for (int i = 0; i < size; i++)
+        {
+            bool result = SortByNameAndWeight()(b0[i], b1[i]);
+            if (result)
+                return true;
+            else if (SortByNameAndWeight()(b1[i], b0[i]))
+                return false;
+        }
+        return false;
+    }
+};
+/*
+void RigTransformSoftware::prepareData(RigGeometry&rig){
+    typedef std::vector<VertexInfluenceSet::BoneWeight> BoneWeightList;
+    typedef std::map<unsigned int,BoneWeightList> VertIDToBoneWeightList;
+    VertIDToBoneWeightList _vertex2Bones;
+    _vertex2Bones.clear();
+
+    VertexInfluenceSet::BoneToVertexList _bone2Vertexes;
+  //  typedef std::set<BoneWeight ,invweight_ordered2>  BoneWeightOrdered;
+    //  std::map<int,BoneWeightOrdered >tempVec2Bones;
+    VertexInfluenceMap *_vertexInfluenceMap=rig.getInfluenceMap();
+    for (osgAnimation::VertexInfluenceMap::iterator it = _vertexInfluenceMap->begin();
+         it != _vertexInfluenceMap->end();
+         ++it){
+
+       //for(VertexInfluence::iterator vit=it->second.begin();vit!=it->second.end();++vit)
+ if(it->first!=it->second.getName()){
+        OSG_WARN << "buildVertexInfluenceSet can't be called without VertexInfluence already set to the RigGeometry ( " << getName() << " ) " << std::endl;
+ }
+        _bone2Vertexes.push_back(it->second);
+          const VertexInfluence& vi = it->second;
+          int size = vi.size();
+          for (int i = 0; i < size; i++)
+          {
+              VertexIndexWeight viw = vi[i];
+              int index = viw.first;
+              float weight = viw.second;
+              if (vi.getName().empty()){
+                  OSG_WARN << "VertexInfluenceSet::buildVertex2BoneList warning vertex " << index << " is not assigned to a bone" << std::endl;
+              }
+              int size=_vertex2Bones[index].size();
+              //tempVec2Bones[index]
+              _vertex2Bones[index].push_back(VertexInfluenceSet::BoneWeight(vi.getName(), weight));;
+              if(++size!=_vertex2Bones[index].size())
+                  OSG_WARN<<"WTF"<<std::endl;
+          }
+      }
+
+
+    // normalize weight per vertex
+    for (VertIDToBoneWeightList::iterator it = _vertex2Bones.begin(); it != _vertex2Bones.end(); ++it)
+    {
+        BoneWeightList& bones = it->second;
+        int size = bones.size();
+        float sum = 0;
+        for (int i = 0; i < size; i++)
+            sum += bones[i].getWeight();
+        if (sum < 1e-4)
+        {
+            OSG_WARN << "VertexInfluenceSet::buildVertex2BoneList warning the vertex " << it->first << " seems to have 0 weight, skip normalize for this vertex" << std::endl;
+        }
+        else
+        {
+            float mult = 1.0/sum;
+            for (int i = 0; i < size; i++)
+                bones[i].setWeight(bones[i].getWeight() * mult);
+        }
+    }
+/*     VertexInfluenceSet::UniqVertexGroupList
+     _uniqVertexSetToBoneSet;
+    _uniqVertexSetToBoneSet.clear();
+//typedef std::vector<UniqVertexGroup>
+    typedef std::map<VertexInfluenceSet::BoneWeightList,VertexInfluenceSet::UniqVertexGroupList, SortByBoneWeightList> UnifyBoneGroup;
+    UnifyBoneGroup unifyBuffer;
+
+    for (VertIDToBoneWeightList::iterator it = _vertex2Bones.begin(); it != _vertex2Bones.end(); ++it)
+    {
+        BoneWeightList bones = it->second;
+        int vertexIndex = it->first;
+
+        // sort the vector to have a consistent key
+        std::sort(bones.begin(), bones.end(), SortByNameAndWeight());
+
+        // we use the vector<BoneWeight> as key to differentiate group
+        UnifyBoneGroup::iterator result = unifyBuffer.find(bones);
+        if (result == unifyBuffer.end())
+            unifyBuffer[bones].setBones(bones);
+        unifyBuffer[bones].getVertexes().push_back(vertexIndex);
+    }
+
+    _uniqVertexSetToBoneSet.reserve(unifyBuffer.size());
+
+
+    for (UnifyBoneGroup::iterator it = unifyBuffer.begin(); it != unifyBuffer.end(); ++it)
+    {
+        _uniqVertexSetToBoneSet.push_back(it->second);
+    }* /
+
+}*/
 bool RigTransformSoftware::init(RigGeometry& geom)
 {
     if (!geom.getSkeleton())
@@ -41,7 +169,7 @@ bool RigTransformSoftware::init(RigGeometry& geom)
     BoneMapVisitor mapVisitor;
     geom.getSkeleton()->accept(mapVisitor);
     BoneMap bm = mapVisitor.getBoneMap();
-    initVertexSetFromBones(bm, geom.getVertexInfluenceSet().getUniqVertexSetToBoneSetList());
+    initVertexSetFromBones(bm, geom.getVertexInfluenceSet().getUniqVertexGroupList());
 
     if (geom.getSourceGeometry())
         geom.copyFrom(*geom.getSourceGeometry());
@@ -116,7 +244,7 @@ void RigTransformSoftware::operator()(RigGeometry& geom)
 
 }
 
-void RigTransformSoftware::initVertexSetFromBones(const BoneMap& map, const VertexInfluenceSet::UniqVertexSetToBoneSetList& influence)
+void RigTransformSoftware::initVertexSetFromBones(const BoneMap& map, const VertexInfluenceSet::UniqVertexGroupList& influence)
 {
     _boneSetVertexSet.clear();
 
@@ -124,7 +252,7 @@ void RigTransformSoftware::initVertexSetFromBones(const BoneMap& map, const Vert
     _boneSetVertexSet.resize(size);
     for (int i = 0; i < size; i++)
     {
-        const VertexInfluenceSet::UniqVertexSetToBoneSet& inf = influence[i];
+        const VertexInfluenceSet::VertexGroup& inf = influence[i];
         int nbBones = inf.getBones().size();
         BoneWeightList& boneList = _boneSetVertexSet[i].getBones();
 

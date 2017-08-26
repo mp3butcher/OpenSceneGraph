@@ -54,7 +54,7 @@ namespace osgAnimation
             const unsigned int &getIndex() const { return _boneIndex; }
             const float &getWeight() const { return _boneWeight; }
         };
-        typedef std::vector<std::set<IndexWeightEntry> > VertexIndexWeightList;
+        typedef std::vector<std::vector<IndexWeightEntry> > VertexIndexWeightList;
 
 
 
@@ -67,9 +67,11 @@ namespace osgAnimation
         unsigned int getNumBonesPerVertex() const;
         unsigned int getNumVertexes() const;
 
-        bool createPalette(unsigned int nbVertexes,const BoneMap& boneMap, const VertexInfluenceSet::VertexIndexToBoneWeightMap& vertexIndexToBoneWeightMap);
+        bool createPalette(unsigned int nbVertexes,const BoneMap& boneMap, const VertexInfluenceSet::VertIDToBoneWeightList& vertexIndexToBoneWeightMap);
 
         virtual void operator()(RigGeometry&);
+
+        //virtual void prepareData(RigGeometry&);
         void setShader(osg::Shader*);
 
         const BoneNamePaletteIndex& getBoneNameToPalette() {
@@ -93,6 +95,10 @@ namespace osgAnimation
         osg::ref_ptr<osg::Shader> _shader;
 
         bool _needInit;
+
+        typedef std::vector<VertexInfluenceSet::BoneWeight> BoneWeightList;
+       // typedef std::map<unsigned int,BoneWeightList> VertIDToBoneWeightList;
+        VertexInfluenceSet::VertIDToBoneWeightList _vertex2Bones;
     };
 }
 
