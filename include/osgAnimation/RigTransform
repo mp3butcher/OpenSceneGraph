@@ -32,7 +32,6 @@ namespace osgAnimation
         META_Object(osgAnimation,RigTransform)
 
         virtual void operator()(RigGeometry&) {}
-        virtual bool init(RigGeometry&){}
 
     protected:
         virtual ~RigTransform() {}

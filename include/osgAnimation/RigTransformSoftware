@@ -37,7 +37,7 @@ namespace osgAnimation
 
         virtual void operator()(RigGeometry&);
 
-        class BonePtrWeight
+        /*class BonePtrWeight
         {
         public:
             BonePtrWeight(Bone* bone, float weight) : _bone(bone), _weight(weight) {}
@@ -47,9 +47,9 @@ namespace osgAnimation
         protected:
             osg::observer_ptr<Bone> _bone;
             float _weight;
-        };
+        };*/
 
-        typedef std::vector<BonePtrWeight> BonePtrWeightList;
+        typedef VertexInfluenceSet::BoneWeightList BonePtrWeightList;
         typedef std::vector<unsigned int> VertexList;
 
         class VertexGroup
@@ -98,7 +98,7 @@ namespace osgAnimation
 
                 for(BonePtrWeightList::iterator bwit=_boneweights.begin();bwit!=_boneweights.end();++bwit )
                 {
-                    const Bone* bone = bwit->getBone();
+                    const Bone* bone = bwit->getBonePtr();
                     if (!bone)
                     {
                         osg::notify(osg::WARN) << this << " RigTransformSoftware::computeMatrixForVertexSet Warning a bone is null, skip it" << std::endl;
@@ -122,39 +122,34 @@ namespace osgAnimation
         template <class V> void compute(const osg::Matrix& transform, const osg::Matrix& invTransform, const V* src, V* dst)
         {
             // the result of matrix mult should be cached to be used for vertexes transform and normal transform and maybe other computation
-            int size = _uniqInfluenceSet2VertIDList.size();
-            for (int i = 0; i < size; i++)
+            for(std::vector<VertexGroup>::iterator itvg=_uniqInfluenceSet2VertIDList.begin(); itvg!=_uniqInfluenceSet2VertIDList.end(); ++itvg)
             {
-                VertexGroup& uniq = _uniqInfluenceSet2VertIDList[i];
+                VertexGroup& uniq = *itvg;
                 uniq.computeMatrixForVertexSet();
                 osg::Matrix matrix =  transform * uniq.getMatrix() * invTransform;
 
                 const VertexList& vertexes = uniq.getVertexes();
-                int vertexSize = vertexes.size();
-                for (int j = 0; j < vertexSize; j++)
+                for(VertexList::const_iterator vertIDit=vertexes.begin(); vertIDit!=vertexes.end(); ++vertIDit)
                 {
-                    int idx = vertexes[j];
-                    dst[idx] = src[idx] * matrix;
+                    dst[*vertIDit] = src[*vertIDit] * matrix;
                 }
+
             }
         }
 
 
         template <class V> void computeNormal(const osg::Matrix& transform, const osg::Matrix& invTransform, const V* src, V* dst)
         {
-            int size = _uniqInfluenceSet2VertIDList.size();
-            for (int i = 0; i < size; i++)
+            for(std::vector<VertexGroup>::iterator itvg=_uniqInfluenceSet2VertIDList.begin(); itvg!=_uniqInfluenceSet2VertIDList.end(); ++itvg)
             {
-                VertexGroup& uniq = _uniqInfluenceSet2VertIDList[i];
+                VertexGroup& uniq = *itvg;
                 uniq.computeMatrixForVertexSet();
                 osg::Matrix matrix =  transform * uniq.getMatrix() * invTransform;
 
                 const VertexList& vertexes = uniq.getVertexes();
-                int vertexSize = vertexes.size();
-                for (int j = 0; j < vertexSize; j++)
+                for(VertexList::const_iterator vertIDit=vertexes.begin(); vertIDit!=vertexes.end(); ++vertIDit)
                 {
-                    int idx = vertexes[j];
-                    dst[idx] = osg::Matrix::transform3x3(src[idx],matrix);
+                    dst[*vertIDit] = osg::Matrix::transform3x3(src[*vertIDit],matrix);
                 }
             }
         }
@@ -162,7 +157,7 @@ namespace osgAnimation
     protected:
 
         bool init(RigGeometry&);
-        void initVertexSetFromBones(const BoneMap& map, const VertexInfluenceSet::UniqVertexGroupList& influence);
+        void initVertexSetFromBones(const BoneMap& map, const VertexInfluenceSet::VertexGroupList& influence);
         std::vector<VertexGroup> _uniqInfluenceSet2VertIDList;
 
         bool _needInit;

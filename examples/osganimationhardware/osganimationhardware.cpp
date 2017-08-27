@@ -77,7 +77,7 @@ struct MyRigTransformHardware : public osgAnimation::RigTransformHardware
         osgAnimation::BoneMapVisitor mapVisitor;
         geom.getSkeleton()->accept(mapVisitor);
         osgAnimation::BoneMap bm = mapVisitor.getBoneMap();
-        if (!createPalette(pos->size(),bm, geom.getVertexInfluenceSet().getVertexToBoneList()))
+        if (!createPalette(pos->size(),bm, geom.getVertexInfluenceSet().getVertexToBoneWeightList()))
             return false;
 
         int attribIndex = 11;
@@ -189,9 +189,9 @@ public:
         index2influences.resize(oldverticesize);
         osgAnimation::VertexInfluenceMap & imap=*rig->getInfluenceMap();
         for(osgAnimation::VertexInfluenceMap::iterator mapit=imap.begin(); mapit!=imap.end(); ++mapit) {
-            osgAnimation::VertexInfluence &curvecinf=mapit->second;
-            for(osgAnimation::VertexInfluence::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end(); ++curinf) {
-                osgAnimation:: VertexIndexWeight& inf=*curinf;
+            osgAnimation::BoneInfluenceList &curvecinf=mapit->second;
+            for(osgAnimation::BoneInfluenceList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end(); ++curinf) {
+                osgAnimation:: IndexWeight& inf=*curinf;
                 index2influences[inf.first].push_back(BoneVecandInf(mapit->first, inf.second) );
             }
         }
@@ -276,9 +276,9 @@ public:
                    old2new[(*itp)->_index]=(*itp)->_newindex;
         // osgAnimation::VertexInfluenceMap & imap=*rig->getInfluenceMap();
         for(osgAnimation::VertexInfluenceMap::iterator mapit=imap.begin(); mapit!=imap.end(); ++mapit) {
-            osgAnimation::VertexInfluence &curvecinf=mapit->second;
-            for(osgAnimation::VertexInfluence::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end();) {
-                osgAnimation:: VertexIndexWeight& inf=*curinf;
+            osgAnimation::BoneInfluenceList &curvecinf=mapit->second;
+            for(osgAnimation::BoneInfluenceList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end();) {
+                osgAnimation:: IndexWeight& inf=*curinf;
                 if(old2new[inf.first]!=newindex) {
                     inf.first=old2new[inf.first];
                     ++curinf;
@@ -298,8 +298,8 @@ public:
         if(index2influences.size()<newindex)index2influences.resize(newindex);
         for(Bone2Weight::iterator infit=pnewinfs.begin(); infit!=pnewinfs.end(); ++infit) {
         if(  infit->second >_weighttreshold){
-            osgAnimation::VertexInfluence &bonevec= (*rig->getInfluenceMap())[infit->first];
-            bonevec.push_back( osgAnimation:: VertexIndexWeight(pNew->_index , infit->second ) );
+            osgAnimation::BoneInfluenceList &bonevec= (*rig->getInfluenceMap())[infit->first];
+            bonevec.push_back( osgAnimation::IndexWeight(pNew->_index , infit->second ) );
             index2influences[pNew->_index].push_back(BoneVecandInf(infit->first, infit->second  ));
         }
         }
@@ -403,7 +403,7 @@ struct SetupRigGeometry : public osg::NodeVisitor
                 osg::ref_ptr<RigSimplifier> simp=new RigSimplifier(_simplifierRatio,_simplifierWeightTreshold);
 
                 const osg::BoundingBox& bb=rig->getBoundingBox();
-                //simp->setMaximumError(_simplifierRatio*(bb._max-bb._min).length()/2.0);
+                simp->setMaximumError(0.002*(bb._max-bb._min).length());
 osgAnimation::MorphGeometry *morph;
                 // osg::ref_ptr<osg::UIntArray> res=
                 if(!(morph=dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry()))){

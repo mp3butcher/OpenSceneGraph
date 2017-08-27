@@ -82,8 +82,6 @@ namespace osgAnimation
         inline void setRigTransformImplementation(RigTransform* rig) { _rigTransformImplementation = rig; }
         inline const RigTransform* getRigTransformImplementation() const { return _rigTransformImplementation.get(); }
 
-
-        //virtual void drawImplementation(osg::RenderInfo& renderInfo) const;
         void update();
 
         const osg::Matrix& getMatrixFromSkeletonToGeometry() const;
@@ -153,9 +151,8 @@ namespace osgAnimation
                     osg::notify(osg::WARN) << "A RigGeometry did not find a parent skeleton for RigGeometry ( " << geom->getName() << " )" << std::endl;
                     return;
                 }
-                geom->setSkeleton(finder._root.get());
                 geom->buildVertexInfluenceSet();
-                //geom->getRigTransformImplementation()->prepareData(*geom);
+                geom->setSkeleton(finder._root.get());
             }
 
             if(!geom->getSkeleton())

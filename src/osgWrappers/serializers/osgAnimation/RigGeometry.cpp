@@ -20,7 +20,7 @@ namespace wrap_osgAnimationRigGeometry{
             is.readWrappedString(name);
             viSize = is.readSize(); is >> is.BEGIN_BRACKET;
 
-            osgAnimation::VertexInfluence vi;
+            osgAnimation::BoneInfluenceList vi;
             vi.setName( name );
             vi.reserve( viSize );
             for ( unsigned int j=0; j<viSize; ++j )
@@ -28,7 +28,7 @@ namespace wrap_osgAnimationRigGeometry{
                 int index = 0;
                 float weight = 0.0f;
                 is >> index >> weight;
-                vi.push_back( osgAnimation::VertexIndexWeight(index, weight) );
+                vi.push_back( osgAnimation::IndexWeight(index, weight) );
             }
             (*map)[name] = vi;
             is >> is.END_BRACKET;
@@ -47,14 +47,14 @@ namespace wrap_osgAnimationRigGeometry{
               itr!=map->end(); ++itr )
         {
             std::string name = itr->first;
-            const osgAnimation::VertexInfluence& vi = itr->second;
+            const osgAnimation::BoneInfluenceList& vi = itr->second;
             if ( name.empty() ) name = "Empty";
 
             os << os.PROPERTY("VertexInfluence");
             os.writeWrappedString(name);
             os.writeSize(vi.size()) ; os << os.BEGIN_BRACKET << std::endl;
 
-            for ( osgAnimation::VertexInfluence::const_iterator vitr=vi.begin();
+            for ( osgAnimation::BoneInfluenceList::const_iterator vitr=vi.begin();
                   vitr != vi.end(); ++vitr )
             {
                 os << vitr->first << vitr->second << std::endl;

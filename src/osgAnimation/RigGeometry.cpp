@@ -58,7 +58,7 @@ RigGeometry::RigGeometry()
     _needToComputeMatrix = true;
     _matrixFromSkeletonToGeometry = _invMatrixFromSkeletonToGeometry = osg::Matrix::identity();
     // disable the computation of boundingbox for the rig mesh
-    setComputeBoundingBoxCallback(new RigComputeBoundingBoxCallback(3));
+    setComputeBoundingBoxCallback(new RigComputeBoundingBoxCallback());
 
 }
 
@@ -74,8 +74,7 @@ RigGeometry::RigGeometry(const RigGeometry& b, const osg::CopyOp& copyop) :
     _matrixFromSkeletonToGeometry = _invMatrixFromSkeletonToGeometry = osg::Matrix::identity();
     // disable the computation of boundingbox for the rig mesh
 
-    setUpdateCallback(new UpdateRigGeometry);
-    setComputeBoundingBoxCallback(new RigComputeBoundingBoxCallback(3));
+    setComputeBoundingBoxCallback(new RigComputeBoundingBoxCallback());
     // we don't copy the RigImplementation yet. because the RigImplementation need to be initialized in a valid graph, with a skeleton ...
     // don't know yet what to do with a clone of a RigGeometry
 
@@ -102,14 +101,9 @@ void RigGeometry::buildVertexInfluenceSet()
     for (osgAnimation::VertexInfluenceMap::iterator it = _vertexInfluenceMap->begin();
          it != _vertexInfluenceMap->end();
          ++it){
-
-       //for(VertexInfluence::iterator vit=it->second.begin();vit!=it->second.end();++vit)
- if(it->first!=it->second.getName()){
-        OSG_WARN << "buildVertexInfluenceSet can't be called without VertexInfluence already set to the RigGeometry ( " << getName() << " ) " << std::endl;
- }
-        _vertexInfluenceSet.addVertexInfluence(it->second);
-}
-    _vertexInfluenceSet.buildVertex2BoneList(getSourceGeometry()->getVertexArray()->getNumElements());
+        _vertexInfluenceSet.addBoneInfluenceList(it->second);
+    }
+    _vertexInfluenceSet.buildVertexToBoneWeightList(getSourceGeometry()->getVertexArray()->getNumElements());
     _vertexInfluenceSet.buildUniqVertexGroupList();
     OSG_DEBUG << "uniq groups " << _vertexInfluenceSet.getUniqVertexGroupList().size() << " for " << getName() << std::endl;
 }
@@ -145,8 +139,8 @@ void RigGeometry::copyFrom(osg::Geometry& from)
 
     osg::Geometry& target = *this;
 
- //  target.setStateSet(from.getStateSet());
- target.setStateSet((osg::StateSet *) osg::CopyOp()(from.getOrCreateStateSet()));
+    target.setStateSet(from.getStateSet());
+    //target.setStateSet((osg::StateSet *) osg::CopyOp()(from.getOrCreateStateSet()));
     // copy over primitive sets.
     target.getPrimitiveSetList() = from.getPrimitiveSetList();
 
