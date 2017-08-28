@@ -37,13 +37,17 @@ namespace osgAnimation
 
         META_Object(osgAnimation,RigTransformHardware);
 
+        void setShader(osg::Shader* shader){            _shader = shader;        }
+        osg::Shader * getShader() const{         return _shader;           }
+
         typedef osg::Matrix MatrixType;
         typedef std::vector<osg::ref_ptr<osg::Vec4Array> > BoneWeightAttribList;
+
         typedef std::vector<osg::ref_ptr<Bone> > BonePalette;
         typedef std::map<std::string, unsigned int> BoneNamePaletteIndex;
 
         typedef std::vector<osg::Matrix> MatrixPalette;
-        class IndexWeightEntry
+        /*class IndexWeightEntry
         {
             unsigned int _boneIndex;
             float _boneWeight;
@@ -53,7 +57,7 @@ namespace osgAnimation
             bool operator <(const IndexWeightEntry &o)const{return (_boneIndex<o._boneIndex);}//if (_boneIndex<o._boneIndex)return true;if((_boneIndex>o._boneIndex))return false;return _boneWeight>o._boneWeight;}
             const unsigned int &getIndex() const { return _boneIndex; }
             const float &getWeight() const { return _boneWeight; }
-        };
+        };*/
 
 
         osg::Vec4Array* getVertexAttrib(unsigned int index);
@@ -65,21 +69,19 @@ namespace osgAnimation
         unsigned int getNumBonesPerVertex() const;
         unsigned int getNumVertexes() const;
 
-        bool createPalette(unsigned int nbVertexes,const BoneMap& boneMap, const VertexInfluenceSet::VertIDToBoneWeightList& vertexIndexToBoneWeightMap);
+       // bool createPalette(unsigned int nbVertexes,const BoneMap& boneMap, const VertexInfluenceSet::VertIDToBoneWeightList& vertexIndexToBoneWeightMap);
 
         virtual void operator()(RigGeometry&);
-        virtual void prepareData(RigGeometry&rig);
+        virtual bool prepareData(RigGeometry&rig);
 
-        void setShader(osg::Shader*);
-
-        const BoneNamePaletteIndex& getBoneNameToPalette() {
+        BoneNamePaletteIndex& getBoneNameToPalette() {
             return _boneNameToPalette;
+        }
+        BonePalette& getBonePalette() {
+            return _bonePalette;
         }
 
     protected:
-
-        bool init(RigGeometry&);
-         osg::Uniform* createVertexUniform();
 
         unsigned int _bonesPerVertex;
         unsigned int _nbVertexes;
@@ -91,8 +93,9 @@ namespace osgAnimation
         osg::ref_ptr<osg::Shader> _shader;
 
         bool _needInit;
+        bool buildPalette(BoneMap& ,RigGeometry&rig);
 
-        VertexInfluenceSet::VertIDToBoneWeightList _vertex2Bones;
+       // std::vector<BoneWeightList> _vertex2Bones;
     };
 }
 

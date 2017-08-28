@@ -26,20 +26,40 @@
 namespace osgAnimation
 {
 
-    // first is vertex index, and second the weight, the
-    typedef std::pair<unsigned int, float> IndexWeight;
-    typedef std::vector<IndexWeight> VertexList;
-    class OSGANIMATION_EXPORT BoneInfluenceList : public VertexList
+    // first is bonename, and second the weight
+    struct OSGANIMATION_EXPORT BoneWeight: public std::pair<std::string, float>
+    {
+        BoneWeight( std::string f,float s):
+        std::pair<std::string,float>(f,s){}
+        inline const std::string& getBoneName()const{return first;}
+        inline void setBoneName(const std::string&s){first=s;}
+        inline const float &getWeight()const{return second;}
+        inline void setWeight(float i){second=i;}
+    };
+    // first is vertex index, and second the weight
+    struct OSGANIMATION_EXPORT IndexWeight: public std::pair<unsigned int, float>
+    {
+        IndexWeight( unsigned int f,float s): std::pair<unsigned int,float>(f,s){}
+        inline const unsigned int& getIndex()const{return first;}
+        inline void setIndex(unsigned int i){first=i;}
+        inline const float &getWeight()const{return second;}
+        inline void setWeight(float i){second=i;}
+    };
+
+
+    typedef std::vector<IndexWeight> IndexWeightList;
+
+    /// IndexWeightList attached to a bone
+    class OSGANIMATION_EXPORT BoneInfluenceList : public IndexWeightList
     {
     public:
-        const std::string& getName() const { return _name;}
-        void setName(const std::string& name) { _name = name;}
-
+        const std::string& getBoneName() const { return _name;}
+        void setBoneName(const std::string& name) { _name = name;}
     protected:
-        // the name is the bone to link to
         std::string _name;
     };
 
+    ///From BoneName To IndexWeightList of the bone
     class VertexInfluenceMap : public std::map<std::string, BoneInfluenceList> , public osg::Object
     {
     public:
@@ -56,7 +76,7 @@ namespace osgAnimation
         void cullBoneCountPerMesh(unsigned int numbonepermesh);
     };
 
-
+/*
     // this class manage VertexInfluence database by mesh
     // reference bones per vertex ...
     class OSGANIMATION_EXPORT VertexInfluenceSet
@@ -79,7 +99,7 @@ namespace osgAnimation
             /*bool operator<(const BoneWeight& bw2)const{        if (_weight > bw2._weight)return true;
             if (_weight < bw2._weight)return false;
             return(_boneName<bw2._boneName);
-                                                     }*/
+                                                     }* /
         protected:
             std::string _boneName;
             float _weight;
@@ -114,10 +134,10 @@ namespace osgAnimation
 
         typedef std::vector<VertexGroup> VertexGroupList;
 
-        /** build the shorted vector of unique VertexGroups and their associated vert indices */
+        /** build the shorted vector of unique VertexGroups and their associated vert indices * /
         void buildUniqVertexGroupList();
 
-        /** return a list of unique VertexGroups and their associated vert indices */
+        /** return a list of unique VertexGroups and their associated vert indices * /
         const VertexGroupList& getUniqVertexGroupList() const { return _uniqVertexSetToBoneSet;}
 
         void clear();
@@ -127,7 +147,7 @@ namespace osgAnimation
         VertIDToBoneWeightList _vertex2Bones;
         VertexGroupList _uniqVertexSetToBoneSet;
     };
-
+*/
 }
 
 #endif

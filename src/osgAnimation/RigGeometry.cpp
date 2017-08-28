@@ -66,7 +66,7 @@ RigGeometry::RigGeometry()
 RigGeometry::RigGeometry(const RigGeometry& b, const osg::CopyOp& copyop) :
     osg::Geometry(b,copyop),
     _geometry(b._geometry),
-    _vertexInfluenceSet(b._vertexInfluenceSet),
+    //_vertexInfluenceSet(b._vertexInfluenceSet),
     _vertexInfluenceMap(b._vertexInfluenceMap),
     _needToComputeMatrix(b._needToComputeMatrix)
 {
@@ -88,7 +88,7 @@ const osg::Matrix& RigGeometry::getInvMatrixFromSkeletonToGeometry() const { ret
 void RigGeometry::drawImplementation(osg::RenderInfo& renderInfo) const
 {
     osg::Geometry::drawImplementation(renderInfo);
-}*/
+}
 
 void RigGeometry::buildVertexInfluenceSet()
 {
@@ -107,7 +107,7 @@ void RigGeometry::buildVertexInfluenceSet()
     _vertexInfluenceSet.buildUniqVertexGroupList();
     OSG_DEBUG << "uniq groups " << _vertexInfluenceSet.getUniqVertexGroupList().size() << " for " << getName() << std::endl;
 }
-
+*/
 void RigGeometry::computeMatrixFromRootSkeleton()
 {
     if (!_root.valid())

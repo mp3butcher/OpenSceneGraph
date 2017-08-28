@@ -21,7 +21,7 @@ namespace wrap_osgAnimationRigGeometry{
             viSize = is.readSize(); is >> is.BEGIN_BRACKET;
 
             osgAnimation::BoneInfluenceList vi;
-            vi.setName( name );
+            vi.setBoneName( name );
             vi.reserve( viSize );
             for ( unsigned int j=0; j<viSize; ++j )
             {

@@ -17,7 +17,7 @@
 
 #include <osgAnimation/Export>
 #include <osgAnimation/Skeleton>
-#include <osgAnimation/RigTransform>
+#include <osgAnimation/RigTransformSoftware>
 #include <osgAnimation/VertexInfluence>
 #include <osg/Geometry>
 
@@ -71,8 +71,8 @@ namespace osgAnimation
 
 
         // this build the internal database about vertex influence and bones
-        void buildVertexInfluenceSet();
-        inline const VertexInfluenceSet& getVertexInfluenceSet() const { return _vertexInfluenceSet;}
+        //void buildVertexInfluenceSet();
+        //inline const VertexInfluenceSet& getVertexInfluenceSet() const { return _vertexInfluenceSet;}
 
         void computeMatrixFromRootSkeleton();
 
@@ -112,7 +112,6 @@ namespace osgAnimation
         osg::ref_ptr<osg::Geometry> _geometry;
         osg::ref_ptr<RigTransform> _rigTransformImplementation;
 
-        VertexInfluenceSet _vertexInfluenceSet;
         osg::ref_ptr<VertexInfluenceMap> _vertexInfluenceMap;
 
         osg::Matrix _matrixFromSkeletonToGeometry;
@@ -151,8 +150,11 @@ namespace osgAnimation
                     osg::notify(osg::WARN) << "A RigGeometry did not find a parent skeleton for RigGeometry ( " << geom->getName() << " )" << std::endl;
                     return;
                 }
-                geom->buildVertexInfluenceSet();
                 geom->setSkeleton(finder._root.get());
+
+                if(!geom->getRigTransformImplementation())
+                    geom->setRigTransformImplementation(new RigTransformSoftware());
+                geom->getRigTransformImplementation()->prepareData(*geom);
             }
 
             if(!geom->getSkeleton())

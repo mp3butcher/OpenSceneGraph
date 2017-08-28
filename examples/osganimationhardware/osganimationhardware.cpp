@@ -77,8 +77,8 @@ struct MyRigTransformHardware : public osgAnimation::RigTransformHardware
         osgAnimation::BoneMapVisitor mapVisitor;
         geom.getSkeleton()->accept(mapVisitor);
         osgAnimation::BoneMap bm = mapVisitor.getBoneMap();
-        if (!createPalette(pos->size(),bm, geom.getVertexInfluenceSet().getVertexToBoneWeightList()))
-            return false;
+        //if (!createPalette(pos->size(),bm, geom.getVertexInfluenceSet().getVertexToBoneWeightList()))
+           // return false;
 
         int attribIndex = 11;
         int nbAttribs = getNumVertexAttrib();
@@ -403,7 +403,7 @@ struct SetupRigGeometry : public osg::NodeVisitor
                 osg::ref_ptr<RigSimplifier> simp=new RigSimplifier(_simplifierRatio,_simplifierWeightTreshold);
 
                 const osg::BoundingBox& bb=rig->getBoundingBox();
-                simp->setMaximumError(0.002*(bb._max-bb._min).length());
+                simp->setMaximumError(0.006*(bb._max-bb._min).length());
 osgAnimation::MorphGeometry *morph;
                 // osg::ref_ptr<osg::UIntArray> res=
                 if(!(morph=dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry()))){
