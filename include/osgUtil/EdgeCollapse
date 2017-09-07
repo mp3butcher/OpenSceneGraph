@@ -60,7 +60,6 @@ namespace osgUtil {
             bool _protected;
 
             unsigned int _index;
-            unsigned int _newindex;
 
             osg::Vec3           _vertex;
             FloatList           _attributes;

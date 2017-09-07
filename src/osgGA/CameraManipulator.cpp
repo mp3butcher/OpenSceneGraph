@@ -110,7 +110,12 @@ void CameraManipulator::computeHomePosition(const osg::Camera *camera, bool useB
                 double horizontal2 = fabs(top - bottom) / zNear / 2.;
                 double dim = horizontal2 < vertical2 ? horizontal2 : vertical2;
                 double viewAngle = atan2(dim,1.);
-                dist = boundingSphere.radius() / sin(viewAngle);
+                viewAngle=sin(viewAngle);
+                if( viewAngle<10e-3){
+                    OSG_WARN<<"osgGA/CameraManipulator.cpp correct bad sin l115"<<std::endl;
+                    viewAngle=10e-3;
+                }
+                dist = boundingSphere.radius() /viewAngle ;
             }
             else
             {

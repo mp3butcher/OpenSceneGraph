@@ -1373,7 +1373,7 @@ class CopyPointsToVertexArrayVisitor : public osg::ArrayVisitor
 
             for(unsigned int i=0;i<_pointList.size();++i)
             {
-                _pointList[i]->_newindex = i;
+                _pointList[i]->_index = i;
                 osg::Vec3& vertex = _pointList[i]->_vertex;
                 array[i].set(vertex.x(),vertex.y());
             }
@@ -1386,7 +1386,7 @@ class CopyPointsToVertexArrayVisitor : public osg::ArrayVisitor
 
             for(unsigned int i=0;i<_pointList.size();++i)
             {
-                _pointList[i]->_newindex = i;
+                _pointList[i]->_index = i;
                 array[i] = _pointList[i]->_vertex;
             }
             array.dirty();
@@ -1398,7 +1398,7 @@ class CopyPointsToVertexArrayVisitor : public osg::ArrayVisitor
 
             for(unsigned int i=0;i<_pointList.size();++i)
             {
-                 _pointList[i]->_newindex = i;
+                 _pointList[i]->_index = i;
                 osg::Vec3& vertex = _pointList[i]->_vertex;
                 array[i].set(vertex.x(),vertex.y(),vertex.z(),1.0f);
             }
@@ -1473,9 +1473,9 @@ void EdgeCollapse::copyBackToGeometry()
         ++titr)
     {
         const EdgeCollapse::Triangle* triangle = (*titr).get();
-        (*primitives)[pos++] = triangle->_p1->_newindex;
-        (*primitives)[pos++] = triangle->_p2->_newindex;
-        (*primitives)[pos++] = triangle->_p3->_newindex;
+        (*primitives)[pos++] = triangle->_p1->_index;
+        (*primitives)[pos++] = triangle->_p2->_index;
+        (*primitives)[pos++] = triangle->_p3->_index;
     }
 
     _geometry->getPrimitiveSetList().clear();

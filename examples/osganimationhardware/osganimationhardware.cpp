@@ -78,7 +78,7 @@ struct MyRigTransformHardware : public osgAnimation::RigTransformHardware
         geom.getSkeleton()->accept(mapVisitor);
         osgAnimation::BoneMap bm = mapVisitor.getBoneMap();
         //if (!createPalette(pos->size(),bm, geom.getVertexInfluenceSet().getVertexToBoneWeightList()))
-           // return false;
+        // return false;
 
         int attribIndex = 11;
         int nbAttribs = getNumVertexAttrib();
@@ -189,8 +189,8 @@ public:
         index2influences.resize(oldverticesize);
         osgAnimation::VertexInfluenceMap & imap=*rig->getInfluenceMap();
         for(osgAnimation::VertexInfluenceMap::iterator mapit=imap.begin(); mapit!=imap.end(); ++mapit) {
-            osgAnimation::BoneInfluenceList &curvecinf=mapit->second;
-            for(osgAnimation::BoneInfluenceList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end(); ++curinf) {
+            osgAnimation::IndexWeightList &curvecinf=mapit->second;
+            for(osgAnimation::IndexWeightList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end(); ++curinf) {
                 osgAnimation:: IndexWeight& inf=*curinf;
                 index2influences[inf.first].push_back(BoneVecandInf(mapit->first, inf.second) );
             }
@@ -248,12 +248,12 @@ public:
         }
 
 
-      /*  std::vector<uint> old2new;
-        for(unsigned int i=0; i<newindex; ++i)old2new.push_back(0xffffffff);
-        unsigned int cpt=0;
-        for(osgUtil::EdgeCollapse::PointSet::iterator itp=ec._pointSet.begin(); itp != ec._pointSet.end(); ++itp)
-            old2new[(*itp)->_index]=cpt++;
-        ///NB: copyback modify _index for reindexation so pick the oldone before*/
+       std::vector<uint> old2new;
+          for(unsigned int i=0; i<newindex; ++i)old2new.push_back(newindex);
+          unsigned int cpt=0;
+          for(osgUtil::EdgeCollapse::PointSet::iterator itp=ec._pointSet.begin(); itp != ec._pointSet.end(); ++itp)
+              old2new[(*itp)->_index]=cpt++;
+          ///NB: copyback modify _index for reindexation so pick the oldone before
         ///
         ec.copyBackToGeometry();
 
@@ -269,15 +269,15 @@ public:
           }*/
 
         ///post simplifier : change Influences according ec points old and new indices
-        std::vector<uint> old2new;
-               for(unsigned int i=0; i<newindex; ++i)old2new.push_back(newindex);
-               unsigned int cpt=0;
-               for(osgUtil::EdgeCollapse::PointList::iterator itp=ec._originalPointList.begin(); itp != ec._originalPointList.end(); ++itp)
-                   old2new[(*itp)->_index]=(*itp)->_newindex;
+         /*  std::vector<uint> old2new;
+        for(unsigned int i=0; i<newindex; ++i)old2new.push_back(newindex);
+        unsigned int cpt=0;
+        for(osgUtil::EdgeCollapse::PointList::iterator itp=ec._originalPointList.begin(); itp != ec._originalPointList.end(); ++itp)
+            old2new[(*itp)->_index]=(*itp)->_newindex;*/
         // osgAnimation::VertexInfluenceMap & imap=*rig->getInfluenceMap();
         for(osgAnimation::VertexInfluenceMap::iterator mapit=imap.begin(); mapit!=imap.end(); ++mapit) {
-            osgAnimation::BoneInfluenceList &curvecinf=mapit->second;
-            for(osgAnimation::BoneInfluenceList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end();) {
+            osgAnimation::IndexWeightList &curvecinf=mapit->second;
+            for(osgAnimation::IndexWeightList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end();) {
                 osgAnimation:: IndexWeight& inf=*curinf;
                 if(old2new[inf.first]!=newindex) {
                     inf.first=old2new[inf.first];
@@ -297,14 +297,14 @@ public:
         pNew->_index = newindex++;
         if(index2influences.size()<newindex)index2influences.resize(newindex);
         for(Bone2Weight::iterator infit=pnewinfs.begin(); infit!=pnewinfs.end(); ++infit) {
-        if(  infit->second >_weighttreshold){
-            osgAnimation::BoneInfluenceList &bonevec= (*rig->getInfluenceMap())[infit->first];
-            bonevec.push_back( osgAnimation::IndexWeight(pNew->_index , infit->second ) );
-            index2influences[pNew->_index].push_back(BoneVecandInf(infit->first, infit->second  ));
-        }
+            if(  infit->second >_weighttreshold) {
+                osgAnimation::IndexWeightList &bonevec= (*rig->getInfluenceMap())[infit->first];
+                bonevec.push_back( osgAnimation::IndexWeight(pNew->_index , infit->second ) );
+                index2influences[pNew->_index].push_back(BoneVecandInf(infit->first, infit->second  ));
+            }
         }
     }
-    virtual bool divideEdge(osgUtil::EdgeCollapse::Edge* edge, osgUtil::EdgeCollapse::Point* pNew){
+    virtual bool divideEdge(osgUtil::EdgeCollapse::Edge* edge, osgUtil::EdgeCollapse::Point* pNew) {
         OSG_WARN<<"EdgeDivide"<<std::endl;
     }
     virtual osgUtil::EdgeCollapse::Point* computeInterpolatedPoint(osgUtil::EdgeCollapse::Edge* edge,float r) {
@@ -343,7 +343,7 @@ public:
                 if( iit->first==iit2->first) {
                     ///same bone so interpolate
                     //if( iit->second *r1  +iit2->second*r2>_weighttreshold)
-                        tempPoints[point][iit->first]=  iit->second *r1      +iit2->second*r2;
+                    tempPoints[point][iit->first]=  iit->second *r1      +iit2->second*r2;
                     found=true;
                     break;
                 }
@@ -352,7 +352,7 @@ public:
             if(!found) {
                 ///not found  in both so simply copy p1inf
                 //if( iit->second *r1>_weighttreshold)
-                    tempPoints[point][iit->first]=  iit->second*r1 ;
+                tempPoints[point][iit->first]=  iit->second*r1 ;
             }
 
         }
@@ -368,8 +368,8 @@ public:
 
             if(!found) {
                 ///not found  in both so simply copy p2inf
-               // if( iit2->second*r2>_weighttreshold)
-                    tempPoints[point][iit2->first]=  iit2->second*r2;
+                // if( iit2->second*r2>_weighttreshold)
+                tempPoints[point][iit2->first]=  iit2->second*r2;
             }
 
         }
@@ -396,7 +396,10 @@ struct SetupRigGeometry : public osg::NodeVisitor
             osgAnimation::RigGeometry* rig = dynamic_cast<osgAnimation::RigGeometry*>(&geom);
             if (rig) {
                 rig->getInfluenceMap()->cullBoneInfluenceCountPerVertex(8,_simplifierWeightTreshold);
-                 //rig->getInfluenceMap()->cullBoneCountPerMesh(2);
+
+                rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware);
+                rig->getRigTransformImplementation()->prepareData(*rig);
+                //rig->getInfluenceMap()->cullBoneCountPerMesh(2);
                 //rig->buildVertexInfluenceSet();
 #if 1
                 //simplify
@@ -404,30 +407,30 @@ struct SetupRigGeometry : public osg::NodeVisitor
 
                 const osg::BoundingBox& bb=rig->getBoundingBox();
                 simp->setMaximumError(0.006*(bb._max-bb._min).length());
-osgAnimation::MorphGeometry *morph;
+                osgAnimation::MorphGeometry *morph;
                 // osg::ref_ptr<osg::UIntArray> res=
-                if(!(morph=dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry()))){
-if(_simplifierRatio<1.0f)
-                     simp->simplify (*((osg::Geometry*)rig)) ;
-                }else {
+                if(!(morph=dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry()))) {
+                    if(_simplifierRatio<1.0f)
+                        simp->simplify (*((osg::Geometry*)rig)) ;
+                } else {
                     osg::ref_ptr<osg::Geometry> ge=new osg::Geometry();//*morph,osg::CopyOp::DEEP_COPY_ALL);
                     ge->setUseVertexArrayObject(false);
-                                        ge->setUseDisplayList(true);
+                    ge->setUseDisplayList(true);
                     osg::Geometry& target=*ge.get();
-                  osgAnimation::MorphGeometry &from=*morph;
+                    osgAnimation::MorphGeometry &from=*morph;
 
-              /*   osgAnimation:: RigGeometry::FindNearestParentSkeleton finder;
-                  if(rig->getParents().size() > 1)
-                      osg::notify(osg::WARN) << "A RigGeometry should not have multi parent ( " << rig->getName() << " )" << std::endl;
-                  rig->getParents()[0]->accept(finder);
+                    /*   osgAnimation:: RigGeometry::FindNearestParentSkeleton finder;
+                        if(rig->getParents().size() > 1)
+                            osg::notify(osg::WARN) << "A RigGeometry should not have multi parent ( " << rig->getName() << " )" << std::endl;
+                        rig->getParents()[0]->accept(finder);
 
-                  if(!finder._root.valid())
-                  {
-                      osg::notify(osg::WARN) << "A RigGeometry did not find a parent skeleton for RigGeometry ( " << rig->getName() << " )" << std::endl;
-                      return;
-                  }
-                  rig->buildVertexInfluenceSet();
-                  rig->setSkeleton(finder._root.get());*/
+                        if(!finder._root.valid())
+                        {
+                            osg::notify(osg::WARN) << "A RigGeometry did not find a parent skeleton for RigGeometry ( " << rig->getName() << " )" << std::endl;
+                            return;
+                        }
+                        rig->buildVertexInfluenceSet();
+                        rig->setSkeleton(finder._root.get());*/
 
                     target.setStateSet(from.getStateSet());
 
@@ -459,7 +462,7 @@ if(_simplifierRatio<1.0f)
                         target.setFogCoordArray(from.getFogCoordArray(), osg::Array::BIND_PER_VERTEX);
                     }
 
-                    for(unsigned int ti=0;ti<from.getNumTexCoordArrays();++ti)
+                    for(unsigned int ti=0; ti<from.getNumTexCoordArrays(); ++ti)
                     {
                         if (from.getTexCoordArray(ti))
                         {
@@ -468,7 +471,7 @@ if(_simplifierRatio<1.0f)
                     }
 
                     osg::Geometry::ArrayList& arrayList = from.getVertexAttribArrayList();
-                    for(unsigned int vi=0;vi< arrayList.size();++vi)
+                    for(unsigned int vi=0; vi< arrayList.size(); ++vi)
                     {
                         osg::Array* array = arrayList[vi].get();
                         if (array)
@@ -476,19 +479,22 @@ if(_simplifierRatio<1.0f)
                             target.setVertexAttribArray(vi,array, osg::Array::BIND_PER_VERTEX);
                         }
                     }
-           //          osgDB::writeNodeFile(*rig,"temp_delete_it.osgb");
-                  //  ge=(osg::Geometry*)osgDB::readNodeFile("temp_delete_it.osgb");
+                    //          osgDB::writeNodeFile(*rig,"temp_delete_it.osgb");
+                    //  ge=(osg::Geometry*)osgDB::readNodeFile("temp_delete_it.osgb");
 
-                   if(_simplifierRatio<1.0f) rig->setSourceGeometry(ge);
+                    if(_simplifierRatio<1.0f) rig->setSourceGeometry(ge);
                     from.setMorphTransformImplementation(new osgAnimation::MorphTransformHardware);
 
-rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware);
+                    rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware);
 //rig->setUpdateCallback(rig->getUpdateCallback()->);
 //rig->dirtyDisplayList();
 //rig->buildVertexInfluenceSet();
-          //  if(_simplifierRatio<1.0f)      simp->simplify (*((osg::Geometry*)rig)) ;
+                    if(_simplifierRatio<1.0f)      simp->simplify (*((osg::Geometry*)rig)) ;
                 }
 
+                rig->getInfluenceMap()->normalize(rig->getSourceGeometry()->getVertexArray()->getNumElements());
+                //rig->getInfluenceMap()->destroyUnusedBones(*rig->getSkeleton());
+                //rig->getRigTransformImplementation()->prepareData(*rig);
 
 
 #endif
@@ -499,7 +505,7 @@ rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware);
                     osg::ref_ptr<osg::Geometry> ge=new osg::Geometry();//*morph.get(),osg::CopyOp::DEEP_COPY_ALL);
                     ge->setUseVertexArrayObject(true);
                     osg::Geometry& target=*ge.get();
-                  osgAnimation::MorphGeometry &from=*morph.get();
+                    osgAnimation::MorphGeometry &from=*morph.get();
                     target.setStateSet(from.getStateSet());
 
                     // copy over primitive sets.
@@ -530,7 +536,7 @@ rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware);
                         target.setFogCoordArray(from.getFogCoordArray(), osg::Array::BIND_PER_VERTEX);
                     }
 
-                    for(unsigned int ti=0;ti<from.getNumTexCoordArrays();++ti)
+                    for(unsigned int ti=0; ti<from.getNumTexCoordArrays(); ++ti)
                     {
                         if (from.getTexCoordArray(ti))
                         {
@@ -539,7 +545,7 @@ rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware);
                     }
 
                     osg::Geometry::ArrayList& arrayList = from.getVertexAttribArrayList();
-                    for(unsigned int vi=0;vi< arrayList.size();++vi)
+                    for(unsigned int vi=0; vi< arrayList.size(); ++vi)
                     {
                         osg::Array* array = arrayList[vi].get();
                         if (array)
@@ -551,8 +557,8 @@ rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware);
                     osg::ref_ptr<RigSimplifier> simp2=new RigSimplifier(_simplifierRatio,_simplifierWeightTreshold);
 
 
-                  //  simp2->setMaximumError(0.1);
-                   // simp->setSampleRatio(0.);
+                    //  simp2->setMaximumError(0.1);
+                    // simp->setSampleRatio(0.);
                     simp2->simplify (*((osg::Geometry*)rig)) ;
                     //rig->buildVertexInfluenceSet();
 #else
@@ -571,9 +577,9 @@ rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware);
                             ge->setNormalArray(n);
                             osg::Vec3Array* mtv=(osg::Vec3Array*)morph->getMorphTarget(i).getGeometry()->getVertexArray();
                             osg::Vec3Array* mtn=(osg::Vec3Array*)morph->getMorphTarget(i).getGeometry()->getNormalArray();
-                         /*  osg::Vec3Array* ovs=(osg::Vec3Array*)morph->getVertexArray();
-                            osg::Vec3Array* ons=(osg::Vec3Array*)morph->getNormalArray();*/
-                             osg::Vec3Array* ovs=(osg::Vec3Array*)morph->getVertexSource();
+                            /*  osg::Vec3Array* ovs=(osg::Vec3Array*)morph->getVertexArray();
+                               osg::Vec3Array* ons=(osg::Vec3Array*)morph->getNormalArray();*/
+                            osg::Vec3Array* ovs=(osg::Vec3Array*)morph->getVertexSource();
                             osg::Vec3Array* ons=(osg::Vec3Array*)morph->getNormalSource();
 
                             for(unsigned int j=0; j< ovs->getNumElements(); ++j) {
@@ -596,15 +602,15 @@ rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware);
                     morph->setVertexArray(morph->getVertexSource());
                     morph->setNormalArray(morph->getNormalSource());
                     simp2->simplify(*rig);
-                  //  morph->setVertexSource((osg::Vec3Array*)morph->getVertexArray());
-                   // morph->setNormalSource((osg::Vec3Array*)morph->getNormalArray());
+                    //  morph->setVertexSource((osg::Vec3Array*)morph->getVertexArray());
+                    // morph->setNormalSource((osg::Vec3Array*)morph->getNormalArray());
                     morph->setVertexArray(0);
                     morph->setNormalArray(0);
 #endif
-                  morph->setMorphTransformImplementation(new osgAnimation::MorphTransformHardware);
+                    morph->setMorphTransformImplementation(new osgAnimation::MorphTransformHardware);
 
                 }
-rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware());
+                rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware());
 
             }
         }

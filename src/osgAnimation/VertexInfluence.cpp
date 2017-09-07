@@ -17,6 +17,11 @@
 #include <iostream>
 #include <algorithm>
 #include <set>
+#include <osgAnimation/BoneMapVisitor>
+#include <osgAnimation/RigGeometry>
+#include <osgDB/OutputStream>
+#include <osgDB/ClassInterface>
+#include <osgDB/Options>
 
 using namespace osgAnimation;
 #if 0
@@ -210,56 +215,71 @@ struct invweight_ordered
     }
 };
 ///cull weakest influences in order to fit targetted numbonepervertex
-void VertexInfluenceMap::cullBoneInfluenceCountPerVertex(unsigned int numbonepervertex,float minweight, bool renormalize) {
+void VertexInfluenceMap::cullBoneInfluenceCountPerVertex(unsigned int numbonepervertex,float minweight,bool makeOddWeightPerVertex, bool renormalize) {
 
     typedef std::set<BoneWeight,invweight_ordered >  BoneWeightOrdered;
     std::map<int,BoneWeightOrdered > tempVec2Bones;
     for(VertexInfluenceMap::iterator mapit=this->begin(); mapit!=this->end(); ++mapit) {
-        BoneInfluenceList &curvecinf=mapit->second;
-        for(BoneInfluenceList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end(); ++curinf) {
+        IndexWeightList &curvecinf=mapit->second;
+        const std::string bonename=mapit->first;
+        for(IndexWeightList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end(); ++curinf) {
             IndexWeight& inf=*curinf;
-            if( curvecinf.getBoneName().empty()) {
+            if( bonename.empty()) {
                 OSG_WARN << "VertexInfluenceSet::buildVertex2BoneList warning vertex " << inf.first << " is not assigned to a bone" << std::endl;
             }
-            else if(inf.second>minweight)tempVec2Bones[inf.first].insert(BoneWeight(curvecinf.getBoneName(), inf.second));
+            else if(inf.second>minweight)tempVec2Bones[inf.first].insert(BoneWeight(bonename, inf.second));
         }
     }
     this->clear();
+
     for( std::map<int,BoneWeightOrdered >::iterator mapit=tempVec2Bones.begin(); mapit!=tempVec2Bones.end(); ++mapit) {
         BoneWeightOrdered& bwset=mapit->second;
         unsigned int newsize=numbonepervertex<bwset.size()?numbonepervertex:bwset.size();
         float sum=0;
+
+        if(makeOddWeightPerVertex &&bwset.size()<=newsize)if(bwset.size()%2==1&&bwset.size()>2)bwset.erase(*bwset.rbegin());
         while(bwset.size()>newsize)bwset.erase(*bwset.rbegin());
-        // if(renormalize)
-        for(BoneWeightOrdered::iterator bwit=bwset.begin(); bwit!=bwset.end(); ++bwit)
-            sum+=bwit->getWeight();
-        sum=1.0f/sum;
-        // if(!renormalize||sum>1e-4)
-        for(BoneWeightOrdered::iterator bwit=bwset.begin(); bwit!=bwset.end(); ++bwit) {
-            BoneInfluenceList & inf= (*this)[bwit->getBoneName()];
-            inf.setBoneName(bwit->getBoneName());
-            inf.push_back(IndexWeight(mapit->first,renormalize? bwit->getWeight()*sum: bwit->getWeight()));
+
+        if(makeOddWeightPerVertex)if(bwset.size()%2==1&&bwset.size()>2)bwset.erase(*bwset.rbegin());
+        if(renormalize) {
+            for(BoneWeightOrdered::iterator bwit=bwset.begin(); bwit!=bwset.end(); ++bwit)
+                sum+=bwit->getWeight();
+            if(sum>1e-4) {
+                sum=1.0f/sum;
+                for(BoneWeightOrdered::iterator bwit=bwset.begin(); bwit!=bwset.end(); ++bwit) {
+                    IndexWeightList & inf= (*this)[bwit->getBoneName()];
+                    inf.push_back(IndexWeight(mapit->first, bwit->getWeight()*sum));
+                }
+            }
+        } else {
+            for(BoneWeightOrdered::iterator bwit=bwset.begin(); bwit!=bwset.end(); ++bwit) {
+                IndexWeightList & inf= (*this)[bwit->getBoneName()];
+                inf.push_back(IndexWeight(mapit->first,bwit->getWeight()));
+            }
+
         }
     }
 }
-void normalize(VertexInfluenceMap*map) {
+void VertexInfluenceMap::normalize(unsigned int numvert) {
 
     typedef std::pair<float, std::vector<float*> > PerVertWeights;
-    std::map<unsigned int,PerVertWeights > localstore;
-    for(VertexInfluenceMap::iterator mapit=map->begin(); mapit!=map->end(); ++mapit) {
-        BoneInfluenceList &curvecinf=mapit->second;
-        for(BoneInfluenceList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end(); ++curinf) {
+    std::vector<PerVertWeights > localstore;
+    localstore.resize(numvert);
+    for(VertexInfluenceMap::iterator mapit=this->begin(); mapit!=this->end(); ++mapit) {
+        IndexWeightList &curvecinf=mapit->second;
+        for(IndexWeightList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end(); ++curinf) {
             IndexWeight& inf=*curinf;
             localstore[inf.first].first+=inf.second;
             localstore[inf.first].second.push_back(&inf.second);
 
         }
     }
-    for(std::map<unsigned int,PerVertWeights >::iterator itvert=localstore.begin(); itvert!=localstore.end(); ++itvert) {
-        PerVertWeights & weights=itvert->second;
+    unsigned int vertid=0;
+    for(std::vector<PerVertWeights >::iterator itvert=localstore.begin(); itvert!=localstore.end(); ++itvert, ++vertid) {
+        PerVertWeights & weights=*itvert;
         if(weights.first< 1e-4)
         {
-            OSG_WARN << "VertexInfluenceSet::buildVertex2BoneList warning the vertex " <<itvert->first << " seems to have 0 weight, skip normalize for this vertex" << std::endl;
+            OSG_WARN << "VertexInfluenceMap::normalize warning the vertex " <<vertid << " seems to have 0 weight, skip normalize for this vertex" << std::endl;
         }
         else
         {
@@ -279,11 +299,12 @@ void VertexInfluenceMap::cullBoneCountPerMesh(unsigned int numbonepermesh) {
     typedef std::map<std::string,std::pair<float,unsigned int> >  BoneName2TotalInf;
     BoneName2TotalInf bone2total;
     for(VertexInfluenceMap::iterator mapit=this->begin(); mapit!=this->end(); ++mapit) {
-        BoneInfluenceList &curvecinf=mapit->second;
-        std::pair<float,unsigned int> & bonetotal=bone2total[curvecinf.getBoneName()];
-        for(BoneInfluenceList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end(); ++curinf) {
+        IndexWeightList &curvecinf=mapit->second;
+        const std::string& bonename= mapit->first;
+        std::pair<float,unsigned int> & bonetotal=bone2total[bonename];
+        for(IndexWeightList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end(); ++curinf) {
             IndexWeight& inf=*curinf;
-            if( curvecinf.getBoneName().empty()) {
+            if( bonename.empty()) {
                 OSG_WARN << "VertexInfluenceMap::cullBoneCountPerMesh warning vertex " << inf.first << " is not assigned to a bone" << std::endl;
             }
             else {
@@ -301,22 +322,21 @@ void VertexInfluenceMap::cullBoneCountPerMesh(unsigned int numbonepermesh) {
     std::vector<BoneWeight> totalinfsorteddesc;
     for(BoneWeightOrdered::reverse_iterator it=totalinfset.rbegin(); it!=totalinfset.rend(); it++)
         totalinfsorteddesc.push_back(BoneWeight(it->getBoneName(),it->getWeight()));
-    //std::reverse_copy (totalinfset.begin(),totalinfset.end(),totalinfsorteddesc.begin());
 
     std::vector<BoneWeight>::iterator lastbone=totalinfsorteddesc.begin();
     while(totalinfsorteddesc.size()>numbonepermesh&&lastbone!=totalinfsorteddesc.end()) {
 
         //test bone removal==good if forall vert its not the unique influence
         bool goodforremoval=true;
-        BoneInfluenceList &curvecinf=(*this)[lastbone->getBoneName()];
-        for(BoneInfluenceList::iterator infit=curvecinf.begin(); infit!=curvecinf.end()&&goodforremoval; infit++) {
+        IndexWeightList &curvecinf=(*this)[lastbone->getBoneName()];
+        for(IndexWeightList::iterator infit=curvecinf.begin(); infit!=curvecinf.end()&&goodforremoval; infit++) {
 
             uint index=infit->first;
             //check if index have other inf
             bool indok=false;
             for(VertexInfluenceMap::iterator mapit=this->begin(); mapit!=this->end()&&!indok; ++mapit) {
                 if(mapit->first!=lastbone->getBoneName()) {
-                    for(BoneInfluenceList::iterator infit2=mapit->second.begin(); infit2!=mapit->second.end(); infit2++) {
+                    for(VertexInfluence::iterator infit2=mapit->second.begin(); infit2!=mapit->second.end(); infit2++) {
                         if(infit2->first==index) {
                             //other inf found
                             indok=true;
@@ -331,26 +351,124 @@ void VertexInfluenceMap::cullBoneCountPerMesh(unsigned int numbonepermesh) {
         if(goodforremoval) {
             OSG_WARN<<"droping bone"<<lastbone->getBoneName()<<" with average influence of "<<lastbone->getWeight()<<std::endl;
             this->erase( this->find(lastbone->getBoneName()));
-            //lastbone=
-            // totalinfsorteddesc.erase(lastbone);
-            //std::advance(lastbone, 1);
             lastbone=totalinfsorteddesc.erase( lastbone );
 
-            //todo: use a vector instead of a set not to loose iterator on erase
-            //lastbone=totalinfsorteddesc.rbegin();
+
         } else lastbone++;
 
     }
-
-
-
 
     if( this->size()!=numbonepermesh) {
         OSG_WARN<<"targetbonepermesh not reached "<<numbonepermesh<<"!="<<this->size()<<std::endl;
 
     }
 
+}
+
+//Expermental
+typedef std::vector<RigGeometry*> RigList;
+class CollectRigVisitor : public osg::NodeVisitor
+{
+public:
+    META_NodeVisitor(osgAnimation, CollectRigVisitor)
+    CollectRigVisitor();
+
+    //void apply(osg::Node&);
+    void apply(osg::Geometry& node);
+    const RigList& getRigList() const;
+
+protected:
+    RigList _map;
+};
+CollectRigVisitor::CollectRigVisitor() : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {}
+
+//void CollectRigVisitor::apply(osg::Node&) { return; }
+void CollectRigVisitor::apply(osg::Geometry& node)
+{
+    RigGeometry* bone = dynamic_cast<RigGeometry*>(&node);
+    if (bone)
+    {
+        _map.push_back( bone);
+        traverse(node);
+    }
+    Skeleton* skeleton = dynamic_cast<Skeleton*>(&node);
+    if (skeleton)
+        traverse(node);
+}
+
+const RigList& CollectRigVisitor::getRigList() const
+{
+    return _map;
+}
+
+void VertexInfluenceMap::destroyUnusedBones(Skeleton &skel) {
+    BoneMapVisitor mapVisitor;
+    skel.accept(mapVisitor);
+    CollectRigVisitor rigvis;
+    skel.accept(rigvis);
+    RigList  rigs=rigvis.getRigList();
+    BoneMap boneMap = mapVisitor.getBoneMap();
+    Bone* child,*par;
+
+    for(BoneMap::iterator bmit=boneMap.begin(); bmit!=boneMap.end();) {
+        if( this->find(bmit->first) ==this->end())
+        {
+            bool isusless=true;
+            for(RigList::iterator rigit=rigs.begin();
+                    rigit!=rigs.end(); ++rigit) {
+                if( ((*rigit)->getInfluenceMap()->find(bmit->first) !=(*rigit)->getInfluenceMap()->end())) {
+                    isusless=false;
+                    break;
+                }
+            }
+
+            if(!isusless||!(par=bmit->second->getBoneParent())) {
+                ++bmit;
+                continue;
+            }
+
+            ///Bone can be removed
+            Bone * bone2rm=bmit->second;
+            /*   InvBindMatrixInSkeletonSpace,_boneInSkeletonSpace*/
+            typedef std::vector<Bone*> BoneVec;
+            BoneVec children;
 
 
+//            osgDB::BaseSerializer* bs = bone2rm->getInvBindMatrixInSkeletonSpace().getClassInterface().getSerializer(object, containerPropertyName, type);
+
+osgDB::OutputStream o(new osgDB::Options);
+class OUT:public osgDB::OutputStream{
+public:
+   osgDB::OutputIterator *getOutputIterator(){return _out;}
+};
+    class CI:public osgDB::ClassInterface{
+
+public:
+   OUT& getOutputStream(){return (OUT&)_outputStream;}
+};
+CI ci;
+ci.getOutputStream().getOutputIterator()->setStream(&std::cerr);
+
+//o.get
+            OSG_WARN<<"removing "<<bmit->first<<std::endl;
+            ci.getOutputStream()<<bone2rm->getInvBindMatrixInSkeletonSpace()<<std::endl;
+           // OSG_WARN<<"removing "<<bmit->first<<std::endl<<              ci.getOutputStream().getOutputIterator()->_s;
+
+            for(unsigned int numchild=0; numchild<bone2rm->getNumChildren(); numchild++) {
+                child=dynamic_cast<Bone*>(bone2rm->getChild(numchild));
+                if(child) {
+                    par->addChild(child);
+                    bone2rm->removeChild(child);
+
+                }
+            }
+            par->removeChild(bone2rm);
+
+            skel.accept(mapVisitor);
+            boneMap = mapVisitor.getBoneMap();
+            bmit=boneMap.begin();
+
+        } else ++bmit;
+    }
 
 }

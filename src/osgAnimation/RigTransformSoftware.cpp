@@ -78,7 +78,7 @@ struct SortByBoneWeightList : public std::less<BoneWeightList>
 void RigTransformSoftware::buildMinimumUpdateSet(const BoneMap&boneMap,const RigGeometry&rig ){
 
     ///1 Create Index2Vec<BoneWeight>
-    typedef std::vector<BonePtrWeight> BoneWeightList;
+    //typedef std::vector<BonePtrWeight> BoneWeightList;
     typedef std::vector<BoneWeightList> VertIDToBoneWeightList;
 
     VertIDToBoneWeightList _vertex2Bones;
@@ -90,26 +90,27 @@ void RigTransformSoftware::buildMinimumUpdateSet(const BoneMap&boneMap,const Rig
             it != _vertexInfluenceMap->end();
             ++it)
     {
-        const BoneInfluenceList& inflist = it->second;
-        for(BoneInfluenceList::const_iterator infit=inflist.begin(); infit!=inflist.end(); ++infit)
+        const IndexWeightList& inflist = it->second;
+        const std::string& bonename=it->first;
+        for(IndexWeightList::const_iterator infit=inflist.begin(); infit!=inflist.end(); ++infit)
         {
             const IndexWeight &iw = *infit;
             const unsigned int &index = iw.getIndex();
             float weight = iw.getWeight();
-            if (inflist.getBoneName().empty()) {
+            if (bonename.empty()) {
                 OSG_WARN << "VertexInfluenceSet::buildVertex2BoneList warning vertex " << index << " is not assigned to a bone" << std::endl;
             }
-            BoneMap::const_iterator it = boneMap.find(inflist.getBoneName());
-            if (it == boneMap.end() )
+            BoneMap::const_iterator itbm = boneMap.find(bonename);
+            if (itbm == boneMap.end() )
             {
-                if (_invalidInfluence.find(inflist.getBoneName()) != _invalidInfluence.end()) {
-                    _invalidInfluence[inflist.getBoneName()] = true;
-                    OSG_WARN << "RigTransformSoftware Bone " << inflist.getBoneName() << " not found, skip the influence group " << std::endl;
+                if (_invalidInfluence.find(bonename) != _invalidInfluence.end()) {
+                    _invalidInfluence[bonename] = true;
+                    OSG_WARN << "RigTransformSoftware Bone " << bonename << " not found, skip the influence group " << std::endl;
                 }
                 continue;
             }
-            Bone* bone = it->second.get();
-            _vertex2Bones[index].push_back(BonePtrWeight(inflist.getBoneName(), weight,bone));;
+            Bone* bone = itbm->second.get();
+            _vertex2Bones[index].push_back(BonePtrWeight(bonename, weight,bone));;
         }
     }
 

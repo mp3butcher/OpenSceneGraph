@@ -70,9 +70,8 @@ namespace osgAnimation
         bool getNeedToComputeMatrix() const { return _needToComputeMatrix;}
 
 
-        // this build the internal database about vertex influence and bones
-        //void buildVertexInfluenceSet();
-        //inline const VertexInfluenceSet& getVertexInfluenceSet() const { return _vertexInfluenceSet;}
+        // deprecated : this build the internal database about vertex influence and bones
+        inline void buildVertexInfluenceSet(){_rigTransformImplementation->prepareData(*this);}
 
         void computeMatrixFromRootSkeleton();
 

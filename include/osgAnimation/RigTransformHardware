@@ -94,6 +94,7 @@ namespace osgAnimation
 
         bool _needInit;
         bool buildPalette(BoneMap& ,RigGeometry&rig);
+        bool init(RigGeometry&);
 
        // std::vector<BoneWeightList> _vertex2Bones;
     };
