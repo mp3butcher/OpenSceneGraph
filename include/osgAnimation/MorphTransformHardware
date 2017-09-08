@@ -1,5 +1,5 @@
 /*  -*-c++-*-
- *  Copyright (C) 2009 Cedric Pinson <cedric.pinson@plopbyte.net>
+ *  Copyright (C) 2017 Julien Valentin <mp3butcher@hotmail.com>
  *
  * This library is open source and may be redistributed and/or modified under
  * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or
@@ -22,6 +22,9 @@
 #include <osg/Matrix>
 #include <osg/Array>
 
+///texture unit reserved for morphtarget TBO
+#define MORPHTRANSHW_DEFAULTMORPHTEXTUREUNIT 7
+
 namespace osgAnimation
 {
     class MorphGeometry;
@@ -37,13 +40,15 @@ namespace osgAnimation
 
         META_Object(osgAnimation,MorphTransformHardware);
 
-
-
-
         virtual void operator()(MorphGeometry&);
-        void setShader(osg::Shader*);
 
+        inline void setShader( osg::Shader*s )      {   _shader=s;      }
+        inline const osg::Shader * getShader() const{   return _shader; }
+        inline osg::Shader * getShader()            {   return _shader; }
 
+        ///texture unit reserved for morphtarget TBO default is 7
+        void setReservedTextureUnit(unsigned int t) {   _reservedTextureUnit=t;     }
+        unsigned int getReservedTextureUnit() const {   return _reservedTextureUnit;}
 
     protected:
 
@@ -54,6 +59,7 @@ namespace osgAnimation
         osg::ref_ptr<osg::Shader> _shader;
 
         bool _needInit;
+        unsigned int _reservedTextureUnit;
     };
 }
 

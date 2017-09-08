@@ -28,7 +28,7 @@ namespace wrap_osgAnimationRigGeometry{
                 int index = 0;
                 float weight = 0.0f;
                 is >> index >> weight;
-                vi.push_back( osgAnimation::IndexWeight(index, weight) );
+                vi.push_back( osgAnimation::VertexIndexWeight(index, weight) );
             }
             (*map)[name] = vi;
             is >> is.END_BRACKET;

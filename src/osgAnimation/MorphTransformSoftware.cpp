@@ -23,7 +23,6 @@ using namespace osgAnimation;
 
 bool MorphTransformSoftware::init(MorphGeometry& morphGeometry){
 
-
     morphGeometry.setDataVariance(osg::Object::DYNAMIC);
     osg::Vec3Array* pos = dynamic_cast<osg::Vec3Array*>(morphGeometry.getVertexArray());
     osg::Vec3Array * vertexSource = (morphGeometry.getVertexSource());
@@ -35,7 +34,7 @@ bool MorphTransformSoftware::init(MorphGeometry& morphGeometry){
     {
         if (!vertexSource|| vertexSource->size() != pos->size())
         {
-            vertexSource =(static_cast<osg::Vec3Array*>( pos->clone(osg::CopyOp::DEEP_COPY_ARRAYS)));//osg::Vec3Array(pos->begin(),pos->end());
+            morphGeometry.setVertexSource(new osg::Vec3Array(pos->begin(),pos->end()));
             pos->setDataVariance(osg::Object::DYNAMIC);
         }
 
@@ -44,7 +43,7 @@ bool MorphTransformSoftware::init(MorphGeometry& morphGeometry){
         morphGeometry.setMorphNormals(normalmorphable);
         if (normalmorphable && (!normalSource || normalSource->size() != normal->size()))
         {
-            normalSource =(static_cast<osg::Vec3Array*>( normal->clone(osg::CopyOp::DEEP_COPY_ARRAYS)));//osg::Vec3Array(normal->begin(),normal->end());
+            morphGeometry.setNormalSource(new osg::Vec3Array(normal->begin(),normal->end()));
             normal->setDataVariance(osg::Object::DYNAMIC);
         }
     }else return false;

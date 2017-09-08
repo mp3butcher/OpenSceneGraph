@@ -17,7 +17,7 @@
 
 #include <osgAnimation/Export>
 #include <osgAnimation/Skeleton>
-#include <osgAnimation/RigTransformSoftware>
+#include <osgAnimation/RigTransform>
 #include <osgAnimation/VertexInfluence>
 #include <osg/Geometry>
 
@@ -69,12 +69,7 @@ namespace osgAnimation
         void setNeedToComputeMatrix(bool state) { _needToComputeMatrix = state;}
         bool getNeedToComputeMatrix() const { return _needToComputeMatrix;}
 
-
-        // deprecated : this build the internal database about vertex influence and bones
-        inline void buildVertexInfluenceSet(){_rigTransformImplementation->prepareData(*this);}
-
         void computeMatrixFromRootSkeleton();
-
 
         // set implementation of rig method
         inline RigTransform* getRigTransformImplementation() { return _rigTransformImplementation.get(); }
@@ -83,9 +78,10 @@ namespace osgAnimation
 
         void update();
 
+        void buildVertexInfluenceSet(){_rigTransformImplementation->prepareData(*this);}
+
         const osg::Matrix& getMatrixFromSkeletonToGeometry() const;
         const osg::Matrix& getInvMatrixFromSkeletonToGeometry() const;
-
 
         inline osg::Geometry* getSourceGeometry() { return _geometry.get(); }
         inline const osg::Geometry* getSourceGeometry() const { return _geometry.get(); }
@@ -149,11 +145,8 @@ namespace osgAnimation
                     osg::notify(osg::WARN) << "A RigGeometry did not find a parent skeleton for RigGeometry ( " << geom->getName() << " )" << std::endl;
                     return;
                 }
-                geom->setSkeleton(finder._root.get());
-
-                if(!geom->getRigTransformImplementation())
-                    geom->setRigTransformImplementation(new RigTransformSoftware());
                 geom->getRigTransformImplementation()->prepareData(*geom);
+                geom->setSkeleton(finder._root.get());
             }
 
             if(!geom->getSkeleton())

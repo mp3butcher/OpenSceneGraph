@@ -1,5 +1,5 @@
 /*  -*-c++-*-
- *  Copyleft 2016 Valentin Julien
+ *  Copyright (C) 2017 Julien Valentin <mp3butcher@hotmail.com>
  *
  * This library is open source and may be redistributed and/or modified under
  * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or
@@ -18,28 +18,21 @@
 #include <osg/TextureBuffer>
 #include <sstream>
 
-///texture unit reserved for morphtarget TBO
-#define MORPHTEXTUREUNIT 7
-
 using namespace osgAnimation;
 
-MorphTransformHardware::MorphTransformHardware()
+MorphTransformHardware::MorphTransformHardware():
+    _needInit(true),
+    _reservedTextureUnit(MORPHTRANSHW_DEFAULTMORPHTEXTUREUNIT)
 {
-    _needInit = true;
-
 }
 
 MorphTransformHardware::MorphTransformHardware(const MorphTransformHardware& rth, const osg::CopyOp& copyop):
     MorphTransform(rth, copyop),
     _uniformTargetsWeight(rth._uniformTargetsWeight),
     _shader(rth._shader),
-    _needInit(rth._needInit)
+    _needInit(rth._needInit),
+    _reservedTextureUnit(rth._reservedTextureUnit)
 {
-}
-
-void MorphTransformHardware::setShader(osg::Shader* shader)
-{
-    _shader = shader;
 }
 
 bool MorphTransformHardware::init(MorphGeometry& morphGeometry)
@@ -53,22 +46,22 @@ bool MorphTransformHardware::init(MorphGeometry& morphGeometry)
     ///(blender osgexport doesn't set sources so assume morphgeom arrays are sources)
     if(pos)
     {
+        pos->setDataVariance(osg::Object::STATIC);
         ///check if source is setted correctly
         if (!vertexSource|| vertexSource->size() != pos->size())
         {
-            vertexSource =(static_cast<osg::Vec3Array*>( pos->clone(osg::CopyOp::DEEP_COPY_ARRAYS)));//osg::Vec3Array(pos->begin(),pos->end());
-            pos->setDataVariance(osg::Object::DYNAMIC);
+            vertexSource =(static_cast<osg::Vec3Array*>( pos->clone(osg::CopyOp::DEEP_COPY_ARRAYS)));
         }
         osg::Vec3Array* normal = dynamic_cast<osg::Vec3Array*>(morphGeometry.getNormalArray());
-        bool normalmorphable = morphGeometry.getMorphNormals() && normal;
+        bool normalmorphable = morphGeometry.getMorphNormals() && normal&&(normal->getBinding()==osg::Array::BIND_PER_VERTEX);
         if(!normalmorphable) {
-            OSG_WARN << "MorphTransformHardware::morph geometry "<<morphGeometry.getName()<<" without normal morphing not supported! "  << std::endl;
+            OSG_WARN << "MorphTransformHardware::morph geometry "<<morphGeometry.getName()<<" without per vertex normal : HWmorphing not supported! "  << std::endl;
             return false;
         }
+        normal->setDataVariance(osg::Object::STATIC);
         if (normalmorphable && (!normalSource || normalSource->size() != normal->size()))
         {
-            normalSource =(static_cast<osg::Vec3Array*>( normal->clone(osg::CopyOp::DEEP_COPY_ARRAYS)));//osg::Vec3Array(normal->begin(),normal->end());
-            normal->setDataVariance(osg::Object::DYNAMIC);
+            normalSource =(static_cast<osg::Vec3Array*>( normal->clone(osg::CopyOp::DEEP_COPY_ARRAYS)));
         }
     }
     ///end check
@@ -104,7 +97,7 @@ bool MorphTransformHardware::init(MorphGeometry& morphGeometry)
 
     //create TBO Texture handle
     osg::Uniform * morphTBOHandle=new osg::Uniform(osg::Uniform::SAMPLER_BUFFER,"morphTargets");
-    morphTBOHandle->set(MORPHTEXTUREUNIT);
+    morphTBOHandle->set((int)_reservedTextureUnit);
 
     //create dynamic uniform for morphtargets animation weights
     _uniformTargetsWeight=new osg::Uniform(osg::Uniform::FLOAT,"morphWeights",morphlist.size());
@@ -145,7 +138,6 @@ bool MorphTransformHardware::init(MorphGeometry& morphGeometry)
     std::size_t start = str.find(toreplace);
     if (std::string::npos == start){
         ///perhaps remanance from previous init (if saved after init) so reload shader
-
         vertexshader = osg::Shader::readShaderFile(osg::Shader::VERTEX,"morphing.vert");
         if (!vertexshader.valid()) {
             OSG_WARN << "RigTransformHardware can't load VertexShader" << std::endl;
@@ -174,7 +166,7 @@ bool MorphTransformHardware::init(MorphGeometry& morphGeometry)
 
     osg::ref_ptr<osg::StateSet> ss = morphGeometry.getOrCreateStateSet();
     ss->addUniform(_uniformTargetsWeight);
-    ss->setTextureAttribute(MORPHTEXTUREUNIT,morphTargetsTBO);
+    ss->setTextureAttribute(_reservedTextureUnit,morphTargetsTBO);
     ss->addUniform( morphTBOHandle);
     ss->addUniform(new osg::Uniform("nbMorphVertex", morphGeometry.getVertexArray()->getNumElements()));
 
@@ -187,11 +179,14 @@ void MorphTransformHardware::operator()(MorphGeometry& geom)
     if (_needInit)
         if (!init(geom))
             return;
-
-    ///upload new morph weights each update via uniform
-    int curimorph=0;
-    MorphGeometry::MorphTargetList & morphlist=geom.getMorphTargetList();
-    for(MorphGeometry::MorphTargetList::const_iterator curmorph=morphlist.begin(); curmorph!=morphlist.end(); ++curmorph)
-        _uniformTargetsWeight->setElement(curimorph++, curmorph->getWeight());
-    _uniformTargetsWeight->dirty();
+    if (geom.isDirty())
+    {
+        ///upload new morph weights each update via uniform
+        int curimorph=0;
+        MorphGeometry::MorphTargetList & morphlist=geom.getMorphTargetList();
+        for(MorphGeometry::MorphTargetList::const_iterator curmorph=morphlist.begin(); curmorph!=morphlist.end(); ++curmorph)
+            _uniformTargetsWeight->setElement(curimorph++, curmorph->getWeight());
+        _uniformTargetsWeight->dirty();
+        geom.dirty(false);
+    }
 }

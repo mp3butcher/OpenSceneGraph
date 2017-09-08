@@ -59,7 +59,7 @@ RigGeometry::RigGeometry()
     _matrixFromSkeletonToGeometry = _invMatrixFromSkeletonToGeometry = osg::Matrix::identity();
     // disable the computation of boundingbox for the rig mesh
     setComputeBoundingBoxCallback(new RigComputeBoundingBoxCallback());
-    setRigTransformImplementation(new RigTransformSoftware);
+    _rigTransformImplementation = new osgAnimation::RigTransformSoftware;
 
 }
 
@@ -85,30 +85,7 @@ RigGeometry::RigGeometry(const RigGeometry& b, const osg::CopyOp& copyop) :
 const osg::Matrix& RigGeometry::getMatrixFromSkeletonToGeometry() const { return _matrixFromSkeletonToGeometry; }
 const osg::Matrix& RigGeometry::getInvMatrixFromSkeletonToGeometry() const { return _invMatrixFromSkeletonToGeometry;}
 
-/*
-void RigGeometry::drawImplementation(osg::RenderInfo& renderInfo) const
-{
-    osg::Geometry::drawImplementation(renderInfo);
-}
 
-void RigGeometry::buildVertexInfluenceSet()
-{
-    if (!_vertexInfluenceMap.valid())
-    {
-        OSG_WARN << "buildVertexInfluenceSet can't be called without VertexInfluence already set to the RigGeometry ( " << getName() << " ) " << std::endl;
-        return;
-    }
-    _vertexInfluenceSet.clear();
-    for (osgAnimation::VertexInfluenceMap::iterator it = _vertexInfluenceMap->begin();
-         it != _vertexInfluenceMap->end();
-         ++it){
-        _vertexInfluenceSet.addBoneInfluenceList(it->second);
-    }
-    _vertexInfluenceSet.buildVertexToBoneWeightList(getSourceGeometry()->getVertexArray()->getNumElements());
-    _vertexInfluenceSet.buildUniqVertexGroupList();
-    OSG_DEBUG << "uniq groups " << _vertexInfluenceSet.getUniqVertexGroupList().size() << " for " << getName() << std::endl;
-}
-*/
 void RigGeometry::computeMatrixFromRootSkeleton()
 {
     if (!_root.valid())
@@ -125,12 +102,7 @@ void RigGeometry::computeMatrixFromRootSkeleton()
 
 void RigGeometry::update()
 {
-    if (!getRigTransformImplementation())
-    {
-        _rigTransformImplementation = new RigTransformSoftware;
-    }
-
-    RigTransform& implementation = *getRigTransformImplementation();
+    RigTransform& implementation = *_rigTransformImplementation;
     (implementation)(*this);
 }
 
@@ -141,7 +113,7 @@ void RigGeometry::copyFrom(osg::Geometry& from)
     osg::Geometry& target = *this;
 
     target.setStateSet(from.getStateSet());
-    //target.setStateSet((osg::StateSet *) osg::CopyOp()(from.getOrCreateStateSet()));
+
     // copy over primitive sets.
     target.getPrimitiveSetList() = from.getPrimitiveSetList();
 

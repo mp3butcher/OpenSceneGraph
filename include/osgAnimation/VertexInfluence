@@ -1,5 +1,6 @@
 /*  -*-c++-*-
  *  Copyright (C) 2008 Cedric Pinson <cedric.pinson@plopbyte.net>
+ *  Copyright (C) 2017 Julien Valentin <mp3butcher@hotmail.com>
  *
  * This library is open source and may be redistributed and/or modified under
  * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or
@@ -17,8 +18,6 @@
 
 #include <osg/Object>
 #include <osgAnimation/Export>
-#include <osgAnimation/Bone>
-#include <osg/observer_ptr>
 #include <map>
 #include <vector>
 #include <string>
@@ -26,40 +25,30 @@
 namespace osgAnimation
 {
     class Skeleton;
+
     // first is bonename, and second the weight
-    struct OSGANIMATION_EXPORT BoneWeight: public std::pair<std::string, float>
-    {
-        BoneWeight( std::string f,float s):
-        std::pair<std::string,float>(f,s){}
-        inline const std::string& getBoneName()const{return first;}
-        inline void setBoneName(const std::string&s){first=s;}
-        inline const float &getWeight()const{return second;}
-        inline void setWeight(float i){second=i;}
-    };
+    typedef std::pair<std::string, float> BoneWeight;
     // first is vertex index, and second the weight
-    struct OSGANIMATION_EXPORT IndexWeight: public std::pair<unsigned int, float>
-    {
-        IndexWeight( unsigned int f,float s): std::pair<unsigned int,float>(f,s){}
-        inline const unsigned int& getIndex()const{return first;}
-        inline void setIndex(unsigned int i){first=i;}
-        inline const float &getWeight()const{return second;}
-        inline void setWeight(float i){second=i;}
-    };
+    typedef std::pair<unsigned int, float> VertexIndexWeight;
+    // list of IndexWeight
+    typedef std::vector<VertexIndexWeight> IndexWeightList;
+    // list of IndexWeight
+    typedef std::vector<BoneWeight> BoneWeightList;
+    // list of Index
+    typedef std::vector<unsigned int> IndexList;
 
-
-    typedef std::vector<IndexWeight> IndexWeightList;
-
-    /// IndexWeightList attached to a bone
+    //Bone influence list
     class OSGANIMATION_EXPORT VertexInfluence : public IndexWeightList
     {
     public:
         const std::string& getName() const { return _name;}
         void setName(const std::string& name) { _name = name;}
+
     protected:
+        // the name is the bone to link to
         std::string _name;
     };
 
-    ///From BoneName To IndexWeightList of the bone
     class VertexInfluenceMap : public std::map<std::string, VertexInfluence> , public osg::Object
     {
     public:
@@ -72,16 +61,30 @@ namespace osgAnimation
         {}
         ///normalize per vertex weights given numvert of the attached mesh
         void normalize(unsigned int numvert);
-        ///cull weakest influences in order to fit targetted numbonepervertex
-        void cullBoneInfluenceCountPerVertex(unsigned int maxnumbonepervertex,
-                                             float minweight=0,
-                                             bool makeOddWeightPerVertex=false,
-                                             bool renormalize=true);
-        ///cull weakest bones in order to fit targetted numbonepermesh
-        void cullBoneCountPerMesh(unsigned int numbonepermesh);
 
-        void destroyUnusedBones(Skeleton &skel);
+        ///remove weakest influences in order to fit targetted numbonepervertex
+        void cullInfluenceCountPerVertex(unsigned int maxnumbonepervertex, float minweight=0, bool renormalize=true);
+
+        //compute PerVertexInfluenceList
+        void computePerVertexInfluenceList(std::vector<BoneWeightList>& perVertexInfluenceList, unsigned int numvert)const;
+
+        /// map a set of boneinfluence to a list of vertex indices sharing this set
+        class VertexGroup: public std::pair<BoneWeightList, IndexList>
+        {
+        public:
+            inline const BoneWeightList& getBoneWeights()const { return first; }
+            inline void setBoneWeights( BoneWeightList& o ) {  first=o; }
+            inline IndexList& vertIDs() { return second; }
+        };
+
+        /// compute the minimal VertexGroup Set in which vertices shares the same influence set
+        void computeMinimalVertexGroupList(std::vector<VertexGroup>&uniqVertexGroupList, unsigned int numvert)const;
+
+        //Experimental removal of unexpressed bone from the skeleton
+        void removeUnexpressedBones(Skeleton &skel) const;
+        void accumulateDuplicates();
     };
+
 }
 
 #endif

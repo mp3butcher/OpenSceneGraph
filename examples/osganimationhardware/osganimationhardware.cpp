@@ -191,7 +191,7 @@ public:
         for(osgAnimation::VertexInfluenceMap::iterator mapit=imap.begin(); mapit!=imap.end(); ++mapit) {
             osgAnimation::IndexWeightList &curvecinf=mapit->second;
             for(osgAnimation::IndexWeightList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end(); ++curinf) {
-                osgAnimation:: IndexWeight& inf=*curinf;
+                osgAnimation:: VertexIndexWeight& inf=*curinf;
                 index2influences[inf.first].push_back(BoneVecandInf(mapit->first, inf.second) );
             }
         }
@@ -278,7 +278,7 @@ public:
         for(osgAnimation::VertexInfluenceMap::iterator mapit=imap.begin(); mapit!=imap.end(); ++mapit) {
             osgAnimation::IndexWeightList &curvecinf=mapit->second;
             for(osgAnimation::IndexWeightList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end();) {
-                osgAnimation:: IndexWeight& inf=*curinf;
+                osgAnimation:: VertexIndexWeight& inf=*curinf;
                 if(old2new[inf.first]!=newindex) {
                     inf.first=old2new[inf.first];
                     ++curinf;
@@ -287,8 +287,7 @@ public:
                 }
             }
         }
-        //rig->buildVertexInfluenceSet();
-
+        rig->copyFrom(*rig->getSourceGeometry());
     }
 
     virtual void OnCollapseEdge(osgUtil::EdgeCollapse::Edge* , osgUtil::EdgeCollapse::Point* pNew) {
@@ -299,7 +298,7 @@ public:
         for(Bone2Weight::iterator infit=pnewinfs.begin(); infit!=pnewinfs.end(); ++infit) {
             if(  infit->second >_weighttreshold) {
                 osgAnimation::IndexWeightList &bonevec= (*rig->getInfluenceMap())[infit->first];
-                bonevec.push_back( osgAnimation::IndexWeight(pNew->_index , infit->second ) );
+                bonevec.push_back( osgAnimation::VertexIndexWeight(pNew->_index , infit->second ) );
                 index2influences[pNew->_index].push_back(BoneVecandInf(infit->first, infit->second  ));
             }
         }
@@ -395,7 +394,7 @@ struct SetupRigGeometry : public osg::NodeVisitor
         if (_hardware) {
             osgAnimation::RigGeometry* rig = dynamic_cast<osgAnimation::RigGeometry*>(&geom);
             if (rig) {
-                rig->getInfluenceMap()->cullBoneInfluenceCountPerVertex(8,_simplifierWeightTreshold);
+                rig->getInfluenceMap()->cullInfluenceCountPerVertex(8,_simplifierWeightTreshold);
 
                 rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware);
                 rig->getRigTransformImplementation()->prepareData(*rig);
@@ -406,31 +405,25 @@ struct SetupRigGeometry : public osg::NodeVisitor
                 osg::ref_ptr<RigSimplifier> simp=new RigSimplifier(_simplifierRatio,_simplifierWeightTreshold);
 
                 const osg::BoundingBox& bb=rig->getBoundingBox();
-                simp->setMaximumError(0.006*(bb._max-bb._min).length());
+                osg::Vec3 vb=bb._max-bb._min;
+                simp->setMaximumError( //0.006*osg::maximum(vb[2],osg::maximum(vb[0],vb[1])));
+                                     0.006*(vb).length());
                 osgAnimation::MorphGeometry *morph;
                 // osg::ref_ptr<osg::UIntArray> res=
                 if(!(morph=dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry()))) {
                     if(_simplifierRatio<1.0f)
                         simp->simplify (*((osg::Geometry*)rig)) ;
-                } else {
+                }else{
+#if 1
+                    ///convert morph to geometry
+
                     osg::ref_ptr<osg::Geometry> ge=new osg::Geometry();//*morph,osg::CopyOp::DEEP_COPY_ALL);
-                    ge->setUseVertexArrayObject(false);
-                    ge->setUseDisplayList(true);
+                    ge->setUseVertexArrayObject(true);
+                    ge->setUseDisplayList(false);
                     osg::Geometry& target=*ge.get();
                     osgAnimation::MorphGeometry &from=*morph;
 
-                    /*   osgAnimation:: RigGeometry::FindNearestParentSkeleton finder;
-                        if(rig->getParents().size() > 1)
-                            osg::notify(osg::WARN) << "A RigGeometry should not have multi parent ( " << rig->getName() << " )" << std::endl;
-                        rig->getParents()[0]->accept(finder);
 
-                        if(!finder._root.valid())
-                        {
-                            osg::notify(osg::WARN) << "A RigGeometry did not find a parent skeleton for RigGeometry ( " << rig->getName() << " )" << std::endl;
-                            return;
-                        }
-                        rig->buildVertexInfluenceSet();
-                        rig->setSkeleton(finder._root.get());*/
 
                     target.setStateSet(from.getStateSet());
 
@@ -479,102 +472,28 @@ struct SetupRigGeometry : public osg::NodeVisitor
                             target.setVertexAttribArray(vi,array, osg::Array::BIND_PER_VERTEX);
                         }
                     }
-                    //          osgDB::writeNodeFile(*rig,"temp_delete_it.osgb");
-                    //  ge=(osg::Geometry*)osgDB::readNodeFile("temp_delete_it.osgb");
+
 
                     if(_simplifierRatio<1.0f) rig->setSourceGeometry(ge);
                     from.setMorphTransformImplementation(new osgAnimation::MorphTransformHardware);
 
                     rig->setRigTransformImplementation(new osgAnimation::RigTransformHardware);
-//rig->setUpdateCallback(rig->getUpdateCallback()->);
-//rig->dirtyDisplayList();
-//rig->buildVertexInfluenceSet();
+
                     if(_simplifierRatio<1.0f)      simp->simplify (*((osg::Geometry*)rig)) ;
-                }
-
-                rig->getInfluenceMap()->normalize(rig->getSourceGeometry()->getVertexArray()->getNumElements());
-                //rig->getInfluenceMap()->destroyUnusedBones(*rig->getSkeleton());
-                //rig->getRigTransformImplementation()->prepareData(*rig);
 
 
-#endif
-                morph = 0;//dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry());
-                if(morph) {
-#if 0
-                    ///replace morph with classic geometry and simplify it
-                    osg::ref_ptr<osg::Geometry> ge=new osg::Geometry();//*morph.get(),osg::CopyOp::DEEP_COPY_ALL);
-                    ge->setUseVertexArrayObject(true);
-                    osg::Geometry& target=*ge.get();
-                    osgAnimation::MorphGeometry &from=*morph.get();
-                    target.setStateSet(from.getStateSet());
-
-                    // copy over primitive sets.
-                    target.getPrimitiveSetList() = from.getPrimitiveSetList();
-
-                    if (from.getVertexSource())
-                    {
-                        target.setVertexArray(from.getVertexSource());
-                    }
-
-                    if (from.getNormalSource())
-                    {
-                        target.setNormalArray(from.getNormalSource(), osg::Array::BIND_PER_VERTEX);
-                    }
-
-                    if (from.getColorArray())
-                    {
-                        target.setColorArray(from.getColorArray(), osg::Array::BIND_PER_VERTEX);
-                    }
-
-                    if (from.getSecondaryColorArray())
-                    {
-                        target.setSecondaryColorArray(from.getSecondaryColorArray(), osg::Array::BIND_PER_VERTEX);
-                    }
-
-                    if (from.getFogCoordArray())
-                    {
-                        target.setFogCoordArray(from.getFogCoordArray(), osg::Array::BIND_PER_VERTEX);
-                    }
-
-                    for(unsigned int ti=0; ti<from.getNumTexCoordArrays(); ++ti)
-                    {
-                        if (from.getTexCoordArray(ti))
-                        {
-                            target.setTexCoordArray(ti,from.getTexCoordArray(ti), osg::Array::BIND_PER_VERTEX);
-                        }
-                    }
-
-                    osg::Geometry::ArrayList& arrayList = from.getVertexAttribArrayList();
-                    for(unsigned int vi=0; vi< arrayList.size(); ++vi)
-                    {
-                        osg::Array* array = arrayList[vi].get();
-                        if (array)
-                        {
-                            target.setVertexAttribArray(vi,array, osg::Array::BIND_PER_VERTEX);
-                        }
-                    }
-                    rig->setSourceGeometry(ge);
-                    osg::ref_ptr<RigSimplifier> simp2=new RigSimplifier(_simplifierRatio,_simplifierWeightTreshold);
-
-
-                    //  simp2->setMaximumError(0.1);
-                    // simp->setSampleRatio(0.);
-                    simp2->simplify (*((osg::Geometry*)rig)) ;
-                    //rig->buildVertexInfluenceSet();
 #else
-                    ///try to simplify morphgeometry but fails
+                    ///try to simplify morphgeometry but fails // to do (if it is usefull:/) create a simplifier for morph
                     for(int i=0; i<morph->getMorphTargetList().size(); i++)
                     {
                         OSG_WARN<<"morphsimplify"<<i<<std::endl;
-                        osg::ref_ptr<osgUtil::Simplifier> simp=new osgUtil::Simplifier(_simplifierRatio);
+                        osg::ref_ptr<osgUtil::Simplifier> simp2=new osgUtil::Simplifier(_simplifierRatio,simp->getMaximumError());
                         if(  morph->getMethod()!=osgAnimation::MorphGeometry::RELATIVE)
-                            simp->simplify(*  morph->getMorphTarget(i).getGeometry());
+                            if(_simplifierRatio<1.0f)   simp2->simplify(*  morph->getMorphTarget(i).getGeometry());
                         else {
-                            osg::ref_ptr<osg::Geometry> ge=new osg::Geometry;
-                            osg::Vec3Array* v=new osg::Vec3Array();
-                            osg::Vec3Array* n=new osg::Vec3Array();
-                            ge->setVertexArray(v);
-                            ge->setNormalArray(n);
+                            osg::ref_ptr<osg::Geometry> ge=morph->getMorphTarget(i).getGeometry();//new osg::Geometry;
+                            osg::Vec3Array* v=new osg::Vec3Array( osg::Array::BIND_PER_VERTEX);
+                            osg::Vec3Array* n=new osg::Vec3Array( osg::Array::BIND_PER_VERTEX);
                             osg::Vec3Array* mtv=(osg::Vec3Array*)morph->getMorphTarget(i).getGeometry()->getVertexArray();
                             osg::Vec3Array* mtn=(osg::Vec3Array*)morph->getMorphTarget(i).getGeometry()->getNormalArray();
                             /*  osg::Vec3Array* ovs=(osg::Vec3Array*)morph->getVertexArray();
@@ -587,8 +506,10 @@ struct SetupRigGeometry : public osg::NodeVisitor
                                 n->push_back((*ons)[j]+(*mtn)[j]);
                             }
 
-                            simp->simplify(*ge.get());
-                            morph->getMorphTarget(i).setGeometry(ge);
+                            ge->setVertexArray(v);
+                            ge->setNormalArray(n, osg::Array::BIND_PER_VERTEX);
+                            if(_simplifierRatio<1.0f)   simp2->simplify(*ge.get());
+                           // morph->getMorphTarget(i).setGeometry(ge);
 
                         }
 
@@ -597,16 +518,41 @@ struct SetupRigGeometry : public osg::NodeVisitor
                         morph->setMethod(osgAnimation::MorphGeometry::NORMALIZED);
                     //osg::ref_ptr<osgUtil::Simplifier> simp=new osgUtil::Simplifier(_simplifierRatio);
 
-                    osg::ref_ptr<RigSimplifier> simp2=new RigSimplifier(_simplifierRatio,_simplifierWeightTreshold);
 
                     morph->setVertexArray(morph->getVertexSource());
                     morph->setNormalArray(morph->getNormalSource());
-                    simp2->simplify(*rig);
-                    //  morph->setVertexSource((osg::Vec3Array*)morph->getVertexArray());
-                    // morph->setNormalSource((osg::Vec3Array*)morph->getNormalArray());
-                    morph->setVertexArray(0);
-                    morph->setNormalArray(0);
+                     if(_simplifierRatio<1.0f)  simp->simplify(*rig);
+                      morph->setVertexSource((osg::Vec3Array*)morph->getVertexArray());
+                     morph->setNormalSource((osg::Vec3Array*)morph->getNormalArray());
+                  //  morph->setVertexArray(0);
+                 //   morph->setNormalArray(0);
 #endif
+
+                }
+
+                rig->getInfluenceMap()->normalize(rig->getSourceGeometry()->getVertexArray()->getNumElements());
+                osgAnimation:: RigGeometry::FindNearestParentSkeleton finder;
+                                      if(rig->getParents().size() > 1)
+                                          osg::notify(osg::WARN) << "A RigGeometry should not have multi parent ( " << rig->getName() << " )" << std::endl;
+                                      rig->getParents()[0]->accept(finder);
+
+                                      if(!finder._root.valid())
+                                      {
+                                          osg::notify(osg::WARN) << "A RigGeometry did not find a parent skeleton for RigGeometry ( " << rig->getName() << " )" << std::endl;
+                                          return;
+                                      }
+                                      rig->setSkeleton(finder._root.get());
+
+                                      rig->getInfluenceMap()->cullInfluenceCountPerVertex(8,_simplifierWeightTreshold);
+                                      rig->getInfluenceMap()->        accumulateDuplicates();
+                rig->getInfluenceMap()->removeUnexpressedBones(*rig->getSkeleton());
+
+                rig->getRigTransformImplementation()->prepareData(*rig);
+
+
+#endif
+                morph = dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry());
+                if(morph) {
                     morph->setMorphTransformImplementation(new osgAnimation::MorphTransformHardware);
 
                 }

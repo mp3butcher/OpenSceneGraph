@@ -29,6 +29,7 @@ MorphGeometry::MorphGeometry() :
     setUseDisplayList(false);
     setUpdateCallback(new UpdateMorphGeometry);
     setUseVertexBufferObjects(true);
+    _morphTransformImplementation = new MorphTransformSoftware();
 }
 
 MorphGeometry::MorphGeometry(const osg::Geometry& g) :
@@ -38,15 +39,15 @@ MorphGeometry::MorphGeometry(const osg::Geometry& g) :
     _positionSource(0),_normalSource(0),
     _morphNormals(true)
 {
-    if(g.getVertexArray())_positionSource=(dynamic_cast<osg::Vec3Array*>( (osg::Array*)g.getVertexArray()->clone(osg::CopyOp::DEEP_COPY_ALL) ));
-    if(g.getNormalArray())_normalSource=(dynamic_cast<osg::Vec3Array*>( (osg::Array*)g.getNormalArray()->clone(osg::CopyOp::DEEP_COPY_ALL) ));
     setUseDisplayList(false);
     setUpdateCallback(new UpdateMorphGeometry);
     setUseVertexBufferObjects(true);
+    _morphTransformImplementation = new MorphTransformSoftware();
 }
 
 MorphGeometry::MorphGeometry(const MorphGeometry& b, const osg::CopyOp& copyop) :
     osg::Geometry(b,copyop),
+    _morphTransformImplementation((MorphTransform*)copyop(b._morphTransformImplementation)),
     _dirty(b._dirty),
     _method(b._method),
     _morphTargets(b._morphTargets),
@@ -57,9 +58,6 @@ MorphGeometry::MorphGeometry(const MorphGeometry& b, const osg::CopyOp& copyop) 
     setUseDisplayList(false);
     setUseVertexBufferObjects(true);
 }
-
-MorphTransform* MorphGeometry::getMorphTransformImplementation() { return _rigTransformImplementation.get(); }
-void MorphGeometry::setMorphTransformImplementation(MorphTransform* rig) { _rigTransformImplementation = rig; }
 
 UpdateMorph::UpdateMorph(const UpdateMorph& apc,const osg::CopyOp& copyop) :
     osg::Object(apc, copyop),

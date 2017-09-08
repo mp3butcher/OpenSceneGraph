@@ -31,12 +31,11 @@ namespace osgAnimation
 
         META_Object(osgAnimation,RigTransform)
 
+        virtual void operator()(RigGeometry&) {}
+
         /// to call manually when a skeleton is reacheable from the rig
         /// in order to prepare technic data before rendering
         virtual bool prepareData(RigGeometry&){return true;}
-
-        /// called on update visitor traversal
-        virtual void operator()(RigGeometry&) {}
 
     protected:
         virtual ~RigTransform() {}
@@ -53,7 +52,6 @@ namespace osgAnimation
 
         META_Object(osgAnimation,MorphTransform)
 
-        /// called on update visitor traversal
         virtual void operator()(MorphGeometry&) {}
 
     protected:
