@@ -34,7 +34,7 @@
 #include <osgAnimation/MorphTransformHardware>
 #include <osgAnimation/AnimationManagerBase>
 #include <osgAnimation/BoneMapVisitor>
-
+#include "AnimationInstancing"
 #include <sstream>
 
 
@@ -248,12 +248,12 @@ public:
         }
 
 
-       std::vector<uint> old2new;
-          for(unsigned int i=0; i<newindex; ++i)old2new.push_back(newindex);
-          unsigned int cpt=0;
-          for(osgUtil::EdgeCollapse::PointSet::iterator itp=ec._pointSet.begin(); itp != ec._pointSet.end(); ++itp)
-              old2new[(*itp)->_index]=cpt++;
-          ///NB: copyback modify _index for reindexation so pick the oldone before
+        std::vector<uint> old2new;
+        for(unsigned int i=0; i<newindex; ++i)old2new.push_back(newindex);
+        unsigned int cpt=0;
+        for(osgUtil::EdgeCollapse::PointSet::iterator itp=ec._pointSet.begin(); itp != ec._pointSet.end(); ++itp)
+            old2new[(*itp)->_index]=cpt++;
+        ///NB: copyback modify _index for reindexation so pick the oldone before
         ///
         ec.copyBackToGeometry();
 
@@ -269,11 +269,11 @@ public:
           }*/
 
         ///post simplifier : change Influences according ec points old and new indices
-         /*  std::vector<uint> old2new;
+        /*  std::vector<uint> old2new;
         for(unsigned int i=0; i<newindex; ++i)old2new.push_back(newindex);
         unsigned int cpt=0;
         for(osgUtil::EdgeCollapse::PointList::iterator itp=ec._originalPointList.begin(); itp != ec._originalPointList.end(); ++itp)
-            old2new[(*itp)->_index]=(*itp)->_newindex;*/
+           old2new[(*itp)->_index]=(*itp)->_newindex;*/
         // osgAnimation::VertexInfluenceMap & imap=*rig->getInfluenceMap();
         for(osgAnimation::VertexInfluenceMap::iterator mapit=imap.begin(); mapit!=imap.end(); ++mapit) {
             osgAnimation::IndexWeightList &curvecinf=mapit->second;
@@ -407,13 +407,13 @@ struct SetupRigGeometry : public osg::NodeVisitor
                 const osg::BoundingBox& bb=rig->getBoundingBox();
                 osg::Vec3 vb=bb._max-bb._min;
                 simp->setMaximumError( //0.006*osg::maximum(vb[2],osg::maximum(vb[0],vb[1])));
-                                     0.006*(vb).length());
+                    0.006*(vb).length());
                 osgAnimation::MorphGeometry *morph;
                 // osg::ref_ptr<osg::UIntArray> res=
                 if(!(morph=dynamic_cast<osgAnimation::MorphGeometry*>(rig->getSourceGeometry()))) {
                     if(_simplifierRatio<1.0f)
                         simp->simplify (*((osg::Geometry*)rig)) ;
-                }else{
+                } else {
 #if 1
                     ///convert morph to geometry
 
@@ -490,28 +490,28 @@ struct SetupRigGeometry : public osg::NodeVisitor
                         osg::ref_ptr<osgUtil::Simplifier> simp2=new osgUtil::Simplifier(_simplifierRatio,simp->getMaximumError());
                         if(  morph->getMethod()!=osgAnimation::MorphGeometry::RELATIVE)
                             if(_simplifierRatio<1.0f)   simp2->simplify(*  morph->getMorphTarget(i).getGeometry());
-                        else {
-                            osg::ref_ptr<osg::Geometry> ge=morph->getMorphTarget(i).getGeometry();//new osg::Geometry;
-                            osg::Vec3Array* v=new osg::Vec3Array( osg::Array::BIND_PER_VERTEX);
-                            osg::Vec3Array* n=new osg::Vec3Array( osg::Array::BIND_PER_VERTEX);
-                            osg::Vec3Array* mtv=(osg::Vec3Array*)morph->getMorphTarget(i).getGeometry()->getVertexArray();
-                            osg::Vec3Array* mtn=(osg::Vec3Array*)morph->getMorphTarget(i).getGeometry()->getNormalArray();
-                            /*  osg::Vec3Array* ovs=(osg::Vec3Array*)morph->getVertexArray();
-                               osg::Vec3Array* ons=(osg::Vec3Array*)morph->getNormalArray();*/
-                            osg::Vec3Array* ovs=(osg::Vec3Array*)morph->getVertexSource();
-                            osg::Vec3Array* ons=(osg::Vec3Array*)morph->getNormalSource();
+                            else {
+                                osg::ref_ptr<osg::Geometry> ge=morph->getMorphTarget(i).getGeometry();//new osg::Geometry;
+                                osg::Vec3Array* v=new osg::Vec3Array( osg::Array::BIND_PER_VERTEX);
+                                osg::Vec3Array* n=new osg::Vec3Array( osg::Array::BIND_PER_VERTEX);
+                                osg::Vec3Array* mtv=(osg::Vec3Array*)morph->getMorphTarget(i).getGeometry()->getVertexArray();
+                                osg::Vec3Array* mtn=(osg::Vec3Array*)morph->getMorphTarget(i).getGeometry()->getNormalArray();
+                                /*  osg::Vec3Array* ovs=(osg::Vec3Array*)morph->getVertexArray();
+                                   osg::Vec3Array* ons=(osg::Vec3Array*)morph->getNormalArray();*/
+                                osg::Vec3Array* ovs=(osg::Vec3Array*)morph->getVertexSource();
+                                osg::Vec3Array* ons=(osg::Vec3Array*)morph->getNormalSource();
 
-                            for(unsigned int j=0; j< ovs->getNumElements(); ++j) {
-                                v->push_back( (*ovs)[j]+(*mtv)[j]);
-                                n->push_back((*ons)[j]+(*mtn)[j]);
+                                for(unsigned int j=0; j< ovs->getNumElements(); ++j) {
+                                    v->push_back( (*ovs)[j]+(*mtv)[j]);
+                                    n->push_back((*ons)[j]+(*mtn)[j]);
+                                }
+
+                                ge->setVertexArray(v);
+                                ge->setNormalArray(n, osg::Array::BIND_PER_VERTEX);
+                                if(_simplifierRatio<1.0f)   simp2->simplify(*ge.get());
+                                // morph->getMorphTarget(i).setGeometry(ge);
+
                             }
-
-                            ge->setVertexArray(v);
-                            ge->setNormalArray(n, osg::Array::BIND_PER_VERTEX);
-                            if(_simplifierRatio<1.0f)   simp2->simplify(*ge.get());
-                           // morph->getMorphTarget(i).setGeometry(ge);
-
-                        }
 
                     }
                     if(  morph->getMethod()!=osgAnimation::MorphGeometry::RELATIVE)
@@ -521,30 +521,30 @@ struct SetupRigGeometry : public osg::NodeVisitor
 
                     morph->setVertexArray(morph->getVertexSource());
                     morph->setNormalArray(morph->getNormalSource());
-                     if(_simplifierRatio<1.0f)  simp->simplify(*rig);
-                      morph->setVertexSource((osg::Vec3Array*)morph->getVertexArray());
-                     morph->setNormalSource((osg::Vec3Array*)morph->getNormalArray());
-                  //  morph->setVertexArray(0);
-                 //   morph->setNormalArray(0);
+                    if(_simplifierRatio<1.0f)  simp->simplify(*rig);
+                    morph->setVertexSource((osg::Vec3Array*)morph->getVertexArray());
+                    morph->setNormalSource((osg::Vec3Array*)morph->getNormalArray());
+                    //  morph->setVertexArray(0);
+                    //   morph->setNormalArray(0);
 #endif
 
                 }
 
                 rig->getInfluenceMap()->normalize(rig->getSourceGeometry()->getVertexArray()->getNumElements());
                 osgAnimation:: RigGeometry::FindNearestParentSkeleton finder;
-                                      if(rig->getParents().size() > 1)
-                                          osg::notify(osg::WARN) << "A RigGeometry should not have multi parent ( " << rig->getName() << " )" << std::endl;
-                                      rig->getParents()[0]->accept(finder);
+                if(rig->getParents().size() > 1)
+                    osg::notify(osg::WARN) << "A RigGeometry should not have multi parent ( " << rig->getName() << " )" << std::endl;
+                rig->getParents()[0]->accept(finder);
 
-                                      if(!finder._root.valid())
-                                      {
-                                          osg::notify(osg::WARN) << "A RigGeometry did not find a parent skeleton for RigGeometry ( " << rig->getName() << " )" << std::endl;
-                                          return;
-                                      }
-                                      rig->setSkeleton(finder._root.get());
+                if(!finder._root.valid())
+                {
+                    osg::notify(osg::WARN) << "A RigGeometry did not find a parent skeleton for RigGeometry ( " << rig->getName() << " )" << std::endl;
+                    return;
+                }
+                rig->setSkeleton(finder._root.get());
 
-                                      rig->getInfluenceMap()->cullInfluenceCountPerVertex(8,_simplifierWeightTreshold);
-                                      rig->getInfluenceMap()->        accumulateDuplicates();
+                rig->getInfluenceMap()->cullInfluenceCountPerVertex(8,_simplifierWeightTreshold);
+                rig->getInfluenceMap()->        accumulateDuplicates();
                 rig->getInfluenceMap()->removeUnexpressedBones(*rig->getSkeleton());
 
                 rig->getRigTransformImplementation()->prepareData(*rig);
@@ -602,6 +602,77 @@ osg::Group* createCharacterInstance(osg::Group* character, bool hardware,float s
 
     return c.release();
 }
+typedef std::vector<osg::Node*> NodeList;
+///parse statesets and put textures in texture array
+class TextureArrayVisitor : public osg::NodeVisitor
+{
+public:
+    META_NodeVisitor(osgAnimation, TextureArrayVisitor)
+    TextureArrayVisitor();
+
+    //void apply(osg::Node&);
+    void apply(osg::Node& node){
+
+        osg::StateSet * ss;
+
+        if(ss=node.getStateSet())
+        {
+            const osg::StateSet::TextureAttributeList &texatts=ss->getTextureAttributeList();
+            int curtu=0;
+            for(osg::StateSet::TextureAttributeList::const_iterator texatt=texatts.begin();texatt!=texatts.end();++texatt,++curtu )
+            {
+                 const osg::StateSet::AttributeList  &texattlist=*texatt;
+
+                 for(osg::StateSet::AttributeList::const_iterator att=texattlist.begin();att!=texattlist.end();++att ){
+
+                     const osg::StateAttribute::TypeMemberPair &typemember=(*att).first;
+                     const osg::StateSet::RefAttributePair &attr=(*att).second;
+
+                 }}
+            _list.push_back(node);
+
+        }
+    }
+
+    const NodeList& getRigList() const
+    {
+        return _list;
+    }
+
+protected:
+    NodeList _list;
+};
+typedef std::vector<osgAnimation::RigGeometry*> RigList;
+class CollectRigVisitor : public osg::NodeVisitor
+{
+public:
+    META_NodeVisitor(osgAnimation, CollectRigVisitor)
+    CollectRigVisitor();
+
+    //void apply(osg::Node&);
+    void apply(osg::Geometry& node);
+    const RigList& getRigList() const
+    {
+        return _list;
+    }
+
+protected:
+    RigList _list;
+};
+CollectRigVisitor::CollectRigVisitor() : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {}
+
+//void CollectRigVisitor::apply(osg::Node&) { return; }
+void CollectRigVisitor::apply(osg::Geometry& node)
+{
+    osgAnimation::RigGeometry* bone = dynamic_cast<osgAnimation::RigGeometry*>(&node);
+    if (bone)
+    {
+        _list.push_back( bone);
+        traverse(node);
+    }
+
+}
+
 
 
 int main (int argc, char* argv[])
@@ -683,6 +754,78 @@ int main (int argc, char* argv[])
     std::cout << "created " << xChar * yChar << " instance"  << std::endl;
 
     osgDB::writeNodeFile(*scene.get(),"testHW.osgb");
+
+    if(1) {
+
+        //animation baking
+        double deltaT=1.0d/33.0d;
+        AnimationManagerFinder animfinder;
+        scene->accept(animfinder);
+        CollectRigVisitor cr;
+        scene->accept(cr);
+        osgAnimation::Skeleton *commonskel=0;
+        RigList riglist=cr.getRigList();
+        for(RigList::iterator rigit=riglist.begin(); rigit!=riglist.end(); ++rigit)
+        {
+            osgAnimation::RigGeometry *geom=*rigit;
+            if(!geom->getSkeleton() && !geom->getParents().empty())
+            {
+                osgAnimation::RigGeometry::FindNearestParentSkeleton finder;
+                if(geom->getParents().size() > 1)
+                    osg::notify(osg::WARN) << "A RigGeometry should not have multi parent ( " << geom->getName() << " )" << std::endl;
+                geom->getParents()[0]->accept(finder);
+
+                if(!finder._root.valid())
+                {
+                    osg::notify(osg::WARN) << "A RigGeometry did not find a parent skeleton for RigGeometry ( " << geom->getName() << " )" << std::endl;
+                    return -1;
+                }
+                geom->setSkeleton(finder._root.get());
+
+            }
+            commonskel=geom->getSkeleton();//TODO check for multiple skeletons (can't handle that)
+        }
+        osgAnimation::BoneMapVisitor bmv;
+        commonskel->accept(bmv);
+        osgAnimation::BoneMap bm=bmv.getBoneMap();
+        //TODO foreach animif(animfinder._am.valid())
+        for(int curanim=0; curanim<animfinder._am->getNumRegisteredAnimations(); ++curanim)
+        {
+            animfinder._am->stopAll();
+            osgAnimation::Animation * anim=animfinder._am->getRegisteredAnimation(curanim);
+            animfinder._am->playAnimation(anim);
+            std::vector<osg::Matrix > bakedanim;
+            osg::ref_ptr<AnimationInstancingTransform> mytechnique=new AnimationInstancingTransform;
+            mytechnique->setBakeStep( deltaT);
+            mytechnique->setBoneMap( bm);
+            osgUtil::UpdateVisitor upv;
+            osg::ref_ptr<osg::FrameStamp> fs=new osg::FrameStamp();
+            double time=0;
+            while(time<anim->getDuration()) {
+                fs->setSimulationTime(time);
+                upv.setFrameStamp(fs );
+                scene->accept(upv);
+                ///update baked bone transforms
+                std::vector<osg::Matrix> matvec;
+                matvec.reserve(bm.size());
+                for(osgAnimation::BoneMap::iterator boneit=bm.begin(); boneit!=bm.end(); ++boneit) {
+                    osgAnimation::Bone & bone=*boneit->second.get();
+                    const osg::Matrixf& invBindMatrix = bone.getInvBindMatrixInSkeletonSpace();
+                    const osg::Matrixf& boneMatrix = bone.getMatrixInSkeletonSpace();
+                    osg::Matrixf resultBoneMatrix = invBindMatrix * boneMatrix;
+//is it usefull with ortho trans
+//osg::Matrixf result =  transformFromSkeletonToGeometry * resultBoneMatrix * invTransformFromSkeletonToGeometry;
+
+                    bakedanim.push_back(resultBoneMatrix);
+
+                }
+
+                time+=deltaT;
+            }
+            mytechnique->addAnimation(bakedanim);
+        }
+    }
+
     viewer.setSceneData(scene.get());
     viewer.realize();
     return viewer.run();

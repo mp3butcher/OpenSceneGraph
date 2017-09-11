@@ -413,11 +413,7 @@ bool isGuesting(const osg::BufferObject&bo,const osg::BufferData*bd)
     }
 
 
-    _numVAOsInUsed++;
-   //if(vecBuffSetANDmaster.first.empty())
- //   vecBuffSetANDmaster.second=g;
 
-    OSG_WARN<<"create new vao buffset, num vao currently in used:"<<_numVAOsInUsed<<" geom:"<<g<<std::endl;
     ///new BuffSetis required
     BuffSetAndMaster     newBuffSet;
     newBuffSet.second=g;
@@ -469,7 +465,11 @@ bool isGuesting(const osg::BufferObject&bo,const osg::BufferData*bd)
 #endif
         return g;
     }
+    _numVAOsInUsed++;
+   //if(vecBuffSetANDmaster.first.empty())
+ //   vecBuffSetANDmaster.second=g;
 
+    OSG_WARN<<"create new vao buffset, num vao currently in used:"<<_numVAOsInUsed<<" geom:"<<g<<std::endl;
     ///current configuration doesn't fit so create a new buffset
     newBuffSet.first.clear();
     std::cout<<newBuffSet.first.size()<<" "<<hash<<std::endl;
