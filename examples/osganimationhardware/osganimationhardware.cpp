@@ -35,11 +35,92 @@
 #include <osgAnimation/AnimationManagerBase>
 #include <osgAnimation/BoneMapVisitor>
 #include "AnimationInstancing"
+#include <osg/Material>
+#include <osg/BufferIndexBinding>
+#include <osg/PrimitiveSetIndirect>
+#include <osg/BufferTemplate>
 #include <sstream>
 
 
 #include <assert.h>
 
+
+
+
+///return Hash without lastbit (index array bit)
+#define MAX_TEX_COORD 8
+#define MAX_VERTEX_ATTRIB 16
+///in case of array binding != PER_VERTEX drop the array
+#define HACKARRAY(GEOM,ARRAYPROP) if (GEOM->get##ARRAYPROP() && GEOM->get##ARRAYPROP()->getBinding()!=osg::Array::BIND_PER_VERTEX) {OSG_DEBUG<<#ARRAYPROP<<"removed"<<std::endl; GEOM->set##ARRAYPROP(0);}
+
+#define HACKARRAYS(GEOM,ARRAYPROP,I) if (GEOM->get##ARRAYPROP(I) && GEOM->get##ARRAYPROP(I)->getBinding()!=osg::Array::BIND_PER_VERTEX){OSG_DEBUG<<#ARRAYPROP<<"removed"<<std::endl;GEOM->set##ARRAYPROP(I,0);}
+
+#define PUSHBACK(XXX) push_back(XXX);XXX->setBufferObject(new osg::VertexBufferObject);
+unsigned int getHash(osg::Geometry*g,osg::Geometry::ArrayList &arrayList)
+{
+    unsigned int hash=0;
+    HACKARRAY(g,VertexArray)
+    HACKARRAY(g,VertexArray)
+    HACKARRAY(g,NormalArray)
+    HACKARRAY(g,ColorArray)
+    HACKARRAY(g,SecondaryColorArray)
+    HACKARRAY(g,FogCoordArray)
+    if (g->getVertexArray())
+    {
+        hash++;
+        arrayList.PUSHBACK(g->getVertexArray());
+    }
+    hash<<=1;
+    if (g->getNormalArray())
+    {
+        hash++;
+        arrayList.PUSHBACK(g->getNormalArray());
+    }
+    hash<<=1;
+    if (g->getColorArray())
+    {
+        hash++;
+        arrayList.PUSHBACK(g->getColorArray());
+    }
+    hash<<=1;
+    if (g->getSecondaryColorArray())
+    {
+        hash++;
+        arrayList.PUSHBACK(g->getSecondaryColorArray());
+    }
+    hash<<=1;
+    if (g->getFogCoordArray())
+    {
+        hash++;
+        arrayList.PUSHBACK(g->getFogCoordArray());
+    }
+    hash<<=1;
+    for(unsigned int unit=0; unit<g->getNumTexCoordArrays(); ++unit)
+    {
+        HACKARRAYS(g,TexCoordArray,unit)
+        osg::Array* array = g->getTexCoordArray(unit);
+        if (array)
+        {
+            hash++;
+            arrayList.PUSHBACK(array);
+        }
+        hash<<=1;
+    }
+    hash<<=MAX_TEX_COORD-g->getNumTexCoordArrays();
+    for(unsigned int  index = 0; index <g->getNumVertexAttribArrays(); ++index )
+    {
+        HACKARRAYS(g,VertexAttribArray,index)
+        osg::Array* array =g->getVertexAttribArray(index);
+        if (array)
+        {
+            hash++;
+            arrayList.PUSHBACK(array);
+        }
+        hash<<=1;
+    }
+    hash<<=MAX_VERTEX_ATTRIB-g->getNumVertexAttribArrays();
+    return hash;
+}
 
 static unsigned int getRandomValueinRange(unsigned int v)
 {
@@ -602,22 +683,38 @@ osg::Group* createCharacterInstance(osg::Group* character, bool hardware,float s
 
     return c.release();
 }
-typedef std::vector<osg::Node*> NodeList;
-///parse statesets and put textures in texture array
-class TextureArrayVisitor : public osg::NodeVisitor
+typedef std::vector<const osg::Material*> MatList;
+typedef std::map<osg::StateSet*, int/*matid*/>  StateSetSet;
+
+struct PhongMaterial {
+    osg::Vec4 _ambientfront;
+    osg::Vec4 _diffusefront;
+    osg::Vec4 _specularfront;
+    osg::Vec4 _specExponentAndPadding;
+};
+
+
+
+///parse statesets and put material in an array
+class MaterialArrayVisitor : public osg::NodeVisitor
 {
 public:
-    META_NodeVisitor(osgAnimation, TextureArrayVisitor)
-    TextureArrayVisitor();
+    META_NodeVisitor(osgAnimation, MaterialArrayVisitor)
+    MaterialArrayVisitor(unsigned int ubbindex=7): osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {
+        _matArray= new osg::BufferTemplate<std::vector<PhongMaterial> > ;
+        _matsUBO= new osg::UniformBufferBinding(ubbindex);
+    }
+    osg::ref_ptr<osg::UniformBufferBinding >_matsUBO;
+    osg::ref_ptr<osg::BufferTemplate<std::vector<PhongMaterial> > >_matArray;
 
     //void apply(osg::Node&);
-    void apply(osg::Node& node){
+    void apply(osg::Geometry& node) {
 
         osg::StateSet * ss;
 
         if(ss=node.getStateSet())
         {
-            const osg::StateSet::TextureAttributeList &texatts=ss->getTextureAttributeList();
+            /*const osg::StateSet::TextureAttributeList &texatts=ss->getTextureAttributeList();
             int curtu=0;
             for(osg::StateSet::TextureAttributeList::const_iterator texatt=texatts.begin();texatt!=texatts.end();++texatt,++curtu )
             {
@@ -627,21 +724,172 @@ public:
 
                      const osg::StateAttribute::TypeMemberPair &typemember=(*att).first;
                      const osg::StateSet::RefAttributePair &attr=(*att).second;
+            if(attr.first->asTexture()){
+            std::cout<<typemember.second<<"TexAtt foudn"<<attr.first->getName()<<std::endl;
 
-                 }}
-            _list.push_back(node);
+            }
+                 }
+            }
+            _list.push_back(&node);*/
 
+            if(_list.find(ss)==_list.end()) {
+                //const osg::StateSet::TextureAttribute* mat=ss->getAttribute(osg::StateAttribute::MATERIAL);
+                const osg::Material* mat=dynamic_cast<osg::Material*>(ss->getAttribute(osg::StateAttribute::MATERIAL));
+                if(mat) {
+
+                    unsigned int cpt=0;
+                    MatList::iterator matit;
+                    for(matit=_mats.begin(); matit!=_mats.end(); ++matit,++cpt) {
+                        if( *matit==mat) {
+                            _list[ss]=cpt;
+                            break;
+                        }
+                    }
+                    if(matit==_mats.end()) {
+                        _list[ss]=cpt;
+                        _mats.push_back(mat);
+
+                        PhongMaterial pmat;
+                        pmat._ambientfront=mat->getAmbient(osg::Material::FRONT);
+                        pmat._diffusefront=mat->getDiffuse(osg::Material::FRONT);
+                        pmat._specularfront=mat->getSpecular(osg::Material::FRONT);
+                        pmat._specExponentAndPadding[0]=mat->getShininess(osg::Material::FRONT);
+
+                        _matArray->getData().push_back(pmat);
+
+                    }
+
+                    ///add ubo and uniform to the ss
+                    ss->setAttribute(_matsUBO);
+                    ss->addUniform(new osg::Uniform(osg::Uniform::UNSIGNED_INT,"materialIndex",cpt));
+
+
+                }
+            }
+        }
+    }
+///finalizing stuff
+    void generateMaterialArrayBufferBinding() {
+        _matsUBO->setBufferData(_matArray);
+        for(StateSetSet::iterator ssit=_list.begin(); ssit!= _list.end(); ++ssit) {
+
+            //if(ssit->second)
         }
     }
 
-    const NodeList& getRigList() const
+    const StateSetSet& getMaterialStateSet() const
     {
         return _list;
     }
 
 protected:
-    NodeList _list;
+    StateSetSet _list;
+    MatList _mats;
 };
+///embed several geometries in one : reroute only cullvisitor
+class VirtualGeometry : public osg::Geometry {
+    VirtualGeometry():osg::Geometry() {
+        _children=new osg::Geode;
+    }
+    unsigned int _hash;
+    osg::Geometry::ArrayList _arrays;
+/// be carefull to share same arrays hash else return false;
+    bool addChild(osg::Geometry&geom) {
+        osg::DrawArraysIndirect* da;
+        osg::DrawElementsIndirectUByte * deb;
+        osg::DrawElementsIndirectUShort* des;
+        osg::DrawElementsIndirectUInt* dei;
+
+        if(_children->getNumChildren()==0) {
+            _arrays.clear();
+            _hash=getHash(&geom,_arrays);
+            ///BADBADBAD:)
+            ((osgAnimation::RigGeometry*)this)->copyFrom(geom);
+            this->removePrimitiveSet(0,this->getNumPrimitiveSets());
+            da=new osg::DrawArraysIndirect(GL_TRIANGLES);
+            deb=new osg::DrawElementsIndirectUByte(GL_TRIANGLES);
+            des=new osg::DrawElementsIndirectUShort(GL_TRIANGLES);
+            dei=new osg::DrawElementsIndirectUInt(GL_TRIANGLES);
+            da->setIndirectCommandArray(new osg::DefaultIndirectCommandDrawArrays);
+            deb->setIndirectCommandArray(new osg::DefaultIndirectCommandDrawElements);
+            des->setIndirectCommandArray(new osg::DefaultIndirectCommandDrawElements);
+            dei->setIndirectCommandArray(new osg::DefaultIndirectCommandDrawElements);
+            this->addPrimitiveSet(da);
+            this->addPrimitiveSet(deb);
+            this->addPrimitiveSet(des);
+            this->addPrimitiveSet(dei);
+            DrawElementsList l;geom.getDrawElementsList(l);
+            if(!l.empty())_hash++;
+            if(_hash==0)return false;
+        }
+
+        da=( osg::DrawArraysIndirect*)getPrimitiveSet(0);
+        deb=( osg::DrawElementsIndirectUByte*)getPrimitiveSet(1);
+        des= ( osg::DrawElementsIndirectUShort*)getPrimitiveSet(2);
+        dei= ( osg::DrawElementsIndirectUInt*)getPrimitiveSet(3);
+        osg::Geometry::ArrayList arrays;
+        DrawElementsList l;geom.getDrawElementsList(l);
+        unsigned int hash=getHash(&geom,arrays) ;
+        if(!l.empty())hash++;
+
+        if(_hash==hash){
+            _children->addDrawable(&geom);
+            osg::Geometry::ArrayList::iterator it1=_arrays.begin(),it2=arrays.begin();
+            for(; it1!=_arrays.end(); ++it1,++it2)
+                (*it2)->setBufferObject((*it1)->getBufferObject());
+            int id=0;
+            for(unsigned int prit=0; prit<geom.getNumPrimitiveSets(); ++prit) {
+                osg::PrimitiveSet * pr=geom.getPrimitiveSet(prit);
+                switch(pr->getType()) {
+                case osg::PrimitiveSet::DrawArraysPrimitiveType:
+                {
+                    osg::DrawArrays *tda=(osg::DrawArrays *)pr;
+                    ((osg::DefaultIndirectCommandDrawArrays*)(da->getIndirectCommandArray()))->push_back(
+                        osg::DrawArraysIndirectCommand(tda->getCount(),1,tda->getFirst()+geom.getVertexArray()->getBufferObjectOffset()/geom.getVertexArray()->getElementSize(),0));
+                }
+                break;
+                case osg::PrimitiveSet::DrawElementsUBytePrimitiveType: id=1;break;
+                case osg::PrimitiveSet::DrawElementsUShortPrimitiveType:id=2;break;
+                case osg::PrimitiveSet::DrawElementsUIntPrimitiveType:id=3;break;
+
+                default:
+                    OSG_WARN<<"fist"<<pr->getType();
+                }
+                if(id>0){
+                    osg::DrawElementsIndirect* de=(osg::DrawElementsIndirect* )getPrimitiveSet(id);
+                    osg::DrawElements *det=(osg::DrawElements *)pr;
+                    ((osg::DefaultIndirectCommandDrawElements*)(de->getIndirectCommandArray()))->push_back(
+                        osg::DrawElementsIndirectCommand(det->getNumIndices(),1,
+                                                         det->getBufferObjectOffset()/     ( det->getTotalDataSize()/  det->getNumIndices()  ),
+                                                         ( geom.getVertexArray()->getBufferObjectOffset()) /(geom.getVertexArray()->getElementSize() ),0));
+
+                }
+            }
+        }
+        else return false;
+        return true;
+    }
+
+    virtual void  traverse(osg::NodeVisitor&nv) {
+        if(nv.asCullVisitor()) {
+
+            osg::Geometry::traverse(nv);
+        } else {
+
+            _children->accept(nv);
+        }
+    }
+    osg::ref_ptr<osg::Geode> _children;
+};
+
+class MaterialArrdayVisitor : public osg::NodeVisitor
+{
+public:
+    META_NodeVisitor(osgAnimation, MaterialArrdayVisitor)
+    MaterialArrdayVisitor(): osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {
+    }
+};
+
 typedef std::vector<osgAnimation::RigGeometry*> RigList;
 class CollectRigVisitor : public osg::NodeVisitor
 {
@@ -756,6 +1004,9 @@ int main (int argc, char* argv[])
     osgDB::writeNodeFile(*scene.get(),"testHW.osgb");
 
     if(1) {
+        MaterialArrayVisitor matvis;
+        scene->accept(matvis);
+        matvis.generateMaterialArrayBufferBinding();
 
         //animation baking
         double deltaT=1.0d/33.0d;
