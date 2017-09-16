@@ -56,9 +56,9 @@
 #define HACKARRAYS(GEOM,ARRAYPROP,I) if (GEOM->get##ARRAYPROP(I) && GEOM->get##ARRAYPROP(I)->getBinding()!=osg::Array::BIND_PER_VERTEX){OSG_DEBUG<<#ARRAYPROP<<"removed"<<std::endl;GEOM->set##ARRAYPROP(I,0);}
 
 #define PUSHBACK(XXX) push_back(XXX);XXX->setBufferObject(new osg::VertexBufferObject);
-unsigned int getHash(osg::Geometry*g,osg::Geometry::ArrayList &arrayList)
+long unsigned int getHash(osg::Geometry*g,osg::Geometry::ArrayList &arrayList)
 {
-    unsigned int hash=0;
+    long unsigned int hash=0;
     HACKARRAY(g,VertexArray)
     HACKARRAY(g,VertexArray)
     HACKARRAY(g,NormalArray)
@@ -119,6 +119,9 @@ unsigned int getHash(osg::Geometry*g,osg::Geometry::ArrayList &arrayList)
         hash<<=1;
     }
     hash<<=MAX_VERTEX_ATTRIB-g->getNumVertexAttribArrays();
+
+    hash+=g->getPrimitiveSet(0)->getMode();
+    hash<<=4;
     return hash;
 }
 
@@ -676,7 +679,7 @@ osg::Group* createCharacterInstance(osg::Group* character, bool hardware,float s
     } else
     {
         osg::notify(osg::FATAL) << "no AnimationManagerBase found, updateCallback need to animate elements" << std::endl;
-        exit(-1);
+        return c.release();//exit(-1);
     }
     SetupRigGeometry switcher(simplifierRatio, simplifierWeightTreshold,hardware);
     c->accept(switcher);
@@ -788,28 +791,42 @@ protected:
 };
 ///embed several geometries in one : reroute only cullvisitor
 class VirtualGeometry : public osg::Geometry {
+public:
     VirtualGeometry():osg::Geometry() {
         _children=new osg::Geode;
+        setUseDisplayList(false);
+        setUseVertexArrayObject(true);
+      //  setComputeBoundingBoxCallback(new osg::Drawable::ComputeBoundingBoxCallback());
     }
-    unsigned int _hash;
+
+    virtual void accept(osg::PrimitiveFunctor& functor) const
+    {
+        for( int i=0;i<_children->getNumChildren();i++)
+            ((osg::Geometry*)_children->getChild(i))->accept(functor);
+    }
+    long unsigned int _hash;
     osg::Geometry::ArrayList _arrays;
 /// be carefull to share same arrays hash else return false;
     bool addChild(osg::Geometry&geom) {
-        osg::DrawArraysIndirect* da;
-        osg::DrawElementsIndirectUByte * deb;
-        osg::DrawElementsIndirectUShort* des;
-        osg::DrawElementsIndirectUInt* dei;
+        osg::MultiDrawArraysIndirect* da;
+        osg::MultiDrawElementsIndirectUByte * deb;
+        osg::MultiDrawElementsIndirectUShort* des;
+        osg::MultiDrawElementsIndirectUInt* dei;
 
         if(_children->getNumChildren()==0) {
             _arrays.clear();
             _hash=getHash(&geom,_arrays);
             ///BADBADBAD:)
             ((osgAnimation::RigGeometry*)this)->copyFrom(geom);
+
+            for(osg::Geometry::ArrayList::iterator it1=_arrays.begin(); it1!=_arrays.end(); ++it1)
+                (*it1)->setBufferObject(new osg::VertexBufferObject());
             this->removePrimitiveSet(0,this->getNumPrimitiveSets());
-            da=new osg::DrawArraysIndirect(GL_TRIANGLES);
-            deb=new osg::DrawElementsIndirectUByte(GL_TRIANGLES);
-            des=new osg::DrawElementsIndirectUShort(GL_TRIANGLES);
-            dei=new osg::DrawElementsIndirectUInt(GL_TRIANGLES);
+            GLenum t=geom.getPrimitiveSet(0)->getMode();
+            da=new osg::MultiDrawArraysIndirect(t);
+            deb=new osg::MultiDrawElementsIndirectUByte(t);
+            des=new osg::MultiDrawElementsIndirectUShort(t);
+            dei=new osg::MultiDrawElementsIndirectUInt(t);
             da->setIndirectCommandArray(new osg::DefaultIndirectCommandDrawArrays);
             deb->setIndirectCommandArray(new osg::DefaultIndirectCommandDrawElements);
             des->setIndirectCommandArray(new osg::DefaultIndirectCommandDrawElements);
@@ -818,25 +835,32 @@ class VirtualGeometry : public osg::Geometry {
             this->addPrimitiveSet(deb);
             this->addPrimitiveSet(des);
             this->addPrimitiveSet(dei);
+            da->setBufferObject(0);
+            deb->setBufferObject(0);
+            des->setBufferObject(0);
+            dei->setBufferObject(0);
             DrawElementsList l;geom.getDrawElementsList(l);
             if(!l.empty())_hash++;
+
+          //  _hash<<=1;
             if(_hash==0)return false;
         }
 
-        da=( osg::DrawArraysIndirect*)getPrimitiveSet(0);
-        deb=( osg::DrawElementsIndirectUByte*)getPrimitiveSet(1);
-        des= ( osg::DrawElementsIndirectUShort*)getPrimitiveSet(2);
-        dei= ( osg::DrawElementsIndirectUInt*)getPrimitiveSet(3);
+        da=( osg::MultiDrawArraysIndirect*)getPrimitiveSet(0);
+        deb=( osg::MultiDrawElementsIndirectUByte*)getPrimitiveSet(1);
+        des= ( osg::MultiDrawElementsIndirectUShort*)getPrimitiveSet(2);
+        dei= ( osg::MultiDrawElementsIndirectUInt*)getPrimitiveSet(3);
         osg::Geometry::ArrayList arrays;
         DrawElementsList l;geom.getDrawElementsList(l);
-        unsigned int hash=getHash(&geom,arrays) ;
+        long unsigned int hash=getHash(&geom,arrays) ;
         if(!l.empty())hash++;
 
-        if(_hash==hash){
+        if(_hash == hash){
             _children->addDrawable(&geom);
             osg::Geometry::ArrayList::iterator it1=_arrays.begin(),it2=arrays.begin();
             for(; it1!=_arrays.end(); ++it1,++it2)
                 (*it2)->setBufferObject((*it1)->getBufferObject());
+            assert(it2==arrays.end());
             int id=0;
             for(unsigned int prit=0; prit<geom.getNumPrimitiveSets(); ++prit) {
                 osg::PrimitiveSet * pr=geom.getPrimitiveSet(prit);
@@ -857,7 +881,17 @@ class VirtualGeometry : public osg::Geometry {
                 }
                 if(id>0){
                     osg::DrawElementsIndirect* de=(osg::DrawElementsIndirect* )getPrimitiveSet(id);
+
                     osg::DrawElements *det=(osg::DrawElements *)pr;
+                    if(!de->getBufferObject()){
+                        /*///first time must copy
+                        for(int i=0;i<det->getNumIndices();i++)
+                            de->setElement(i,det->getElement(i));*/
+                        de->setBufferObject(new osg::ElementBufferObject());
+                       //de->setBufferObject(det->getBufferObject());
+                    }//else
+                        det->setBufferObject(de->getBufferObject());
+                        if(det->getNumIndices()!=0) //dirty guard
                     ((osg::DefaultIndirectCommandDrawElements*)(de->getIndirectCommandArray()))->push_back(
                         osg::DrawElementsIndirectCommand(det->getNumIndices(),1,
                                                          det->getBufferObjectOffset()/     ( det->getTotalDataSize()/  det->getNumIndices()  ),
@@ -876,18 +910,35 @@ class VirtualGeometry : public osg::Geometry {
             osg::Geometry::traverse(nv);
         } else {
 
-            _children->accept(nv);
+           osg::Geometry::traverse(nv);
+            // _children->accept(nv);
         }
     }
     osg::ref_ptr<osg::Geode> _children;
 };
 
-class MaterialArrdayVisitor : public osg::NodeVisitor
+class VirtualGeometryVisitor : public osg::NodeVisitor
 {
 public:
-    META_NodeVisitor(osgAnimation, MaterialArrdayVisitor)
-    MaterialArrdayVisitor(): osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {
+    META_NodeVisitor(osgAnimation, VirtualGeometryVisitor)
+
+    VirtualGeometryVisitor(): osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {
     }
+    typedef std::vector<VirtualGeometry*> VGS;
+    void apply(osg::Geometry& node){
+        VGS::iterator vgit;
+        for( vgit=vgs.begin();vgit!=vgs.end() && !(*vgit)->addChild(node) ;++vgit);
+        if(vgit==vgs.end()){
+            VirtualGeometry *vg=new VirtualGeometry();
+            vgs.push_back(vg);
+            if(!vg->addChild( node))
+                OSG_WARN<<" WTF addchild failed"<<std::endl;
+
+        }
+    }
+
+
+    VGS vgs;
 };
 
 typedef std::vector<osgAnimation::RigGeometry*> RigList;
@@ -1007,6 +1058,24 @@ int main (int argc, char* argv[])
         MaterialArrayVisitor matvis;
         scene->accept(matvis);
         matvis.generateMaterialArrayBufferBinding();
+VirtualGeometryVisitor vgvis;
+scene->accept(vgvis);
+osg::Group * newscene=new osg::Group();
+for(VirtualGeometryVisitor::VGS::iterator vgit=vgvis.vgs.begin(); vgit!=vgvis.vgs.end();++vgit)
+{
+ newscene->addChild(*vgit);
+ osg::Geometry::PrimitiveSetList &prlist=(*vgit)->getPrimitiveSetList();
+ for(osg::Geometry::PrimitiveSetList::iterator prit=prlist.begin();prit!=prlist.end(); )
+    {
+     osg::PrimitiveSet * pr=*prit;osg::DrawElementsIndirect *de;osg::DrawArraysIndirect *da;
+     if((de=dynamic_cast<osg::DrawElementsIndirect  *>(pr))&&de->getIndirectCommandArray()->getNumElements()==0)
+         prit=prlist.erase(prit);
+     else if((da= dynamic_cast<osg::DrawArraysIndirect  *>(pr))&& da->getIndirectCommandArray()->getNumElements()==0)
+         prit=prlist.erase(prit);
+     else ++prit;
+
+ }
+}
 
         //animation baking
         double deltaT=1.0d/33.0d;
@@ -1037,9 +1106,11 @@ int main (int argc, char* argv[])
             commonskel=geom->getSkeleton();//TODO check for multiple skeletons (can't handle that)
         }
         osgAnimation::BoneMapVisitor bmv;
+        if(commonskel)
         commonskel->accept(bmv);
         osgAnimation::BoneMap bm=bmv.getBoneMap();
         //TODO foreach animif(animfinder._am.valid())
+        if(animfinder._am)
         for(int curanim=0; curanim<animfinder._am->getNumRegisteredAnimations(); ++curanim)
         {
             animfinder._am->stopAll();
@@ -1075,6 +1146,8 @@ int main (int argc, char* argv[])
             }
             mytechnique->addAnimation(bakedanim);
         }
+
+        scene=newscene;
     }
 
     viewer.setSceneData(scene.get());
