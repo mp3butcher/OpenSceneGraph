@@ -764,9 +764,8 @@ public:
 
                     ///add ubo and uniform to the ss
                     ss->setAttribute(_matsUBO);
-                    ss->addUniform(new osg::Uniform(osg::Uniform::UNSIGNED_INT,"materialIndex",cpt));
-
-
+                //DEBUGrm    ss->addUniform(new osg::Uniform(osg::Uniform::UNSIGNED_INT,"materialIndex",cpt));
+(ss)->removeAttribute(const_cast<osg::Material*>(mat));
                 }
             }
         }
@@ -796,9 +795,81 @@ public:
         _children=new osg::Geode;
         setUseDisplayList(false);
         setUseVertexArrayObject(true);
+        setUserData(_children);
       //  setComputeBoundingBoxCallback(new osg::Drawable::ComputeBoundingBoxCallback());
     }
+virtual int isCompatible(const osg::Geometry&geom){
+     //check geom for compatibility <ith current VirtualGeometry
+        osg::Geometry *m=((osg::Geometry*)_children->getChild(0));
+        const osg::Geometry * g=&geom;
+        if (g->getVertexArray() ){
+                if(!m->getVertexArray())return 1;}
+        else if(m->getVertexArray())return -1;
+        if (g->getNormalArray() ){
+                if(!m->getNormalArray())return 1;}
+        else if(m->getNormalArray())return -1;
+        if (g->getColorArray() ){
+                if(!m->getColorArray())return 1;}
+        else if(m->getColorArray())return -1;
+        if (g->getSecondaryColorArray() ){
+                if(!m->getSecondaryColorArray())return 1;}
+        else if(m->getSecondaryColorArray())return -1;
+        if (g->getFogCoordArray() ){
+                if(!m->getFogCoordArray())return 1;}
+        else if(m->getFogCoordArray())return -1;
 
+        if(g->getNumTexCoordArrays()>m->getNumTexCoordArrays()) return 1;
+        else if(g->getNumTexCoordArrays()<m->getNumTexCoordArrays()) return -1;
+
+        for(unsigned int unit=0; unit<g->getNumTexCoordArrays(); ++unit)
+        {
+            if (g->getTexCoordArray(unit) ){
+                    if(!m->getTexCoordArray(unit))return 1;
+            }
+            else if(m->getTexCoordArray(unit))return -1;
+        }
+        if(g->getNumVertexAttribArrays()>getNumVertexAttribArrays()) return 1;
+        else if(g->getNumVertexAttribArrays()<getNumVertexAttribArrays()) return -1;
+
+        for(unsigned int unit=0; unit<g->getNumVertexAttribArrays(); ++unit)
+        {
+            if (g->getVertexAttribArray(unit) ){
+                    if(!m->getVertexAttribArray(unit))return 1;
+             }
+            else if(m->getVertexAttribArray(unit))return -1;
+        }
+
+        std::set<osg::PrimitiveSet::Type> types,types2;
+        for(osg::Geometry::PrimitiveSetList::const_iterator it=m->getPrimitiveSetList().begin();it!=m->getPrimitiveSetList().end();++it)
+      types.insert((*it)->getType());
+        for(osg::Geometry::PrimitiveSetList::const_iterator it=g->getPrimitiveSetList().begin();it!=g->getPrimitiveSetList().end();++it)
+      types2.insert((*it)->getType());
+
+        if(types.size()>types2.size()) return 1;
+        else if(types.size()<types2.size()) return -1;
+  #if 0
+
+        std::set<osg::PrimitiveSet::Type>::const_iterator it2=types2.begin();
+        for(std::set<osg::PrimitiveSet::Type>::const_iterator it=types.begin();it!=types.end();++it,++it2){
+            if ( *it > *it2 )return 1;
+            else if ( *it > *it2 )return -1;
+        }
+#else
+        if(g->getPrimitiveSet(0)->getMode()>m->getPrimitiveSet(0)->getMode())return 1;
+        if(g->getPrimitiveSet(0)->getMode()<m->getPrimitiveSet(0)->getMode())return -1;
+#endif
+  #if 1
+        if (g->getStateSet() ){
+            if(!m->getStateSet())return 1;}
+    else if(m->getStateSet())return -1;
+
+    if(g->getStateSet()&&m->getStateSet()){
+        if(*m->getStateSet()<*g->getStateSet())return 1;
+        if(*g->getStateSet()<*m->getStateSet())return -1;
+    }
+    #endif
+        return 0;
+    }
     virtual void accept(osg::PrimitiveFunctor& functor) const
     {
         for( int i=0;i<_children->getNumChildren();i++)
@@ -855,7 +926,7 @@ public:
         long unsigned int hash=getHash(&geom,arrays) ;
         if(!l.empty())hash++;
 
-        if(_hash == hash){
+       if( _children->getNumChildren()==0 || isCompatible(geom)==0 ){ // if(_hash == hash){
             _children->addDrawable(&geom);
             osg::Geometry::ArrayList::iterator it1=_arrays.begin(),it2=arrays.begin();
             for(; it1!=_arrays.end(); ++it1,++it2)
@@ -1058,24 +1129,6 @@ int main (int argc, char* argv[])
         MaterialArrayVisitor matvis;
         scene->accept(matvis);
         matvis.generateMaterialArrayBufferBinding();
-VirtualGeometryVisitor vgvis;
-scene->accept(vgvis);
-osg::Group * newscene=new osg::Group();
-for(VirtualGeometryVisitor::VGS::iterator vgit=vgvis.vgs.begin(); vgit!=vgvis.vgs.end();++vgit)
-{
- newscene->addChild(*vgit);
- osg::Geometry::PrimitiveSetList &prlist=(*vgit)->getPrimitiveSetList();
- for(osg::Geometry::PrimitiveSetList::iterator prit=prlist.begin();prit!=prlist.end(); )
-    {
-     osg::PrimitiveSet * pr=*prit;osg::DrawElementsIndirect *de;osg::DrawArraysIndirect *da;
-     if((de=dynamic_cast<osg::DrawElementsIndirect  *>(pr))&&de->getIndirectCommandArray()->getNumElements()==0)
-         prit=prlist.erase(prit);
-     else if((da= dynamic_cast<osg::DrawArraysIndirect  *>(pr))&& da->getIndirectCommandArray()->getNumElements()==0)
-         prit=prlist.erase(prit);
-     else ++prit;
-
- }
-}
 
         //animation baking
         double deltaT=1.0d/33.0d;
@@ -1087,39 +1140,52 @@ for(VirtualGeometryVisitor::VGS::iterator vgit=vgvis.vgs.begin(); vgit!=vgvis.vg
         RigList riglist=cr.getRigList();
         for(RigList::iterator rigit=riglist.begin(); rigit!=riglist.end(); ++rigit)
         {
-            osgAnimation::RigGeometry *geom=*rigit;
-            if(!geom->getSkeleton() && !geom->getParents().empty())
+            osgAnimation::RigGeometry *rigid=*rigit;
+            if(!rigid->getSkeleton() && !rigid->getParents().empty())
             {
                 osgAnimation::RigGeometry::FindNearestParentSkeleton finder;
-                if(geom->getParents().size() > 1)
-                    osg::notify(osg::WARN) << "A RigGeometry should not have multi parent ( " << geom->getName() << " )" << std::endl;
-                geom->getParents()[0]->accept(finder);
+                if(rigid->getParents().size() > 1)
+                    osg::notify(osg::WARN) << "A RigGeometry should not have multi parent ( " << rigid->getName() << " )" << std::endl;
+                rigid->getParents()[0]->accept(finder);
 
                 if(!finder._root.valid())
                 {
-                    osg::notify(osg::WARN) << "A RigGeometry did not find a parent skeleton for RigGeometry ( " << geom->getName() << " )" << std::endl;
+                    osg::notify(osg::WARN) << "A RigGeometry did not find a parent skeleton for RigGeometry ( " << rigid->getName() << " )" << std::endl;
                     return -1;
                 }
-                geom->setSkeleton(finder._root.get());
-
+                rigid->setSkeleton(finder._root.get());
+              /*  ;
+rigid->getStateSet()->removeUniform("matrixPalette");
+rigid->getStateSet()->removeUniform("nbBonesPerVertex");
+rigid->getStateSet()->removeAttribute(osg::StateAttribute::PROGRAM);*/
             }
-            commonskel=geom->getSkeleton();//TODO check for multiple skeletons (can't handle that)
+            commonskel=rigid->getSkeleton();//TODO check for multiple skeletons (can't handle that)
         }
         osgAnimation::BoneMapVisitor bmv;
         if(commonskel)
         commonskel->accept(bmv);
         osgAnimation::BoneMap bm=bmv.getBoneMap();
+        for(RigList::iterator rigit=riglist.begin(); rigit!=riglist.end(); ++rigit)
+{      osg::ref_ptr<AnimationInstancingTransform> mytechnique=new AnimationInstancingTransform;
+            mytechnique->setBakeStep( deltaT);
+            mytechnique->setBoneMap( bm);
+            (*rigit)->setRigTransformImplementation(mytechnique);
+            (*mytechnique).prepareData(**rigit);
+            (*mytechnique)(**rigit);
+        }
+
+
+
+
         //TODO foreach animif(animfinder._am.valid())
-        if(animfinder._am)
+        if(animfinder._am){
         for(int curanim=0; curanim<animfinder._am->getNumRegisteredAnimations(); ++curanim)
         {
             animfinder._am->stopAll();
             osgAnimation::Animation * anim=animfinder._am->getRegisteredAnimation(curanim);
             animfinder._am->playAnimation(anim);
             std::vector<osg::Matrix > bakedanim;
-            osg::ref_ptr<AnimationInstancingTransform> mytechnique=new AnimationInstancingTransform;
-            mytechnique->setBakeStep( deltaT);
-            mytechnique->setBoneMap( bm);
+
             osgUtil::UpdateVisitor upv;
             osg::ref_ptr<osg::FrameStamp> fs=new osg::FrameStamp();
             double time=0;
@@ -1130,6 +1196,12 @@ for(VirtualGeometryVisitor::VGS::iterator vgit=vgvis.vgs.begin(); vgit!=vgvis.vg
                 ///update baked bone transforms
                 std::vector<osg::Matrix> matvec;
                 matvec.reserve(bm.size());
+
+                //DEBUG
+               /*osgAnimation::Bone& b=*(bm.begin())->second.get();
+               const osg::Matrixf&  Matrix = b.getMatrixInSkeletonSpace();
+               OSG_WARN<<Matrix(0,0)<<" "<<Matrix(0,1)<<" "<<Matrix(0,2)<<" "<<Matrix(0,3)<<" "<<std::endl;
+*/
                 for(osgAnimation::BoneMap::iterator boneit=bm.begin(); boneit!=bm.end(); ++boneit) {
                     osgAnimation::Bone & bone=*boneit->second.get();
                     const osg::Matrixf& invBindMatrix = bone.getInvBindMatrixInSkeletonSpace();
@@ -1144,9 +1216,56 @@ for(VirtualGeometryVisitor::VGS::iterator vgit=vgvis.vgs.begin(); vgit!=vgvis.vg
 
                 time+=deltaT;
             }
-            mytechnique->addAnimation(bakedanim);
+          ///use the first rig technique in order to create incremental animationsdata and copy it to other latter
+            osg::ref_ptr<AnimationInstancingTransform> mytechnique=  (AnimationInstancingTransform*)riglist[0]->getRigTransformImplementation();
+          mytechnique->addAnimation(bakedanim);
         }
+        animfinder._am->stopAll();
+    }
+        int _reservedTextureUnit=6;
+        osg::ref_ptr<AnimationInstancingTransform> mytechnique=  (AnimationInstancingTransform*)riglist[0]->getRigTransformImplementation();
+       mytechnique-> generateAnimationDatas();
+       //create TBO Texture handle
+       osg::Uniform * _bakedAnimationTBOHandle=new osg::Uniform(osg::Uniform::SAMPLER_BUFFER,"animationTBO");
+       _bakedAnimationTBOHandle->set((int)_reservedTextureUnit);
+       osg::Uniform * bonecount=new osg::Uniform(osg::Uniform::UNSIGNED_INT,"boneCount");
+       bonecount->set((unsigned int)bm.size());
 
+       for(RigList::iterator rigit=riglist.begin(); rigit!=riglist.end(); ++rigit)
+{      osg::ref_ptr<AnimationInstancingTransform> mtechnique= (AnimationInstancingTransform*)(*rigit)->getRigTransformImplementation();
+           osg::StateSet *ss=(*rigit)->getStateSet();
+
+           ss->addUniform(mytechnique->getBakedAnimationDescriptor());
+
+
+           ss->addUniform(_bakedAnimationTBOHandle);
+           ss->addUniform(bonecount);
+           ss->setTextureAttribute(_reservedTextureUnit,mytechnique->getBakedAnimationTBO());
+
+           mtechnique->setBakedAnimationDescriptor(mytechnique->getBakedAnimationDescriptor());
+           mtechnique->setBakedAnimationTBO(mytechnique->getBakedAnimationTBO());
+}
+
+       VirtualGeometryVisitor vgvis;
+       scene->accept(vgvis);
+       osg::Group * newscene=new osg::Group();
+       for(VirtualGeometryVisitor::VGS::iterator vgit=vgvis.vgs.begin(); vgit!=vgvis.vgs.end();++vgit)
+       {
+        newscene->addChild(*vgit);
+        //remove empty pr
+        osg::Geometry::PrimitiveSetList &prlist=(*vgit)->getPrimitiveSetList();
+        for(osg::Geometry::PrimitiveSetList::iterator prit=prlist.begin();prit!=prlist.end(); )
+           {
+            osg::PrimitiveSet * pr=*prit;osg::DrawElementsIndirect *de;osg::DrawArraysIndirect *da;
+            if((de=dynamic_cast<osg::DrawElementsIndirect  *>(pr))&&de->getIndirectCommandArray()->getNumElements()==0)
+                prit=prlist.erase(prit);
+            else if((da= dynamic_cast<osg::DrawArraysIndirect  *>(pr))&& da->getIndirectCommandArray()->getNumElements()==0)
+                prit=prlist.erase(prit);
+            else ++prit;
+
+        }
+       }
+osgDB::writeNodeFile(*newscene,"koi.osgb");
         scene=newscene;
     }
 
