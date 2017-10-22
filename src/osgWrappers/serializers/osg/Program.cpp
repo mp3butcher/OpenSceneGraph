@@ -145,6 +145,37 @@ static bool writeComputeGroups( osgDB::OutputStream& os, const osg::Program& att
     return true;
 }
 
+static bool checkBindUniformBlock( const osg::Program& node )
+{
+    return true;
+}
+
+static bool readBindUniformBlock( osgDB::InputStream& is, osg::Program& p )
+{
+    unsigned int  size = 0; is >> size >> is.BEGIN_BRACKET;
+    unsigned int elmt0; std::string elmt1;
+    for ( unsigned int i=0; i<size; ++i )
+    {
+        is >>elmt0;        is >>elmt1;    
+        p.addBindUniformBlock(elmt1, elmt0);
+    }
+    is >> is.END_BRACKET;
+    return true;
+}
+
+static bool writeBindUniformBlock( osgDB::OutputStream& os, const osg::Program& p )
+{
+    unsigned int size = p.getNumBindUniformBlocks();
+    os << size << os.BEGIN_BRACKET << std::endl;
+    for ( unsigned int i=0; i<size; ++i )
+    {
+        os << p.getBindUniformBlockIndex(i);
+        os << p.getBindUniformBlockName(i);
+    }
+    os << os.END_BRACKET << std::endl;
+    return true;
+}
+
 REGISTER_OBJECT_WRAPPER( Program,
                          new osg::Program,
                          osg::Program,
@@ -166,5 +197,9 @@ REGISTER_OBJECT_WRAPPER( Program,
         UPDATE_TO_VERSION_SCOPED( 116 )
         ADD_USER_SERIALIZER( FeedbackVaryingsName );
         ADD_USER_SERIALIZER( FeedbackMode );
+    }
+    {
+        UPDATE_TO_VERSION_SCOPED( 145 )
+        ADD_USER_SERIALIZER( BindUniformBlock );
     }
 }

@@ -36,6 +36,41 @@ RigTransformSoftware::RigTransformSoftware(const RigTransformSoftware& rts,const
 
 }
 
+// sort by name and weight
+struct SortByNameAndWeight : public std::less<RigTransformSoftware::BonePtrWeightList>
+{
+    bool operator()(const RigTransformSoftware::BonePtrWeight& b0,
+                    const RigTransformSoftware::BonePtrWeight& b1) const
+    {
+        if (b0.getBoneID() < b1.getBoneID())
+            return true;
+        else if (b0.getBoneID() > b1.getBoneID())
+            return false;
+        return (b0.getWeight() < b1.getWeight());
+    }
+};
+
+struct SortByBoneWeightList : public std::less<RigTransformSoftware::BonePtrWeightList>
+{
+    bool operator()(const RigTransformSoftware::BonePtrWeightList& b0,
+                    const RigTransformSoftware::BonePtrWeightList& b1) const
+    {
+        if (b0.size() < b1.size())
+            return true;
+        else if (b0.size() > b1.size())
+            return false;
+
+        int size = b0.size();
+        for (int i = 0; i < size; i++)
+        {
+            if (SortByNameAndWeight()(b0[i], b1[i]))
+                return true;
+            else if (SortByNameAndWeight()(b1[i], b0[i]))
+                return false;
+        }
+        return false;
+    }
+};
 void RigTransformSoftware::buildMinimumUpdateSet( const RigGeometry&rig )
 {
     ///1 Create Index2Vec<BoneWeight>
@@ -66,35 +101,15 @@ void RigTransformSoftware::buildMinimumUpdateSet( const RigGeometry&rig )
         }
     }
 
-    // normalize _vertex2Bones weight per vertex
-    unsigned vertexID = 0;
-    for (std::vector<BonePtrWeightList>::iterator it = perVertexInfluences.begin();
-            it != perVertexInfluences.end();
-            ++it, ++vertexID)
-    {
-        BonePtrWeightList& bones = *it;
-        float sum = 0;
-        for(BonePtrWeightList::iterator bwit = bones.begin(); bwit!=bones.end(); ++bwit)
-            sum += bwit->getWeight();
-        if (sum < 1e-4)
-        {
-            OSG_WARN << "VertexInfluenceSet::buildVertex2BoneList warning the vertex " << vertexID << " seems to have 0 weight, skip normalize for this vertex" << std::endl;
-        }
-        else
-        {
-            float mult = 1.0/sum;
-            for(BonePtrWeightList::iterator bwit = bones.begin(); bwit != bones.end(); ++bwit)
-                bwit->setWeight(bwit->getWeight() * mult);
-        }
-    }
+
 
     ///2 Create inverse mapping Vec<BoneWeight>2Vec<Index> from previous built Index2Vec<BoneWeight>
     ///in order to minimize weighted matrices computation on update
     _uniqVertexGroupList.clear();
 
-    typedef std::map<BonePtrWeightList, VertexGroup> UnifyBoneGroup;
+    typedef std::map<BonePtrWeightList, VertexGroup,SortByBoneWeightList> UnifyBoneGroup;
     UnifyBoneGroup unifyBuffer;
-    vertexID = 0;
+    unsigned int vertexID = 0;
     for (std::vector<BonePtrWeightList>::iterator perVertinfit = perVertexInfluences.begin();
             perVertinfit!=perVertexInfluences.end();
             ++perVertinfit,++vertexID)
@@ -163,12 +178,12 @@ bool RigTransformSoftware::init(RigGeometry&rig)
         prepareData(rig);
         return false;
     }
-
     if(!rig.getSkeleton())
         return false;
     ///get bonemap from skeleton
     BoneMapVisitor mapVisitor;
-    rig.getSkeleton()->accept(mapVisitor);
+    for(unsigned int i=0;i<rig.getNumSkeletons();++i)
+        rig.getSkeleton(i)->accept(mapVisitor);
     BoneMap boneMap = mapVisitor.getBoneMap();
     VertexInfluenceMap & vertexInfluenceMap = *rig.getInfluenceMap();
 
@@ -188,7 +203,7 @@ bool RigTransformSoftware::init(RigGeometry&rig)
         BoneMap::const_iterator bmit = boneMap.find(bonename);
         if (bmit == boneMap.end() )
         {
-            if (_invalidInfluence.find(bonename) != _invalidInfluence.end())
+            if (_invalidInfluence.find(bonename) == _invalidInfluence.end())
             {
                 _invalidInfluence[bonename] = true;
                 OSG_WARN << "RigTransformSoftware Bone " << bonename << " not found, skip the influence group " << std::endl;
@@ -208,12 +223,16 @@ bool RigTransformSoftware::init(RigGeometry&rig)
         for(BonePtrWeightList::iterator bwit=  uniq.getBoneWeights().begin(); bwit != uniq.getBoneWeights().end(); )
         {
             Bone * b = localid2bone[bwit->getBoneID()];
-            if(!b)
+            if(!b){
                 bwit = uniq.getBoneWeights().erase(bwit);
+            }
             else
                 bwit++->setBonePtr(b);
         }
     }
+    //normalize
+    for(VertexGroupList::iterator itvg = _uniqVertexGroupList.begin(); itvg != _uniqVertexGroupList.end(); ++itvg)
+        itvg->normalize();
 
     _needInit = false;
 

@@ -213,10 +213,14 @@ class OSG_EXPORT Array : public BufferData
         inline void setVertexBufferObject(osg::VertexBufferObject* vbo) { setBufferObject(vbo); }
 
         /** Get the VertexBufferObject. If no VBO is assigned returns NULL*/
-        inline osg::VertexBufferObject* getVertexBufferObject() { return dynamic_cast<osg::VertexBufferObject*>(_bufferObject.get()); }
+        inline osg::VertexBufferObject* getVertexBufferObject() { return _bufferObject.valid()?(_bufferObject->getTarget()==GL_ARRAY_BUFFER_ARB? static_cast<osg::VertexBufferObject*>(_bufferObject.get()):0):0 ;
+                    //dynamic_cast<osg::VertexBufferObject*>(_bufferObject.get());
+                                                                }
 
         /** Get the const VertexBufferObject. If no VBO is assigned returns NULL*/
-        inline const osg::VertexBufferObject* getVertexBufferObject() const { return dynamic_cast<const osg::VertexBufferObject*>(_bufferObject.get());  }
+        inline const osg::VertexBufferObject* getVertexBufferObject() const {return _bufferObject.valid()?(_bufferObject->getTarget()==GL_ARRAY_BUFFER_ARB? static_cast<osg::VertexBufferObject*>(_bufferObject.get()):0):0 ;
+                                                                              //return dynamic_cast<const osg::VertexBufferObject*>(_bufferObject.get());
+                                                                            }
 
     protected:
 

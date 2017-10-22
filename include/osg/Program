@@ -128,6 +128,11 @@ class OSG_EXPORT Program : public osg::StateAttribute
         /** Remove a uniform block binding. */
         void removeBindUniformBlock(const std::string& name);
 
+       // const UniformBlockBindingList& getBindUniformBlocks()const {return _uniformBlockBindingList;}
+        unsigned int getNumBindUniformBlocks()const {return _uniformBlockBindingList.size();}
+        const unsigned int &getBindUniformBlockIndex(const unsigned int i)const {UniformBlockBindingList::const_iterator it= _uniformBlockBindingList.begin();for(unsigned int j=0;j<i;++j,++it); return it->second;}
+        const std::string & getBindUniformBlockName(const unsigned int i)const {UniformBlockBindingList::const_iterator it= _uniformBlockBindingList.begin();for(unsigned int j=0;j<i;++j,++it); return it->first;}
+
         /** Remove a TransformFeedbackVarying. */
         void removeTransformFeedbackVarying(const std::string& name)
         {

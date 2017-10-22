@@ -35,9 +35,9 @@ static bool readBufferObject( osgDB::InputStream& is, osg::BufferData& bd )
 
 static bool writeBufferObject( osgDB::OutputStream& os, const osg::BufferData& bd )
 {
-    if (os.getWriteBufferObjectConfiguration())
+   // if (os.getWriteBufferObjectConfiguration())
         os << bd.getBufferObject();
-    else os << (osg::BufferObject*)NULL;
+   // else os << (osg::BufferObject*)NULL;
     return true;
 }
 /*

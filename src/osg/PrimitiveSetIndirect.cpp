@@ -303,7 +303,6 @@ void MultiDrawElementsIndirectUByte::draw(State& state, bool /*useVertexBufferOb
     GLBufferObject* ebo = getOrCreateGLBufferObject(state.getContextID());
 
     state.bindElementBufferObject(ebo);
-
     state.get<GLExtensions>()-> glMultiDrawElementsIndirect(mode, GL_UNSIGNED_BYTE,
                                                             (const GLvoid *)(dibo->getOffset(_indirectCommandArray->getBufferIndex())),_indirectCommandArray->getNumElements(), _stride);
 }

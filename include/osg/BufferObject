@@ -581,9 +581,9 @@ public:
                 for(unsigned int i=0; i<getBufferIndex(); i++) offset+=getBufferObject()->getBufferData(i)->getTotalDataSize();
             return offset;
         }
+        void setBufferIndex(unsigned int index) { _bufferIndex = index; }
 protected:
 
-        void setBufferIndex(unsigned int index) { _bufferIndex = index; }
         virtual ~BufferData();
 
         unsigned int                    _modifiedCount;

@@ -16,6 +16,7 @@
 #include <osgAnimation/VertexInfluence>
 #include <osgAnimation/RigGeometry>
 #include <osgAnimation/BoneMapVisitor>
+#include <osgAnimation/UpdateBone>
 #include <osg/Notify>
 #include <iostream>
 #include <algorithm>
@@ -36,59 +37,59 @@ struct BoneNameKey
 
 void VertexInfluenceMap::accumulateDuplicates()
 {
-typedef std::map<std::string,BoneWeight >  BoneWeightOrdered;
-std::map<int, BoneWeightOrdered > tempVec2Bones;
+    typedef std::map<std::string,BoneWeight >  BoneWeightOrdered;
+    std::map<int, BoneWeightOrdered > tempVec2Bones;
 
-for(VertexInfluenceMap::iterator mapit = this->begin(); mapit != this->end(); ++mapit)
-{
-    const std::string& bonename = mapit->first;
-    IndexWeightList &curvecinf = mapit->second;
-    for(IndexWeightList::iterator curinf = curvecinf.begin(); curinf != curvecinf.end(); ++curinf)
+    for(VertexInfluenceMap::iterator mapit = this->begin(); mapit != this->end(); ++mapit)
     {
-        VertexIndexWeight& inf = *curinf;
-        if( bonename.empty())
+        const std::string& bonename = mapit->first;
+        IndexWeightList &curvecinf = mapit->second;
+        for(IndexWeightList::iterator curinf = curvecinf.begin(); curinf != curvecinf.end(); ++curinf)
         {
-            OSG_WARN << "VertexInfluenceMap::cullInfluenceCountPerVertex warning vertex " << inf.first << " is not assigned to a bone" << std::endl;
-        }
-        else{
-            BoneWeightOrdered::iterator bwit;
-            BoneWeight bw(bonename, inf.second);
-            bwit=tempVec2Bones[inf.first].find(bonename );
-            if((bwit==tempVec2Bones[inf.first].end()))
-                tempVec2Bones[inf.first][bonename]=(bw);
-            else
+            VertexIndexWeight& inf = *curinf;
+            if( bonename.empty())
             {
-                //accumulate weights cause bonearethe same
-                OSG_WARN << "VertexInfluenceMap::accumulateDuplicates warning vertex " << inf.first << " duplicate bone weight" <<
-                           bwit->second.first<< " " <<    bwit->second.second<< " "<<inf.second<< std::endl;
+                OSG_WARN << "VertexInfluenceMap::cullInfluenceCountPerVertex warning vertex " << inf.first << " is not assigned to a bone" << std::endl;
+            }
+            else {
+                BoneWeightOrdered::iterator bwit;
+                BoneWeight bw(bonename, inf.second);
+                bwit=tempVec2Bones[inf.first].find(bonename );
+                if((bwit==tempVec2Bones[inf.first].end()))
+                    tempVec2Bones[inf.first][bonename]=(bw);
+                else
+                {
+                    //accumulate weights cause bonearethe same
+                    OSG_WARN << "VertexInfluenceMap::accumulateDuplicates warning vertex " << inf.first << " duplicate bone weight" <<
+                             bwit->second.first<< " " <<    bwit->second.second<< " "<<inf.second<< std::endl;
 
-                bwit->second.second+=inf.second;
+                    bwit->second.second+=inf.second;
 
+                }
             }
         }
     }
-}
-this->clear();
-for( std::map<int,BoneWeightOrdered >::iterator mapit = tempVec2Bones.begin(); mapit != tempVec2Bones.end(); ++mapit)
-{
-    BoneWeightOrdered& bwset = mapit->second;
-    float sum = 0.0f;
-
+    this->clear();
+    for( std::map<int,BoneWeightOrdered >::iterator mapit = tempVec2Bones.begin(); mapit != tempVec2Bones.end(); ++mapit)
     {
-        for(BoneWeightOrdered::iterator bwit = bwset.begin(); bwit != bwset.end(); ++bwit)
-            sum += bwit->second.second;
-        if(sum > 1e-4)
+        BoneWeightOrdered& bwset = mapit->second;
+        float sum = 0.0f;
+
         {
-            sum = 1.0f/sum;
             for(BoneWeightOrdered::iterator bwit = bwset.begin(); bwit != bwset.end(); ++bwit)
+                sum += bwit->second.second;
+            if(sum > 1e-4)
             {
-                VertexInfluence & inf = (*this)[bwit->first];
-                inf.push_back(VertexIndexWeight(mapit->first, bwit->second.second*sum));
-                inf.setName(bwit->first);
+                sum = 1.0f/sum;
+                for(BoneWeightOrdered::iterator bwit = bwset.begin(); bwit != bwset.end(); ++bwit)
+                {
+                    VertexInfluence & inf = (*this)[bwit->first];
+                    inf.push_back(VertexIndexWeight(mapit->first, bwit->second.second*sum));
+                    inf.setName(bwit->first);
+                }
             }
         }
     }
-}
 }
 void VertexInfluenceMap::normalize(unsigned int numvert)
 {
@@ -109,8 +110,8 @@ void VertexInfluenceMap::normalize(unsigned int numvert)
     }
     unsigned int vertid = 0;
     for(std::vector<PerVertWeights >::iterator itvert = localstore.begin();
-    itvert != localstore.end();
-    ++itvert, ++vertid)
+            itvert != localstore.end();
+            ++itvert, ++vertid)
     {
         PerVertWeights & weights = *itvert;
         if(weights.first< 1e-4)
@@ -286,6 +287,8 @@ public:
     META_NodeVisitor(osgAnimation, CollectRigVisitor)
     CollectRigVisitor();
 
+    void apply(osg::Node&) {
+        return; }
     //void apply(osg::Node&);
     void apply(osg::Geometry& node);
     const RigList& getRigList() const;
@@ -302,11 +305,10 @@ void CollectRigVisitor::apply(osg::Geometry& node)
     if (bone)
     {
         _map.push_back( bone);
-        traverse(node);
     }
-    Skeleton* skeleton = dynamic_cast<Skeleton*>(&node);
-    if (skeleton)
-        traverse(node);
+    traverse(node);
+    // Skeleton* skeleton = dynamic_cast<Skeleton*>(&node);
+    //  if (skeleton)
 }
 
 const RigList& CollectRigVisitor::getRigList() const
@@ -314,54 +316,165 @@ const RigList& CollectRigVisitor::getRigList() const
     return _map;
 }
 
-void VertexInfluenceMap::removeUnexpressedBones(Skeleton &skel) const
+bool recursiveisUsefull(Bone*bone,std::set<std::string> foundnames){
+    for(int i=0;i<bone->getNumChildren();++i){
+        Bone*child=dynamic_cast<Bone*>(bone->getChild(i));
+        if(child){
+        if(foundnames.find(child->getName())!=foundnames.end())
+            return true;
+        if(recursiveisUsefull(child,foundnames))return true;
+        }
+
+    }
+    return false;
+}
+
+void VertexInfluenceMap::removeUnexpressedBones(osg::Node *rootchar) const
 {
     BoneMapVisitor mapVisitor;
-    skel.accept(mapVisitor);
-
     CollectRigVisitor rigvis;
-    skel.accept(rigvis);
-
+    rootchar->accept(rigvis);
     RigList  rigs = rigvis.getRigList();
+    //if(rig.getNumSkeletons()==0)rig.findSkeleton();
+    for(RigList::iterator rigit = rigs.begin(); rigit != rigs.end(); ++rigit) {
+       if((*rigit)->getNumSkeletons()==0)(*rigit)->findSkeleton();
+       for(unsigned int i=0; i<(*rigit)->getNumSkeletons(); ++i)
+        (*rigit)->getSkeleton(i)->accept(mapVisitor);
+}
+    /*for(unsigned int i=0; i<rig.getNumSkeletons(); ++i) {
+        rig.getSkeleton(i)->accept(mapVisitor);
+        rig.getSkeleton(i)->accept(rigvis);
+    }*/
+
     BoneMap boneMap = mapVisitor.getBoneMap();
+    unsigned int removed=0;
+   // OSG_WARN<<"removeUnexpressedBones"<<rigs.size()<<"rigs"<<std::endl;
     Bone* child,*par;
 
-    for(BoneMap::iterator bmit = boneMap.begin(); bmit != boneMap.end();)
-    {
-        if( this->find(bmit->first) == this->end())
-        {
-            bool isusless = true;
-            for(RigList::iterator rigit = rigs.begin(); rigit != rigs.end(); ++rigit)
-            {
-                if( ((*rigit)->getInfluenceMap()->find(bmit->first) != (*rigit)->getInfluenceMap()->end()))
-                {
-                    isusless = false;
-                    break;
-                }
-            }
-            if(!isusless || !(par = bmit->second->getBoneParent()))
+    std::set<std::string> usebones;
+    for(RigList::iterator rigit = rigs.begin(); rigit != rigs.end(); ++rigit) {
+       //(*rigit)->findSkeleton();for(unsigned int i=0; i<(*rigit)->getNumSkeletons(); ++i)
+        //(*rigit)->getSkeleton(i)->accept(mapVisitor);
+        for(VertexInfluenceMap::iterator mapit=(*rigit)->getInfluenceMap()->begin();
+                mapit!=(*rigit)->getInfluenceMap()->end();
+                ++mapit) {
+            usebones.insert((*mapit).first);//second.getName());
+        }
+    }
+    OSG_INFO<<"removeUnexpressedBones"<<rigs.size()<<"rigs"<<"bmsize "<<boneMap.size()<<" usebones "<<usebones.size()<<std::endl;
+    //for(std::set<std::string>::iterator it=usebones.begin();it!=usebones.end();++it)
+   //     OSG_WARN<<"used bone:"<<*it<<std::endl;
+
+    for(BoneMap::iterator bmit = boneMap.begin(); bmit != boneMap.end();) {
+        if(usebones.find(bmit->second->getName())==usebones.end()) {
+            if( !(par = bmit->second->getBoneParent()))
             {
                 ++bmit;
                 continue;
             }
 
-            ///Bone can be removed
             Bone * bone2rm = bmit->second;
+
+           if( recursiveisUsefull(bone2rm,usebones)){
+               ++bmit;
+               continue;
+           }
+            //check UpdateBoneCallback
+            UpdateBone * cb=0;
+         /*   if(cb= dynamic_cast<UpdateBone*>(bone2rm->getUpdateCallback())){
+                    if(!cb->getStackedTransforms().empty()){
+                    ++bmit;
+                    continue;
+
+        }
+
+        }*/
+
+            ///Bone can be removed
+            ++ removed;
+            OSG_INFO<<"removing useless bone"<<bone2rm->getName()<<std::endl;
+            osg::NodeList nodes;
             for(unsigned int numchild = 0; numchild < bone2rm->getNumChildren(); numchild++)
             {
                 if( (child = dynamic_cast<Bone*>(bone2rm->getChild(numchild))) )
                 {
-                    par->addChild(child);
-                    bone2rm->removeChild(child);
-                }
+
+                  //  child->setMatrixInSkeletonSpace(child->getMatrixInSkeletonSpace() * par->getMatrixInSkeletonSpace());
+                    //child->setMatrixInSkeletonSpace(bone2rm->getMatrixInBoneSpace() * par->getMatrixInSkeletonSpace());
+                    if(par!=child &&child!=bone2rm) { //               child->setMatrix(bone2rm->getMatrix() * child->getMatrix());
+
+                        par->addChild(child);
+                        nodes.push_back(child);
+                    }
+                    //bone2rm->removeChild(child);
+                }else
+                    OSG_WARN<<"WTF "<<bone2rm->getName()<<std::endl;
             }
+            for(unsigned int i=0; i<nodes.size(); ++i)
+                bone2rm->removeChild(nodes[i]);
             par->removeChild(bone2rm);
             ///rebuild bonemap after bone removal
-            skel.accept(mapVisitor);
-            boneMap = mapVisitor.getBoneMap();
+            BoneMapVisitor mapVis ;
+            for(RigList::iterator rigit = rigs.begin(); rigit != rigs.end(); ++rigit) {
+               (*rigit)->findSkeleton();for(unsigned int i=0; i<(*rigit)->getNumSkeletons(); ++i)
+                (*rigit)->getSkeleton(i)->accept(mapVis);
+            }
+            boneMap = mapVis.getBoneMap();
             bmit = boneMap.begin();
-        }
-        else ++bmit;
+        } else ++bmit;
+
     }
+ OSG_WARN<<"Number of bone removed "<<removed<<std::endl;
+    if(0)    for(BoneMap::iterator bmit = boneMap.begin(); bmit != boneMap.end();)
+        {
+            if( this->find(/*bmit->first*/ bmit->second->getName()) == this->end())
+            {
+                bool isusless = !rigs.empty();//true;
+                for(RigList::iterator rigit = rigs.begin(); rigit != rigs.end(); ++rigit)
+                {
+                    if( ((*rigit)->getInfluenceMap()->find(bmit->second->getName()) != (*rigit)->getInfluenceMap()->end()))
+                    {
+                        isusless = false;
+                        break;
+                    }
+                }
+                if(!isusless || !(par = bmit->second->getBoneParent()))
+                {
+                    ++bmit;
+                    continue;
+                }
+
+                ///Bone can be removed
+                Bone * bone2rm = bmit->second;
+                OSG_WARN<<"removeing "<<bone2rm->getName()<<std::endl;
+                osg::NodeList nodes;
+                for(unsigned int numchild = 0; numchild < bone2rm->getNumChildren(); numchild++)
+                {
+                    if( (child = dynamic_cast<Bone*>(bone2rm->getChild(numchild))) )
+                    {
+                        //child->setMatrixInSkeletonSpace(bone2rm->getMatrixInBoneSpace() * par->getMatrixInSkeletonSpace());
+                        if(par!=child &&child!=bone2rm) { //               child->setMatrix(bone2rm->getMatrix() * child->getMatrix());
+
+                            par->addChild(child);
+                            nodes.push_back(child);
+                        } else
+                            OSG_WARN<<"WTF "<<bone2rm->getName()<<std::endl;
+                        //bone2rm->removeChild(child);
+                    }
+                }
+                for(unsigned int i=0; i<nodes.size(); ++i)
+                    bone2rm->removeChild(nodes[i]);
+                par->removeChild(bone2rm);
+                ///rebuild bonemap after bone removal
+                BoneMapVisitor mapVis ;
+                for(RigList::iterator rigit = rigs.begin(); rigit != rigs.end(); ++rigit) {
+                   (*rigit)->findSkeleton();for(unsigned int i=0; i<(*rigit)->getNumSkeletons(); ++i)
+                    (*rigit)->getSkeleton(i)->accept(mapVis);
+                }
+                boneMap = mapVis.getBoneMap();
+                bmit = boneMap.begin();
+            }
+            else ++bmit;
+        }
 
 }

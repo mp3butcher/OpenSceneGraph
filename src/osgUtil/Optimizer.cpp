@@ -1792,6 +1792,11 @@ bool isAbleToMerge(const osg::Geometry& g1, const osg::Geometry& g2)
     if (g1.getColorArray() && g2.getColorArray() && g1.getColorArray()->getDataType()!=g2.getColorArray()->getDataType()) return false;
     if (g1.getSecondaryColorArray() && g2.getSecondaryColorArray() && g1.getSecondaryColorArray()->getDataType()!=g2.getSecondaryColorArray()->getDataType()) return false;
     if (g1.getFogCoordArray() && g2.getNormalArray() && g1.getFogCoordArray()->getDataType()!=g2.getFogCoordArray()->getDataType()) return false;
+
+    for (unsigned int eachVertexAttribArray=0;eachVertexAttribArray<g1.getNumVertexAttribArrays();++eachVertexAttribArray)
+    {
+        if (!isArrayCompatible(numVertice1,numVertice2,g1.getVertexAttribArray(eachVertexAttribArray),g2.getVertexAttribArray(eachVertexAttribArray))) return false;
+    }
     return true;
 }
 

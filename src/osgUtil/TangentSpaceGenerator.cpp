@@ -290,8 +290,19 @@ void TangentSpaceGenerator::compute(osg::PrimitiveSet *pset,
         N3 = N1;
     }
 
-    V = osg::Vec3(P2.x() - P1.x(), uv2.x() - uv1.x(), uv2.y() - uv1.y()) ^
-        osg::Vec3(P3.x() - P1.x(), uv3.x() - uv1.x(), uv3.y() - uv1.y());
+
+    osg::Vec2 uv12( uv2.x() - uv1.x(), uv2.y() - uv1.y() );
+    osg::Vec2 uv13( uv3.x() - uv1.x(), uv3.y() - uv1.y()  );
+#define UVDISCONTINUITIES_THRESHOLD 0.001
+#define CLAMP(XXX,YYY) \
+    if(XXX>UVDISCONTINUITIES_THRESHOLD*fabs(1)){OSG_WARN<<"clamping tangent "<<XXX<<std::endl;XXX=fabs(1)*UVDISCONTINUITIES_THRESHOLD;}\
+    else if(XXX<-UVDISCONTINUITIES_THRESHOLD*fabs(1)){OSG_WARN<<"clamping tangent "<<XXX<<std::endl;XXX=-fabs(1)*UVDISCONTINUITIES_THRESHOLD;}
+  //  CLAMP(uv12[0],P2.x() - P1.x())  CLAMP(uv12[1],P2.y() - P1.y()) //CLAMP(uv12[2],P3.x() - P1.x())
+   // CLAMP(uv13[0],P3.x() - P1.x())  CLAMP(uv13[1],P3.y() - P1.y()) //CLAMP(uv13[2],P3.y() - P1.y())
+
+    V = osg::Vec3(P2.x() - P1.x(),uv12.x(),uv12.y()) ^// uv2.x() - uv1.x(), uv2.y() - uv1.y()) ^
+        osg::Vec3(P3.x() - P1.x(), uv13.x(),uv13.y());//uv3.x() - uv1.x(), uv3.y() - uv1.y());
+    //
     if (V.x() != 0) {
         V.normalize();
         T1.x() += -V.y() / V.x();
@@ -302,8 +313,8 @@ void TangentSpaceGenerator::compute(osg::PrimitiveSet *pset,
         B3.x() += -V.z() / V.x();
     }
 
-    V = osg::Vec3(P2.y() - P1.y(), uv2.x() - uv1.x(), uv2.y() - uv1.y()) ^
-        osg::Vec3(P3.y() - P1.y(), uv3.x() - uv1.x(), uv3.y() - uv1.y());
+    V = osg::Vec3(P2.y() - P1.y(),uv12.x(),uv12.y())^// uv2.x() - uv1.x(), uv2.y() - uv1.y()) ^
+        osg::Vec3(P3.y() - P1.y(),  uv13.x(),uv13.y());//uv3.x() - uv1.x(), uv3.y() - uv1.y());
     if (V.x() != 0) {
         V.normalize();
         T1.y() += -V.y() / V.x();
@@ -314,8 +325,8 @@ void TangentSpaceGenerator::compute(osg::PrimitiveSet *pset,
         B3.y() += -V.z() / V.x();
     }
 
-    V = osg::Vec3(P2.z() - P1.z(), uv2.x() - uv1.x(), uv2.y() - uv1.y()) ^
-        osg::Vec3(P3.z() - P1.z(), uv3.x() - uv1.x(), uv3.y() - uv1.y());
+    V = osg::Vec3(P2.z() - P1.z(), uv12.x(),uv12.y() ) ^//uv2.x() - uv1.x(), uv2.y() - uv1.y()) ^
+        osg::Vec3(P3.z() - P1.z(),  uv13.x(),uv13.y());//uv3.x() - uv1.x(), uv3.y() - uv1.y());
     if (V.x() != 0) {
         V.normalize();
         T1.z() += -V.y() / V.x();

@@ -24,7 +24,8 @@
 
 namespace osgAnimation
 {
-    class Skeleton;
+class Skeleton;
+class RigGeometry;
 
     // first is bonename, and second the weight
     typedef std::pair<std::string, float> BoneWeight;
@@ -81,7 +82,7 @@ namespace osgAnimation
         void computeMinimalVertexGroupList(std::vector<VertexGroup>&uniqVertexGroupList, unsigned int numvert)const;
 
         //Experimental removal of unexpressed bone from the skeleton
-        void removeUnexpressedBones(Skeleton &skel) const;
+        void removeUnexpressedBones(osg::Node *root) const;
         void accumulateDuplicates();
     };
 

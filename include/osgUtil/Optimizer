@@ -226,7 +226,7 @@ class OSGUTIL_EXPORT Optimizer
 
         bool isOperationPermissibleForObjectImplementation(const osg::Drawable* drawable, unsigned int option) const
         {
-            if (option & (REMOVE_REDUNDANT_NODES|MERGE_GEOMETRY))
+            if (option & (REMOVE_REDUNDANT_NODES|MERGE_GEOMETRY|FLATTEN_STATIC_TRANSFORMS))
             {
                 if (drawable->getUserData()) return false;
                 if (drawable->getUpdateCallback()) return false;

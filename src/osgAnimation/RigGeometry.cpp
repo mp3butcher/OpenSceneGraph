@@ -88,13 +88,14 @@ const osg::Matrix& RigGeometry::getInvMatrixFromSkeletonToGeometry() const { ret
 
 void RigGeometry::computeMatrixFromRootSkeleton()
 {
-    if (!_root.valid())
+    ///TODO understand the purpose of it
+    if (!_roots[0].valid())
     {
         OSG_WARN << "Warning " << className() <<"::computeMatrixFromRootSkeleton if you have this message it means you miss to call buildTransformer(Skeleton* root), or your RigGeometry (" << getName() <<") is not attached to a Skeleton subgraph" << std::endl;
         return;
     }
-    osg::MatrixList mtxList = getParent(0)->getWorldMatrices(_root.get());
-    osg::Matrix notRoot = _root->getMatrix();
+    osg::MatrixList mtxList = getParent(0)->getWorldMatrices(_roots[0].get());
+    osg::Matrix notRoot = _roots[0]->getMatrix();
     _matrixFromSkeletonToGeometry = mtxList[0] * osg::Matrix::inverse(notRoot);
     _invMatrixFromSkeletonToGeometry = osg::Matrix::inverse(_matrixFromSkeletonToGeometry);
     _needToComputeMatrix = false;

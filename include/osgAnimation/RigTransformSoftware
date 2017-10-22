@@ -109,7 +109,6 @@ namespace osgAnimation
                     return;
                 }
                 resetMatrix();
-
                 for(BonePtrWeightList::iterator bwit=_boneweights.begin();bwit!=_boneweights.end();++bwit )
                 {
                     const Bone* bone = bwit->getBonePtr();
@@ -118,12 +117,26 @@ namespace osgAnimation
                         osg::notify(osg::WARN) << this << " RigTransformSoftware::computeMatrixForVertexSet Warning a bone is null, skip it" << std::endl;
                         continue;
                     }
+
                     const osg::Matrix& invBindMatrix = bone->getInvBindMatrixInSkeletonSpace();
                     const osg::Matrix& matrix = bone->getMatrixInSkeletonSpace();
                     osg::Matrix::value_type w = bwit->getWeight();
                     accummulateMatrix(invBindMatrix, matrix, w);
                 }
             }
+            inline void normalize(){
+                osg::Matrix::value_type sum=0;
+                for(BonePtrWeightList::iterator bwit=_boneweights.begin();bwit!=_boneweights.end();++bwit )
+                    sum+=bwit->getWeight();
+                if (sum < 1e-4)
+                {
+                    OSG_WARN << "RigTransformSoftware::VertexGroup: warning try to normalize a zero sum vertexgroup" << std::endl;
+                }else
+                    for(BonePtrWeightList::iterator bwit=_boneweights.begin();bwit!=_boneweights.end();++bwit )
+                        bwit->setWeight(bwit->getWeight()/sum);
+            }
+
+
             inline const osg::Matrix& getMatrix() const { return _result;}
         protected:
             BonePtrWeightList _boneweights;

@@ -15,6 +15,7 @@
 #include <osgAnimation/UpdateMatrixTransform>
 #include <osg/NodeVisitor>
 #include <osg/MatrixTransform>
+#include <osg/Camera>
 
 using namespace osgAnimation;
 
@@ -35,13 +36,26 @@ void UpdateMatrixTransform::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
     if (nv && nv->getVisitorType() == osg::NodeVisitor::UPDATE_VISITOR)
     {
-        osg::MatrixTransform* matrixTransform = dynamic_cast<osg::MatrixTransform*>(node);
-        if (matrixTransform)
-        {
-            // here we would prefer to have a flag inside transform stack in order to avoid update and a dirty state in matrixTransform if it's not require.
-            _transforms.update();
-            const osg::Matrix& matrix = _transforms.getMatrix();
-            matrixTransform->setMatrix(matrix);
+        osg::Transform * trans=node->asTransform();osg::Camera* cam;
+        if(trans){
+
+            if(cam=trans->asCamera()){
+                _transforms.update();
+                const osg::Matrix& matrix = _transforms.getMatrix();
+                cam->setViewMatrix(osg::Matrix::inverse(matrix));
+                OSG_WARN<<"setting viewmatrix"<<matrix(0,0)<<std::endl;
+
+            }else{
+
+                osg::MatrixTransform* matrixTransform =  dynamic_cast<osg::MatrixTransform*>(node);
+                if (matrixTransform)
+                {
+                    // here we would prefer to have a flag inside transform stack in order to avoid update and a dirty state in matrixTransform if it's not require.
+                    _transforms.update();
+                    const osg::Matrix& matrix = _transforms.getMatrix();
+                    matrixTransform->setMatrix(matrix);
+                }
+             }
         }
     }
     traverse(node,nv);

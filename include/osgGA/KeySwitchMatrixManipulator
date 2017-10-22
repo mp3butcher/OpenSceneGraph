@@ -31,7 +31,7 @@ and the associated switch keys, can be configured.
 class OSGGA_EXPORT KeySwitchMatrixManipulator : public CameraManipulator
 {
     public:
-
+        KeySwitchMatrixManipulator():CameraManipulator(){}
         typedef std::pair<std::string, osg::ref_ptr<CameraManipulator> > NamedManipulator;
         typedef std::map<int, NamedManipulator> KeyManipMap;
 

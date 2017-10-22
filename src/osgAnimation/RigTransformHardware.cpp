@@ -153,6 +153,12 @@ unsigned int createVertexAttribList(const PerVertexInfList & perVertexInfluences
 
 bool RigTransformHardware::prepareData(RigGeometry& rig)
 {
+    //HACK remove blender osgexport bug (duplicate texcoord for each material slot...:/)
+    while(rig.getSourceGeometry()->getNumTexCoordArrays()>1)
+        rig.getSourceGeometry()->getTexCoordArrayList().pop_back();
+    while(rig. getNumTexCoordArrays()>1)
+        rig. getTexCoordArrayList().pop_back();
+
     _nbVertices = rig.getSourceGeometry()->getVertexArray()->getNumElements();
     const VertexInfluenceMap &vertexInfluenceMap = *rig.getInfluenceMap();
     _perVertexInfluences.reserve(_nbVertices);
@@ -173,7 +179,7 @@ bool RigTransformHardware::prepareData(RigGeometry& rig)
             const float &weight = iw.second;
             IndexWeightList & iwlist = _perVertexInfluences[index];
 
-            if(fabs(weight) > 1e-4) // don't use bone with weight too small
+            if(fabs(weight) > 1e-5) // don't use bone with weight too small
             {
                 iwlist.push_back(VertexIndexWeight(localboneid,weight));
             }
@@ -257,6 +263,7 @@ bool RigTransformHardware::buildPalette(const BoneMap& boneMap, const RigGeometr
             }
         }
     }
+
     if( (_bonesPerVertex = createVertexAttribList(_perVertexInfluences, _boneWeightAttribArrays) ) < 1 )
         return false;
     if( _bonesPerVertex>15 )
@@ -279,7 +286,8 @@ bool RigTransformHardware::init(RigGeometry& rig)
         return false;
 
     BoneMapVisitor mapVisitor;
-    rig.getSkeleton()->accept(mapVisitor);
+    for(unsigned int i=0;i<rig.getNumSkeletons();++i)
+    rig.getSkeleton(i)->accept(mapVisitor);
     BoneMap boneMap = mapVisitor.getBoneMap();
 
     if (!buildPalette(boneMap,rig) )
