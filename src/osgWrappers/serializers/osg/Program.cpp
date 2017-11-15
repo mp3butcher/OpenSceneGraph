@@ -153,24 +153,27 @@ static bool checkBindUniformBlock( const osg::Program& node )
 static bool readBindUniformBlock( osgDB::InputStream& is, osg::Program& p )
 {
     unsigned int  size = 0; is >> size >> is.BEGIN_BRACKET;
-    unsigned int elmt0; std::string elmt1;
+    std::string name; unsigned int index;
     for ( unsigned int i=0; i<size; ++i )
     {
-        is >>elmt0;        is >>elmt1;    
-        p.addBindUniformBlock(elmt1, elmt0);
+        is >>name;        is >>index;    
+        p.addBindUniformBlock(name, index);
     }
     is >> is.END_BRACKET;
     return true;
 }
 
+
+
 static bool writeBindUniformBlock( osgDB::OutputStream& os, const osg::Program& p )
 {
-    unsigned int size = p.getNumBindUniformBlocks();
+    unsigned int size = p.getUniformBlockBindingList().size();
     os << size << os.BEGIN_BRACKET << std::endl;
-    for ( unsigned int i=0; i<size; ++i )
+    for(osg::Program::UniformBlockBindingList::const_iterator bbit = p.getUniformBlockBindingList().begin();
+        bbit != p.getUniformBlockBindingList().end(); ++bbit)
     {
-        os << p.getBindUniformBlockIndex(i);
-        os << p.getBindUniformBlockName(i);
+        os << bbit->first;
+        os << bbit->second;
     }
     os << os.END_BRACKET << std::endl;
     return true;
@@ -200,6 +203,10 @@ REGISTER_OBJECT_WRAPPER( Program,
     }
     {
         UPDATE_TO_VERSION_SCOPED( 145 )
+        ADD_USER_SERIALIZER( BindUniformBlock );
+    }
+    {
+        UPDATE_TO_VERSION_SCOPED( 150 )
         ADD_USER_SERIALIZER( BindUniformBlock );
     }
 }

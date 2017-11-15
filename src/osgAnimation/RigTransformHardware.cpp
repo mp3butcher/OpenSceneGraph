@@ -92,8 +92,6 @@ unsigned int createVertexAttribList(const PerVertexInfList & perVertexInfluences
 
     if (!nbArray)
         return 0;
-    if (!(nbArray<16))
-        return 0;
 
     ///create vertex attrib arrays
     boneWeightAttribArrays.reserve(nbArray);
@@ -153,12 +151,6 @@ unsigned int createVertexAttribList(const PerVertexInfList & perVertexInfluences
 
 bool RigTransformHardware::prepareData(RigGeometry& rig)
 {
-    //HACK remove blender osgexport bug (duplicate texcoord for each material slot...:/)
-    while(rig.getSourceGeometry()->getNumTexCoordArrays()>1)
-        rig.getSourceGeometry()->getTexCoordArrayList().pop_back();
-    while(rig. getNumTexCoordArrays()>1)
-        rig. getTexCoordArrayList().pop_back();
-
     _nbVertices = rig.getSourceGeometry()->getVertexArray()->getNumElements();
     const VertexInfluenceMap &vertexInfluenceMap = *rig.getInfluenceMap();
     _perVertexInfluences.reserve(_nbVertices);
@@ -179,7 +171,7 @@ bool RigTransformHardware::prepareData(RigGeometry& rig)
             const float &weight = iw.second;
             IndexWeightList & iwlist = _perVertexInfluences[index];
 
-            if(fabs(weight) > 1e-5) // don't use bone with weight too small
+            if(fabs(weight) > 1e-4) // don't use bone with weight too small
             {
                 iwlist.push_back(VertexIndexWeight(localboneid,weight));
             }
@@ -263,10 +255,7 @@ bool RigTransformHardware::buildPalette(const BoneMap& boneMap, const RigGeometr
             }
         }
     }
-
     if( (_bonesPerVertex = createVertexAttribList(_perVertexInfluences, _boneWeightAttribArrays) ) < 1 )
-        return false;
-    if( _bonesPerVertex>15 )
         return false;
 
     _uniformMatrixPalette = new osg::Uniform(osg::Uniform::FLOAT_MAT4, "matrixPalette", _bonePalette.size());
@@ -286,8 +275,7 @@ bool RigTransformHardware::init(RigGeometry& rig)
         return false;
 
     BoneMapVisitor mapVisitor;
-    for(unsigned int i=0;i<rig.getNumSkeletons();++i)
-    rig.getSkeleton(i)->accept(mapVisitor);
+    rig.getSkeleton()->accept(mapVisitor);
     BoneMap boneMap = mapVisitor.getBoneMap();
 
     if (!buildPalette(boneMap,rig) )
@@ -358,20 +346,14 @@ bool RigTransformHardware::init(RigGeometry& rig)
     }
 
     unsigned int nbAttribs = getNumVertexAttrib();
-
     for (unsigned int i = 0; i < nbAttribs; i++)
     {
-        if( i>4){
-            OSG_WARN << "RigTransformHardware WARNING:vertex attrib size >4 for "<< rig.getName() << std::endl;
-            return false;}
         std::stringstream ss;
         ss << "boneWeight" << i;
         program->addBindAttribLocation(ss.str(), _minAttribIndex + i);
         rig.setVertexAttribArray(_minAttribIndex + i, getVertexAttrib(i));
         OSG_INFO << "set vertex attrib " << ss.str() << std::endl;
     }
-
-
 
     program->addShader(vertexshader.get());
 

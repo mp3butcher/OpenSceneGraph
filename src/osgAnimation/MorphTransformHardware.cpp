@@ -54,7 +54,8 @@ bool MorphTransformHardware::init(MorphGeometry& morphGeometry)
         }
         osg::Vec3Array* normal = dynamic_cast<osg::Vec3Array*>(morphGeometry.getNormalArray());
         bool normalmorphable = morphGeometry.getMorphNormals() && normal&&(normal->getBinding()==osg::Array::BIND_PER_VERTEX);
-        if(!normalmorphable) {
+        if(!normalmorphable)
+        {
             OSG_WARN << "MorphTransformHardware::morph geometry "<<morphGeometry.getName()<<" without per vertex normal : HWmorphing not supported! "  << std::endl;
             return false;
         }
@@ -72,31 +73,38 @@ bool MorphTransformHardware::init(MorphGeometry& morphGeometry)
     //create one TBO for all morphtargets (pack vertex/normal)
     osg::Vec3Array *  morphTargets=new osg::Vec3Array ;
     MorphGeometry::MorphTargetList & morphlist=morphGeometry.getMorphTargetList();
-    for(MorphGeometry::MorphTargetList::const_iterator curmorph=morphlist.begin(); curmorph!=morphlist.end(); ++curmorph) {
+    for(MorphGeometry::MorphTargetList::const_iterator curmorph=morphlist.begin(); curmorph!=morphlist.end(); ++curmorph)
+    {
         const osg::Geometry * morphtargetgeom=                curmorph->getGeometry() ;
         const osg::Vec3Array *varray=(osg::Vec3Array*)morphtargetgeom->getVertexArray();
         const osg::Vec3Array *narray=(osg::Vec3Array*)morphtargetgeom->getNormalArray();
-        if(morphGeometry.getMethod()==MorphGeometry::RELATIVE){
-            for(unsigned int i=0; i<morphGeometry.getVertexArray()->getNumElements(); ++i) {
+        if(morphGeometry.getMethod()==MorphGeometry::RELATIVE)
+        {
+            for(unsigned int i=0; i<morphGeometry.getVertexArray()->getNumElements(); ++i)
+            {
                 morphTargets->push_back( (*varray)[i]);
                 morphTargets->push_back( (*narray)[i]);
             }
-        }else{
+        }
+        else
+        {
             //convert to RELATIVE as it involve less math in the VS than NORMALIZED
             const osg::Vec3Array *ovarray=(osg::Vec3Array*)morphGeometry.getVertexArray();
             const osg::Vec3Array *onarray=(osg::Vec3Array*)morphGeometry.getNormalArray();
-            for(unsigned int i=0; i<morphGeometry.getVertexArray()->getNumElements(); ++i) {
+            for(unsigned int i=0; i<morphGeometry.getVertexArray()->getNumElements(); ++i)
+            {
                 morphTargets->push_back( (*varray)[i]- (*ovarray)[i] );
                 morphTargets->push_back( (*narray)[i]- (*onarray)[i] );
             }
         }
     }
-    osg::TextureBuffer * morphTargetsTBO=new osg::TextureBuffer();
+    
+    osg::ref_ptr<osg::TextureBuffer> morphTargetsTBO=new osg::TextureBuffer();
     morphTargetsTBO->setBufferData(morphTargets);
     morphTargetsTBO->setInternalFormat( GL_RGB32F_ARB );
 
     //create TBO Texture handle
-    osg::Uniform * morphTBOHandle=new osg::Uniform(osg::Uniform::SAMPLER_BUFFER,"morphTargets");
+    osg::ref_ptr<osg::Uniform> morphTBOHandle=new osg::Uniform(osg::Uniform::SAMPLER_BUFFER,"morphTargets");
     morphTBOHandle->set((int)_reservedTextureUnit);
 
     //create dynamic uniform for morphtargets animation weights
@@ -110,6 +118,7 @@ bool MorphTransformHardware::init(MorphGeometry& morphGeometry)
     if(!_shader.valid() && (program = (osg::Program*)stateset->getAttribute(osg::StateAttribute::PROGRAM)))
     {
         for(unsigned int i=0;i<program->getNumShaders();++i)
+
             if(program->getShader(i)->getType()==osg::Shader::VERTEX){
                // vertexshader=program->getShader(i);
                 program->removeShader(vertexshader);
@@ -158,9 +167,6 @@ bool MorphTransformHardware::init(MorphGeometry& morphGeometry)
     }
     OSG_INFO << "Shader " << str << std::endl;
     }
-
-
-
     program->addShader(vertexshader.get());
     //morphGeometry.setStateSet((osg::StateSet *) osg::CopyOp()(source.getOrCreateStateSet()));
 
@@ -174,18 +180,21 @@ bool MorphTransformHardware::init(MorphGeometry& morphGeometry)
     _needInit = false;
     return true;
 }
+
+
 void MorphTransformHardware::operator()(MorphGeometry& geom)
 {
-    if (_needInit)
-        if (!init(geom))
-            return;
+    if (_needInit && !init(geom)) return;
+
     if (geom.isDirty())
     {
         ///upload new morph weights each update via uniform
         int curimorph=0;
         MorphGeometry::MorphTargetList & morphlist=geom.getMorphTargetList();
         for(MorphGeometry::MorphTargetList::const_iterator curmorph=morphlist.begin(); curmorph!=morphlist.end(); ++curmorph)
+        {
             _uniformTargetsWeight->setElement(curimorph++, curmorph->getWeight());
+        }
         _uniformTargetsWeight->dirty();
         geom.dirty(false);
     }

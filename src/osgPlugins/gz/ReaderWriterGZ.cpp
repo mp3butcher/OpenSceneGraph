@@ -45,9 +45,7 @@ public:
 
     ~ReaderWriterGZ();
 
-    virtual const char* className() const {
-        return "GZ Archive Reader/Writer";
-    }
+    virtual const char* className() const { return "GZ Archive Reader/Writer"; }
 
     virtual ReadResult openArchive(const std::string& fileName,ArchiveStatus status, unsigned int , const Options* options) const
     {
@@ -173,10 +171,8 @@ public:
     WriteResult writeFile(ObjectType objectType, const osg::Object* object, const std::string& fullFileName, const osgDB::ReaderWriter::Options* options) const;
     WriteResult writeFile(ObjectType objectType, const osg::Object* object, std::ostream& fout, const osgDB::ReaderWriter::Options* options) const;
 
-
     bool read(std::istream& fin, std::stringstream& destination) const;
     bool write(std::ostream& fout, const std::stringstream& source) const;
-
 
 };
 
@@ -255,7 +251,6 @@ osgDB::ReaderWriter::ReadResult ReaderWriterGZ::readFile(ObjectType objectType, 
 
     std::stringstream strstream;
     read(fin, strstream);
-
 
     return readFile(objectType, rw, strstream, local_opt.get());
 }
@@ -472,6 +467,8 @@ bool ReaderWriterGZ::write(std::ostream& fout, const std::stringstream& sourcest
     (void)deflateEnd(&strm);
     return true;
 }
+
+
 
 
 // now register with Registry to instantiate the above

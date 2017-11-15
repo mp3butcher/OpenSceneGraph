@@ -238,6 +238,28 @@ bool RigTransformSoftware::init(RigGeometry&rig)
 
     return true;
 }
+
+void RigTransformSoftware::VertexGroup::normalize()
+{
+    osg::Matrix::value_type sum=0;
+    for(BonePtrWeightList::iterator bwit = _boneweights.begin(); bwit != _boneweights.end(); ++bwit )
+    {
+        sum += bwit->getWeight();
+    }
+
+    if (sum < 1e-4)
+    {
+        OSG_WARN << "RigTransformSoftware::VertexGroup: warning try to normalize a zero sum vertexgroup" << std::endl;
+    }
+    else
+    {
+        for(BonePtrWeightList::iterator bwit = _boneweights.begin(); bwit != _boneweights.end(); ++bwit )
+        {
+            bwit->setWeight(bwit->getWeight()/sum);
+        }
+    }
+}
+
 void RigTransformSoftware::operator()(RigGeometry& geom)
 {
     if (_needInit)

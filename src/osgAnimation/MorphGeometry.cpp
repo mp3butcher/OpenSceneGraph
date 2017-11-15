@@ -47,7 +47,7 @@ MorphGeometry::MorphGeometry(const osg::Geometry& g) :
 
 MorphGeometry::MorphGeometry(const MorphGeometry& b, const osg::CopyOp& copyop) :
     osg::Geometry(b,copyop),
-    _morphTransformImplementation((MorphTransform*)copyop(b._morphTransformImplementation)),
+    _morphTransformImplementation(osg::clone(b._morphTransformImplementation.get(), copyop)),
     _dirty(b._dirty),
     _method(b._method),
     _morphTargets(b._morphTargets),
@@ -63,7 +63,8 @@ UpdateMorph::UpdateMorph(const UpdateMorph& apc,const osg::CopyOp& copyop) :
     osg::Object(apc, copyop),
     osg::Callback(apc, copyop),
     AnimationUpdateCallback<osg::NodeCallback>(apc, copyop)
-{_targetNames=apc._targetNames;
+{
+    _targetNames=apc._targetNames;
 }
 
 UpdateMorph::UpdateMorph(const std::string& name) : AnimationUpdateCallback<osg::NodeCallback>(name)
@@ -105,8 +106,6 @@ void UpdateMorph::operator()(osg::Node* node, osg::NodeVisitor* nv)
     }
     traverse(node,nv);
 }
-
-
 
 bool UpdateMorph::needLink() const
 {

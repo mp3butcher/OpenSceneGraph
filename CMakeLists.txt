@@ -115,8 +115,10 @@ PROJECT(OpenSceneGraph)
 
 SET(OPENSCENEGRAPH_MAJOR_VERSION 3)
 SET(OPENSCENEGRAPH_MINOR_VERSION 5)
-SET(OPENSCENEGRAPH_PATCH_VERSION 7)
-SET(OPENSCENEGRAPH_SOVERSION 151)
+
+SET(OPENSCENEGRAPH_PATCH_VERSION 8)
+SET(OPENSCENEGRAPH_SOVERSION 152)
+ 
 
 # set to 0 when not a release candidate, non zero means that any generated
 # git tags will be treated as release candidates of given number
@@ -468,6 +470,10 @@ OPTION(OSG_PROVIDE_READFILE "Set to ON for include/osgDB/ReadFile to provide the
 OPTION(OSG_USE_REF_PTR_IMPLICIT_OUTPUT_CONVERSION "Set to ON to use the ref_ptr<> T* operator() output conversion. " ON)
 OPTION(OSG_USE_REF_PTR_SAFE_DEREFERENCE "Set to ON to throw an exception whenever ref_ptr<> is dereferenced or called. " OFF)
 
+OPTION(OSG_ENVVAR_SUPPORTED "Set to ON to build OpenSceneGraph with the OSG_ENVVAR_SUPPOERTED #define enabled to enable use of getenv() related functions." ON)
+
+
+
 # Map the OPENGL_PROFILE to OSG_GL*_AVAILABLE settings
 SET(OPENGL_PROFILE "GL2" CACHE STRING "OpenGL Profile to use, choose from GL1, GL2, GL3, GLES1, GLES2, GLES3")
 
@@ -741,6 +747,7 @@ IF(ANDROID)
 ELSE()
 # Common to all platforms except android:
     FIND_PACKAGE(Freetype)
+    FIND_PACKAGE(ilmbase)
     FIND_PACKAGE(Inventor)
     FIND_PACKAGE(Jasper)
     FIND_PACKAGE(OpenEXR)

@@ -178,6 +178,8 @@ struct VertexArrayDispatch : public PerContextVertexArrayState::ArrayDispatch
     VertexArrayDispatch(GLint & basevertex):
                         PerContextVertexArrayState::ArrayDispatch(basevertex) {}
 
+    virtual const char* className() const { return "VertexArrayDispatch"; }
+
     virtual void enable_and_dispatch(osg::State&, const osg::Array* new_array)
     {
         VAS_NOTICE<<"    VertexArrayDispatch::enable_and_dispatch("<<new_array->getNumElements()<<")"<<std::endl;
@@ -231,6 +233,8 @@ struct ColorArrayDispatch : public PerContextVertexArrayState::ArrayDispatch
 {
     ColorArrayDispatch(GLint & basevertex):
         PerContextVertexArrayState::ArrayDispatch(basevertex) {}
+
+    virtual const char* className() const { return "ColorArrayDispatch"; }
 
     virtual void enable_and_dispatch(osg::State&, const osg::Array* new_array)
     {
@@ -286,6 +290,8 @@ struct NormalArrayDispatch : public PerContextVertexArrayState::ArrayDispatch
 {
     NormalArrayDispatch(GLint & basevertex):
         PerContextVertexArrayState::ArrayDispatch(basevertex) {}
+
+    virtual const char* className() const { return "NormalArrayDispatch"; }
 
     virtual void enable_and_dispatch(osg::State&, const osg::Array* new_array)
     {
@@ -349,6 +355,8 @@ struct SecondaryColorArrayDispatch : public PerContextVertexArrayState::ArrayDis
     SecondaryColorArrayDispatch(GLint & basevertex):
         PerContextVertexArrayState::ArrayDispatch(basevertex) {}
 
+    virtual const char* className() const { return "SecondaryColorArrayDispatch"; }
+
     virtual void enable_and_dispatch(osg::State& state, const osg::Array* new_array)
     {
         glEnableClientState(GL_SECONDARY_COLOR_ARRAY);
@@ -395,6 +403,8 @@ struct FogCoordArrayDispatch : public PerContextVertexArrayState::ArrayDispatch
     FogCoordArrayDispatch(GLint & basevertex):
         PerContextVertexArrayState::ArrayDispatch(basevertex) {}
 
+    virtual const char* className() const { return "FogCoordArrayDispatch"; }
+
     virtual void enable_and_dispatch(osg::State& state, const osg::Array* new_array)
     {
         glEnableClientState(GL_FOG_COORDINATE_ARRAY);
@@ -431,6 +441,8 @@ struct TexCoordArrayDispatch : public PerContextVertexArrayState::ArrayDispatch
 {
     TexCoordArrayDispatch(unsigned int in_unit,GLint & basevertex):
                           PerContextVertexArrayState::ArrayDispatch(basevertex) , unit(in_unit) {}
+
+    virtual const char* className() const { return "TexCoordArrayDispatch"; }
 
     virtual void enable_and_dispatch(osg::State& state, const osg::Array* new_array)
     {
@@ -501,6 +513,8 @@ struct VertexAttribArrayDispatch : public PerContextVertexArrayState::ArrayDispa
 {
     VertexAttribArrayDispatch(unsigned int in_unit,GLint & basevertex):
                               PerContextVertexArrayState::ArrayDispatch(basevertex), unit(in_unit) {}
+
+    virtual const char* className() const { return "VertexAttribArrayDispatch"; }
 
     inline void callVertexAttribPointer(GLExtensions* ext, const osg::Array* new_array, const GLvoid * ptr)
     {
@@ -799,8 +813,10 @@ void PerContextVertexArrayState::setArray(ArrayDispatch* vad, osg::State& state,
 void PerContextVertexArrayState::setInterleavedArrays( osg::State& state, GLenum format, GLsizei stride, const GLvoid* pointer)
 {
 #if defined(OSG_GL_VERTEX_ARRAY_FUNCS_AVAILABLE) && !defined(OSG_GLES1_AVAILABLE)
-    lazyDisablingOfVertexAttributes();
-    applyDisablingOfVertexAttributes(state);
+    unbindVertexBufferObject();
+
+    //lazyDisablingOfVertexAttributes();
+    //applyDisablingOfVertexAttributes(state);
 
     glInterleavedArrays( format, stride, pointer);
 #else
