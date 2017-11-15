@@ -611,6 +611,18 @@ bool Program::ProgramObjects::getGlProgramInfoLog(std::string& log) const
     return result;
 }
 
+Program::ProgramObjects* Program::getPCProgramObjects(State& state) const{
+    unsigned int contextID = state.getContextID();
+
+    if( ! _pcpList[contextID].valid() )
+    {
+        _pcpList[contextID] = new ProgramObjects( this, contextID );
+    }
+
+    Program::ProgramObjects* pcp = _pcpList[contextID];
+    return pcp;
+
+}
 Program::PerContextProgram* Program::getPCP(State& state) const
 {
     unsigned int contextID = state.getContextID();

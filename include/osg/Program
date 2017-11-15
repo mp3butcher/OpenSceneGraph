@@ -423,6 +423,7 @@ class OSG_EXPORT Program : public osg::StateAttribute
 
         /** Get the PCP for a particular GL context */
         PerContextProgram* getPCP(State& state) const;
+        ProgramObjects* getPCProgramObjects(State& state) const;
 
     protected:        /*methods*/
         virtual ~Program();

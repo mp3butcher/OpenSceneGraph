@@ -38,7 +38,64 @@ using namespace std;
 using namespace osg;
 
 static ApplicationUsageProxy State_e0(ApplicationUsage::ENVIRONMENTAL_VARIABLE,"OSG_GL_ERROR_CHECKING <type>","ONCE_PER_ATTRIBUTE | ON | on enables fine grained checking,  ONCE_PER_FRAME enables coarse grained checking");
+void State::pushDefineList(DefineMap& defineMap,const StateSet::DefineList& defineList)
+{
+    for(StateSet::DefineList::const_iterator aitr=defineList.begin();
+        aitr!=defineList.end();
+        ++aitr)
+    {
+        // get the attribute stack for incoming type {aitr->first}.
+        DefineStack& ds = defineMap.map[aitr->first];
+        DefineStack::DefineVec& dv = ds.defineVec;
+        if (dv.empty())
+        {
+            // first pair so simply push incoming pair to back.
+            dv.push_back(StateSet::DefinePair(aitr->second.first,aitr->second.second));
 
+            ds.changed = true;
+             defineMap.changed = true;
+        }
+        else if ((ds.defineVec.back().second & StateAttribute::OVERRIDE) && !(aitr->second.second & StateAttribute::PROTECTED)) // check the existing override flag
+        {
+            // push existing back since override keeps the previous value.
+            ds.defineVec.push_back(ds.defineVec.back());
+        }
+        else
+        {
+            // no override on so simply push incoming pair to back.
+            dv.push_back(StateSet::DefinePair(aitr->second.first,aitr->second.second));
+
+            // if the back of the stack has changed since the last then mark it as changed.
+            bool changed = (dv[dv.size()-2] != dv.back());
+            if (changed)
+            {
+                ds.changed = true;
+                 defineMap.changed = true;
+            }
+        }
+    }
+}
+void State::popDefineList(DefineMap& defineMap,const StateSet::DefineList& defineList)
+{
+    for(StateSet::DefineList::const_iterator aitr=defineList.begin();
+        aitr!=defineList.end();
+        ++aitr)
+    {
+        // get the attribute stack for incoming type {aitr->first}.
+        DefineStack& ds = defineMap.map[aitr->first];
+        DefineStack::DefineVec& dv = ds.defineVec;
+        if (!dv.empty())
+        {
+            // if the stack has less than 2 entries or new back vs old back are different then mark the DefineStack as changed
+            if ((dv.size() < 2) || (dv[dv.size()-2] != dv.back()))
+            {
+                ds.changed = true;
+                defineMap.changed = true;
+            }
+            dv.pop_back();
+        }
+    }
+}
 State::State():
     Referenced(true)
 {
@@ -671,8 +728,13 @@ void State::apply(const StateSet* dstate)
 
         if ((_lastAppliedProgramObject!=0) && (previousLastAppliedProgramObject==_lastAppliedProgramObject) && _defineMap.changed)
         {
-            // OSG_NOTICE<<"State::apply(StateSet*) Program already applied ("<<(previousLastAppliedProgramObject==_lastAppliedProgramObject)<<") and _defineMap.changed= "<<_defineMap.changed<<std::endl;
-            _lastAppliedProgramObject->getProgram()->apply(*this);
+            // OSG_NOTICE<<"State::apply(StateSet*) Program already applied ("<<(previousLastAppliedProgramObject==_lastAppliedProgramObject)<<") and _defineMap.changed= "<<_defineMap.changed<
+            // std::string defineStr= getDefineString(_lastAppliedProgramObject->getProgram()->getShaderDefines() );
+            // if(!_lastAppliedProgramObject->getProgram() ->getPCProgramObjects(*this)->getPCP(defineStr))
+            Program::PerContextProgram*pcp;
+            if((pcp=_lastAppliedProgramObject->getProgram() ->getPCP (*this))!=_lastAppliedProgramObject )
+                // pcp->useProgram();
+                _lastAppliedProgramObject->getProgram()->apply(*this);
         }
 
         if (_shaderCompositionEnabled)
