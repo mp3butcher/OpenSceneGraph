@@ -658,6 +658,12 @@ class OSG_EXPORT GLExtensions : public osg::Referenced
         void (GL_APIENTRY * glBlitFramebuffer) (GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLbitfield, GLenum);
         void (GL_APIENTRY * glGetRenderbufferParameteriv) (GLenum, GLenum, GLint*);
 
+        //ARB_framebuffer_no_attachments
+        void (GL_APIENTRY * glFramebufferParameteri)(GLenum target, GLenum pname, GLint param);
+        void (GL_APIENTRY * glGetFramebufferParameteriv)(GLenum target, GLenum pname, GLint *params);
+        void (GL_APIENTRY * glNamedFramebufferParameteri)(GLuint fbo, GLenum pname, GLint param);
+        void (GL_APIENTRY * glGetNamedFramebufferParameteriv)(GLuint fbo, GLenum pname, GLint *params);
+
         //subroutine
         GLint(GL_APIENTRY* glGetSubroutineUniformLocation) (GLuint program, GLenum shadertype, const GLchar *name);
         void (GL_APIENTRY * glGetActiveSubroutineUniformName) (GLuint program, GLenum shadertype, GLuint index, GLsizei bufsize, GLsizei *length, GLchar *name);
