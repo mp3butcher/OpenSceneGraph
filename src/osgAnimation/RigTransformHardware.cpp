@@ -57,7 +57,7 @@ void RigTransformHardware::computeMatrixPaletteUniform(const osg::Matrix& transf
         const osg::Matrixf& boneMatrix = bone->getMatrixInSkeletonSpace();
         osg::Matrixf resultBoneMatrix = invBindMatrix * boneMatrix;
         osg::Matrixf result =  transformFromSkeletonToGeometry * resultBoneMatrix * invTransformFromSkeletonToGeometry;
-        if (!_uniformMatrixPalette->setElement(i, resultBoneMatrix))
+        if (!_uniformMatrixPalette->setElement(i, result))
             OSG_WARN << "RigTransformHardware::computeUniformMatrixPalette can't set uniform at " << i << " elements" << std::endl;
     }
 }

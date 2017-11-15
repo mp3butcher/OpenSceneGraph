@@ -102,6 +102,8 @@ bool FFmpegDecoder::open(const std::string & filename, FFmpegParameters* paramet
             }
         }
 
+
+        OSG_INFO<<"avformat_open_input(&p_format_context, "<<filename<<" iformat, parameters->getOptions());"<<std::endl;
         int error = avformat_open_input(&p_format_context, filename.c_str(), iformat, parameters->getOptions());
         if (error != 0)
         {

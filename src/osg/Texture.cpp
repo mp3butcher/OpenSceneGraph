@@ -2307,8 +2307,7 @@ void Texture::applyTexImage2D_load(State& state, GLenum target, const Image* ima
                             width = 1;
                         if (height == 0)
                             height = 1;
-
-                        glTexSubImage2D( target, k,
+                       glTexSubImage2D( target, k,
                             0, 0,
                             width, height,
                             (GLenum)image->getPixelFormat(),

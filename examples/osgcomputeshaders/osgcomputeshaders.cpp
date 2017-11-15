@@ -26,20 +26,44 @@
 #include <osgGA/StateSetManipulator>
 #include <osgViewer/Viewer>
 #include <osgViewer/ViewerEventHandlers>
+#include <osg/BufferIndexBinding>
 
 static const char* computeSrc = {
-    "#version 430\n"
+    "#version 430 compatibility\n"
     "uniform float osg_FrameTime;\n"
     "layout (r32f, binding =0) uniform image2D targetTex;\n"
     "layout (local_size_x = 16, local_size_y = 16) in;\n"
+    "layout(binding = 1) uniform atomic_uint acRed;\n"
     "void main() {\n"
-    "   ivec2 storePos = ivec2(gl_GlobalInvocationID.xy);\n"
-    "   float coeffcient = 0.5*sin(float(gl_WorkGroupID.x + gl_WorkGroupID.y)*0.1 + osg_FrameTime);\n"
+    "  uint fok=atomicCounterIncrement(acRed); ivec2 storePos = ivec2(gl_GlobalInvocationID.xy);\n"
+    "   float coeffcient = 0.5*sin(float(fok*gl_WorkGroupID.x + gl_WorkGroupID.y)*0.1 + osg_FrameTime);\n"
     "   coeffcient *= length(vec2(ivec2(gl_LocalInvocationID.xy) - ivec2(8)) / vec2(8.0));\n"
     "   imageStore(targetTex, storePos, vec4(1.0-coeffcient, 0.0, 0.0, 0.0));\n"
     "}\n"
 };
+class ReadBackAndResetCallback : public osg::SyncBufferDataUpdateCallback {
+public:
+    ReadBackAndResetCallback(osg::BufferData*bd):osg::SyncBufferDataUpdateCallback(bd) {
+        this->setRamAccess(osg::SyncBufferDataUpdateCallback::READ_WRITE);
+        setVRamAccess(osg::SyncBufferDataUpdateCallback::READ_WRITE);
+    }
+    virtual bool synctraversal(osg::Node *,osg::NodeVisitor*) {
+             osg::UIntArray * array=dynamic_cast<  osg::UIntArray*>(_bd.get());
+       //      if(!array->isDirty()) {
 
+            unsigned int numPixel = osg::maximum(0u, array->front());
+
+            // if ((renderInfo.getView()->getFrameStamp()->getFrameNumber() % 10) == 0)
+            if(array->front()!=0)   {
+                OSG_WARN << "osgatomiccounter : draw " << array->front() << " pixels." << std::endl;
+                (*array)[0]=0;
+                _bd->dirty();
+            }
+      //  }
+
+    }
+
+};
 int main( int argc, char** argv )
 {
     osg::ArgumentParser arguments( &argc, argv );
@@ -63,17 +87,30 @@ int main( int argc, char** argv )
     // Create a node for outputting to the texture.
     // It is OK to have just an empty node here, but seems inbuilt uniforms like osg_FrameTime won't work then.
     // TODO: maybe we can have a custom drawable which also will implement glMemoryBarrier?
-    osg::ref_ptr<osg::Node> sourceNode = osgDB::readRefNodeFile("axes.osgt");
-    if ( !sourceNode ) sourceNode = new osg::Node;
+    osg::ref_ptr<osg::Node> sourceNode =0;// osgDB::readRefNodeFile("axes.osgt");
+    if ( !sourceNode ) sourceNode = new osg::Geometry;
     sourceNode->setDataVariance( osg::Object::DYNAMIC );
+    osg::ref_ptr<osg::UIntArray> atomicCounterArrayBlue = new osg::UIntArray;
+    atomicCounterArrayBlue->push_back(0);
+    atomicCounterArrayBlue->push_back(0);
+    atomicCounterArrayBlue->push_back(0);
+    atomicCounterArrayBlue->push_back(0);
+
+    osg::ref_ptr<osg::AtomicCounterBufferObject> acboBlueBO = new osg::AtomicCounterBufferObject;
+    acboBlueBO->setUsage(GL_STREAM_COPY);
+    atomicCounterArrayBlue->setBufferObject(acboBlueBO);
+    osg::ref_ptr<osg::AtomicCounterBufferBinding> acbbBlue = new osg::AtomicCounterBufferBinding(1,atomicCounterArrayBlue.get(), 0, sizeof(GLuint));
+
+    sourceNode->getOrCreateStateSet()->setAttributeAndModes(acbbBlue);
     sourceNode->getOrCreateStateSet()->setAttributeAndModes( computeProg.get() );
     sourceNode->getOrCreateStateSet()->addUniform( new osg::Uniform("targetTex", (int)0) );
     sourceNode->getOrCreateStateSet()->setTextureAttributeAndModes( 0, tex2D.get() );
-
+    ReadBackAndResetCallback *readbackandreset=new ReadBackAndResetCallback(acbbBlue->getBufferData());
+    osg::ref_ptr<osg::Geode> quad = new osg::Geode;
+    quad->addUpdateCallback( readbackandreset);
     // Display the texture on a quad. We will also be able to operate on the data if reading back to CPU side
     osg::Geometry* geom = osg::createTexturedQuadGeometry(
-        osg::Vec3(), osg::Vec3(1.0f,0.0f,0.0f), osg::Vec3(0.0f,0.0f,1.0f) );
-    osg::ref_ptr<osg::Geode> quad = new osg::Geode;
+                              osg::Vec3(), osg::Vec3(1.0f,0.0f,0.0f), osg::Vec3(0.0f,0.0f,1.0f) );
     quad->addDrawable( geom );
     quad->getOrCreateStateSet()->setMode( GL_LIGHTING, osg::StateAttribute::OFF );
     quad->getOrCreateStateSet()->setTextureAttributeAndModes( 0, tex2D.get() );

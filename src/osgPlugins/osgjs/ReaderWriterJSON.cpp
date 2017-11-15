@@ -34,6 +34,9 @@
 
 using namespace osg;
 
+class JSONScript:public osg::Script{
+
+};
 
 class ReaderWriterJSON : public osgDB::ReaderWriter
 {
@@ -64,6 +67,7 @@ public:
     ReaderWriterJSON()
     {
         supportsExtension("osgjs","OpenSceneGraph Javascript implementation format");
+        supportsExtension("json","json script");
         supportsOption("resizeTextureUpToPowerOf2=<int>","Specify the maximum power of 2 allowed dimension for texture. Using 0 will disable the functionality and no image resizing will occur.");
         supportsOption("useExternalBinaryArray","create binary files for vertex arrays");
         supportsOption("mergeAllBinaryFiles","merge all binary files into one to avoid multi request on a server");
@@ -94,6 +98,36 @@ public:
             return res;
         }
         return WriteResult("Unable to open file for output");
+    }
+    virtual ReadResult readScript(std::istream&  fin ,   const osgDB::ReaderWriter::Options* options=NULL) const {
+        std::string fullFileName=options->getPluginStringData("STREAM_FILENAME");
+        std::string ext = osgDB::getLowerCaseFileExtension(fullFileName);
+
+
+       fin.seekg(0, std::ios::end);    // go to the end
+       //std::istream::pos_type
+               std::string::size_type length = fin.tellg();           // report location (this is the length)
+        fin.seekg(0, std::ios::beg);    // go back to the beginning
+        osg::Script * json=new osg::Script;
+        std::string script;
+        script.reserve(length);
+        script.resize(length);
+        // allocate memory for a buffer of appropriate dimension
+        fin.read((char*)script.c_str(), length);       // read the whole file into the buffer
+
+
+
+        json->setScript(script);
+
+        return  ReadResult  (json,ReadResult::FILE_LOADED );
+
+        osgDB::ReaderWriter* rw = 0;
+
+            std::string baseFileName = osgDB::getNameLessExtension(fullFileName);
+            std::string baseExt = osgDB::getLowerCaseFileExtension(baseFileName);
+            rw = osgDB::Registry::instance()->getReaderWriterForExtension(baseExt);
+            OSG_INFO<<baseExt<<" ReaderWriter "<<rw<<std::endl;
+        return ReadResult(ReadResult::FILE_LOADED );
     }
 
     virtual WriteResult writeNode(const Node& node,

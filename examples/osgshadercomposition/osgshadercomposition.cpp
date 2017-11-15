@@ -129,7 +129,7 @@ osg::Node* createNewShaderCompositionScene(osg::ArgumentParser& arguments)
         pat->setPosition(position);
         pat->getOrCreateStateSet()->setDefine("LIGHTING");
         pat->getOrCreateStateSet()->setDefine("TEXTURE_2D");
-        pat->getOrCreateStateSet()->setDefine("VERTEX_FUNC(v)", "vec4(v.x, v.y, v.z * sin(osg_SimulationTime), v.w)");
+        stateset ->setDefine("VERTEX_FUNC(v)", "vec4(v.x, v.y, v.z * sin(osg_SimulationTime), v.w)");
 
         pat->addChild(node.get());
 

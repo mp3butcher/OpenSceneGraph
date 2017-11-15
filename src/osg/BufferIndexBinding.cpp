@@ -211,7 +211,8 @@ void BufferDataReadBack::readback (osg::RenderInfo& renderInfo) const {
 
     GLBufferObject* glObject
         = bd->getBufferObject()->getOrCreateGLBufferObject(renderInfo.getContextID());
-    if (glObject->isDirty()) glObject->compileBuffer();
+    if (glObject->isDirty())
+        return;//while not read back a dirty bo glObject->compileBuffer();
     glObject->_extensions->glBindBuffer(bd->getBufferObject()->getTarget(), glObject->getGLObjectID());
 //TODO manage persistance mapping
     GLubyte* src ;

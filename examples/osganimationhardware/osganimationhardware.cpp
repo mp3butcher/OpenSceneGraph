@@ -551,7 +551,7 @@ struct SetupRigGeometry : public osg::NodeVisitor
 
                 rig->getInfluenceMap()->cullInfluenceCountPerVertex(8,_simplifierWeightTreshold);
                 //rig->getInfluenceMap()->        accumulateDuplicates();
-                  rig->getInfluenceMap()->removeUnexpressedBones(rig->getSkeleton());
+             //     rig->getInfluenceMap()->removeUnexpressedBones(rig->getSkeleton());
 
                 rig->getRigTransformImplementation()->prepareData(*rig);
 

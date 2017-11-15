@@ -1220,6 +1220,11 @@ bool GraphicsWindowX11::makeCurrentImplementation()
         checkEGLError("after eglMakeCurrent()");
         return result;
     #else
+#define TRACE_MakeCurrent 1
+#ifdef TRACE_MakeCurrent
+    OSG_DEBUG<<"X11makeCurrent"<<std::endl;
+#endif
+
         return glXMakeCurrent( _display, _window, _context )==True;
     #endif
 }

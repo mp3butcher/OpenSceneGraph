@@ -561,12 +561,16 @@ void Texture2DArray::applyTexImage2DArray_subload(State& state, Image* image, GL
                     if (height == 0)
                        height = 1;
 
-                    extensions->glTexSubImage3D( target, k, 0, 0, layer,
+                   extensions->glTexSubImage3D( target, k, 0, 0, layer,
                                               width, height, indepth,
                                               (GLenum)image->getPixelFormat(),
                                               (GLenum)image->getDataType(),
                                                image->getMipmapData(k));
-
+                  /*totest?   extensions->glTexImage3D( target,k, _internalFormat,
+                        width, height,indepth, _borderWidth,
+                        (GLenum)image->getPixelFormat(),
+                        (GLenum)image->getDataType(),
+                         image->getMipmapData(k));*/
                     width >>= 1;
                     height >>= 1;
                 }
