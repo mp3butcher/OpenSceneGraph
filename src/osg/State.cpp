@@ -821,7 +821,15 @@ void State::apply()
 
     if (_currentShaderCompositionUniformList.empty()) applyUniformMap(_uniformMap);
     else applyUniformList(_uniformMap, _currentShaderCompositionUniformList);
-
+    //HACK
+    /*
+            if ((_lastAppliedProgramObject!=0)){
+                    int x,y,z;const osg::Program* prog=_lastAppliedProgramObject->getProgram();prog->getComputeGroups(x,y,z);
+                    if ( x>0&&y>0&&z>0 )
+                    {
+                        _glExtensions->glDispatchCompute( x,y,z);
+                    }
+        }*/
     if (_checkGLErrors==ONCE_PER_ATTRIBUTE) checkGLErrors("end of State::apply()");
 }
 

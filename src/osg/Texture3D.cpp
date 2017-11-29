@@ -380,10 +380,29 @@ void Texture3D::applyTexImage3D(GLenum target, Image* image, State& state, GLsiz
         || indepth > extensions->maxTexture3DSize )
         image->ensureValidSizeForTexturing(extensions->maxTexture3DSize);
 
+
+    unsigned char* dataPtr = (unsigned char*)image->data();
+    int rowLength=image->getRowLength();
+    GLBufferObject* pbo = image->getOrCreateGLBufferObject(state.getContextID());
+    if (pbo /*&& !needImageRescale && !useGluBuildMipMaps*/)
+    {
+        state.bindPixelBufferObject(pbo);
+        dataPtr = reinterpret_cast<unsigned char*>(pbo->getOffset(image->getBufferIndex()));
+        rowLength = 0;
+#ifdef DO_TIMING
+        OSG_NOTICE<<"after PBO "<<osg::Timer::instance()->delta_m(start_tick,osg::Timer::instance()->tick())<<"ms"<<std::endl;
+#endif
+    }
+    else
+    {
+        pbo = 0;
+    }
     glPixelStorei(GL_UNPACK_ALIGNMENT,image->getPacking());
 #if !defined(OSG_GLES1_AVAILABLE) && !defined(OSG_GLES2_AVAILABLE)
-    glPixelStorei(GL_UNPACK_ROW_LENGTH,image->getRowLength());
+    glPixelStorei(GL_UNPACK_ROW_LENGTH,rowLength);
 #endif
+
+
 
     bool useHardwareMipMapGeneration = !image->isMipmap() && _useHardwareMipMapGeneration && extensions->isGenerateMipMapSupported;
 
@@ -426,7 +445,129 @@ void Texture3D::applyTexImage3D(GLenum target, Image* image, State& state, GLsiz
     }
     else
     {
-        if(!image->isMipmap())
+        if(image->isMipmap())
+        {
+            bool useTexStorrage = extensions->isTextureStorageEnabled;
+            GLenum sizedInternalFormat = 0;
+
+            if(useTexStorrage)
+            {
+                if(extensions->isTexStorage2DSupported() && _borderWidth == 0)
+                {
+                    //calculate sized internal format
+                    if(!compressed_image)
+                    {
+                        if(isSizedInternalFormat(_internalFormat))
+                        {
+                            sizedInternalFormat = _internalFormat;
+                        }
+                        else
+                        {
+                            sizedInternalFormat = assumeSizedInternalFormat((GLenum)image->getInternalTextureFormat(), (GLenum)image->getDataType());
+                        }
+                    }
+                    else
+                    {
+                        if(isCompressedInternalFormatSupportedByTexStorrage(_internalFormat))
+                        {
+                            sizedInternalFormat = _internalFormat;
+                        }
+                    }
+                }
+
+                useTexStorrage &= sizedInternalFormat != 0;
+            }
+
+            numMipmapLevels = image->getNumMipmapLevels();
+
+            int width  = image->s();
+            int height = image->t();
+            int depth = image->r();
+            if(useTexStorrage)
+            {
+
+                extensions->glTexStorage3D(target, numMipmapLevels, sizedInternalFormat, width, height, depth);
+
+
+                if( !compressed_image )
+                {
+                    for( GLsizei k = 0 ; k < numMipmapLevels  && (width || height || depth) ;k++)
+                    {
+
+                        if (width == 0)
+                            width = 1;
+                        if (height == 0)
+                            height = 1;
+                        if (depth == 0)
+                            depth = 1;
+                       extensions->glTexSubImage3D( target, k,
+                            0, 0,0,
+                            width, height, depth,
+                            (GLenum)image->getPixelFormat(),
+                            (GLenum)image->getDataType(),
+                            dataPtr + image->getMipmapOffset(k));
+
+                        width >>= 1;
+                        height >>= 1;
+                        depth >>= 1;
+                    }
+                }
+                else if (extensions->isCompressedTexImage2DSupported())
+                {
+                    GLint blockSize,size;
+                    for( GLsizei k = 0 ; k < numMipmapLevels  && (width || height || depth) ;k++)
+                    {
+                        if (width == 0)
+                            width = 1;
+                        if (height == 0)
+                            height = 1;
+                        if (depth == 0)
+                            depth = 1;
+
+                        getCompressedSize(image->getInternalTextureFormat(), width, height, depth, blockSize,size);
+
+                        //state.checkGLErrors("before extensions->glCompressedTexSubImage2D(");
+
+                        extensions->glCompressedTexSubImage3D(target, k,
+                            0, 0, 0,
+                            width, height, depth,
+                            (GLenum)image->getPixelFormat(),
+                            size,
+                            dataPtr + image->getMipmapOffset(k));
+
+                        //state.checkGLErrors("after extensions->glCompressedTexSubImage2D(");
+
+                        width >>= 1;
+                        height >>= 1;
+                        depth >>= 1;
+                    }
+                }
+            }
+            else
+            {
+                for( GLsizei k = 0 ; k < numMipmapLevels  && (width || height || depth) ;k++)
+                {
+
+                    if (width == 0)
+                        width = 1;
+                    if (height == 0)
+                        height = 1;
+                    if (depth == 0)
+                        depth = 1;
+
+                    extensions->glTexImage3D( target, k, _internalFormat,
+                                              width, height, depth, _borderWidth,
+                                              (GLenum)image->getPixelFormat(),
+                                              (GLenum)image->getDataType(),
+                                              image->getMipmapData(k));
+
+                    width >>= 1;
+                    height >>= 1;
+                    depth >>= 1;
+                }
+            }
+        }
+        else
         {
 
             numMipmapLevels = 1;
@@ -438,42 +579,27 @@ void Texture3D::applyTexImage3D(GLenum target, Image* image, State& state, GLsiz
                                image->data() );
 
         }
-        else
-        {
-            numMipmapLevels = image->getNumMipmapLevels();
-
-            int width  = image->s();
-            int height = image->t();
-            int depth = image->r();
-
-            for( GLsizei k = 0 ; k < numMipmapLevels  && (width || height || depth) ;k++)
-            {
-
-                if (width == 0)
-                    width = 1;
-                if (height == 0)
-                    height = 1;
-                if (depth == 0)
-                    depth = 1;
-
-                extensions->glTexImage3D( target, k, _internalFormat,
-                                          width, height, depth, _borderWidth,
-                                          (GLenum)image->getPixelFormat(),
-                                          (GLenum)image->getDataType(),
-                                          image->getMipmapData(k));
-
-                width >>= 1;
-                height >>= 1;
-                depth >>= 1;
-            }
-        }
 
     }
 
     inwidth  = image->s();
     inheight = image->t();
     indepth  = image->r();
+    if (pbo)
+    {
+        state.unbindPixelBufferObject();
 
+        const BufferObject* bo = image->getBufferObject();
+        if (bo->getCopyDataAndReleaseGLBufferObject())
+        {
+            pbo->setBufferDataHasBeenRead(image);
+            if (pbo->hasAllBufferDataBeenRead())
+            {
+                //OSG_NOTICE<<"Release PBO"<<std::endl;
+                bo->releaseGLObjects(&state);
+            }
+        }
+    }
 }
 
 void Texture3D::copyTexSubImage3D(State& state, int xoffset, int yoffset, int zoffset, int x, int y, int width, int height )

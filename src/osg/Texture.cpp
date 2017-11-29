@@ -201,7 +201,7 @@ InternalPixelRelations compressedInternalFormats[] = {
  // , { GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT , GL_RGBA             , GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT       }
 };
 
-bool isSizedInternalFormat(GLint internalFormat)
+bool Texture::isSizedInternalFormat(GLint internalFormat)
 {
     const size_t formatsCount = sizeof(sizedInternalFormats) / sizeof(sizedInternalFormats[0]);
 
@@ -214,7 +214,7 @@ bool isSizedInternalFormat(GLint internalFormat)
     return false;
 }
 
-GLenum assumeSizedInternalFormat(GLint internalFormat, GLenum type)
+GLenum Texture::assumeSizedInternalFormat(GLint internalFormat, GLenum type)
 {
     const size_t formatsCount = sizeof(sizedInternalFormats) / sizeof(sizedInternalFormats[0]);
 
@@ -227,7 +227,7 @@ GLenum assumeSizedInternalFormat(GLint internalFormat, GLenum type)
     return 0;
 }
 
-bool isCompressedInternalFormatSupportedByTexStorrage(GLint internalFormat)
+bool Texture::isCompressedInternalFormatSupportedByTexStorrage(GLint internalFormat)
 {
     const size_t formatsCount = sizeof(compressedInternalFormats) / sizeof(compressedInternalFormats[0]);
 

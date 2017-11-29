@@ -31,6 +31,7 @@
 #include <OpenThreads/ScopedLock>
 #include <OpenThreads/Mutex>
 
+#define COMPUTEDIPATCHTEST 1
 using namespace osg;
 
 static unsigned int s_minimumNumberOfDisplayListsToRetainInCache = 0;
@@ -310,8 +311,12 @@ void Drawable::resizeGLObjectBuffers(unsigned int maxSize)
     if (_drawCallback.valid()) _drawCallback->resizeGLObjectBuffers(maxSize);
 
     _globjList.resize(maxSize);
-
+#ifdef COMPUTEDIPATCHTEST
+    if(_vas.valid())
+#else
+    #endif
     _vas->getPCVertexArrayStates().resize(maxSize);
+
 }
 
 void Drawable::releaseGLObjects(State* state) const
@@ -338,6 +343,10 @@ void Drawable::releaseGLObjects(State* state) const
                 globj = 0;
             }
         }
+#ifdef COMPUTEDIPATCHTEST
+                if(_vas.valid()){
+
+                #endif
         PerContextVertexArrayState* vas = contextID <_vas->  getPCVertexArrayStates().size() ? _vas->  getPCVertexArrayStates()[contextID].get() : 0;
 
         if (vas)
@@ -345,6 +354,9 @@ void Drawable::releaseGLObjects(State* state) const
             vas->release();
             _vas->  getPCVertexArrayStates()[contextID] = 0;
         }
+#ifdef COMPUTEDIPATCHTEST
+              }
+ #endif
 
     }
     else

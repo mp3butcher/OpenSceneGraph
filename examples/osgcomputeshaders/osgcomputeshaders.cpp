@@ -27,6 +27,7 @@
 #include <osgViewer/Viewer>
 #include <osgViewer/ViewerEventHandlers>
 #include <osg/BufferIndexBinding>
+#include <osg/ComputeDispatch>
 
 static const char* computeSrc = {
     "#version 430 compatibility\n"
@@ -88,7 +89,9 @@ int main( int argc, char** argv )
     // It is OK to have just an empty node here, but seems inbuilt uniforms like osg_FrameTime won't work then.
     // TODO: maybe we can have a custom drawable which also will implement glMemoryBarrier?
     osg::ref_ptr<osg::Node> sourceNode =0;// osgDB::readRefNodeFile("axes.osgt");
-    if ( !sourceNode ) sourceNode = new osg::Geometry;
+    if ( !sourceNode ) sourceNode = new osg::ComputeDispatch( 512/16, 512/16, 1 );
+
+
     sourceNode->setDataVariance( osg::Object::DYNAMIC );
     osg::ref_ptr<osg::UIntArray> atomicCounterArrayBlue = new osg::UIntArray;
     atomicCounterArrayBlue->push_back(0);

@@ -865,6 +865,12 @@ class OSG_EXPORT Texture : public osg::StateAttribute
         /** Returns -1 if *this < *rhs, 0 if *this==*rhs, 1 if *this>*rhs. */
         int compareTextureObjects(const Texture& rhs) const;
 
+        static bool isSizedInternalFormat(GLint internalFormat);
+
+        static GLenum assumeSizedInternalFormat(GLint internalFormat, GLenum type);
+
+        static bool isCompressedInternalFormatSupportedByTexStorrage(GLint internalFormat);
+
         typedef buffered_value<unsigned int> TexParameterDirtyList;
         mutable TexParameterDirtyList _texParametersDirtyList;
         mutable TexParameterDirtyList _texMipmapGenerationDirtyList;
@@ -1000,11 +1006,64 @@ class OSG_EXPORT Texture : public osg::StateAttribute
             GLint        _border;
             unsigned int _size;
         };
+   class OSG_EXPORT ImageUnitBinding: public Referenced{
+       public:
+       ImageUnitBinding(  GLuint imagebinding=0,
+                          GLenum access=GL_READ_ONLY_ARB,
+                          GLenum format=GL_RGBA8,
+                          int level=0,
+                          bool layered=GL_FALSE,
+                          int layer=0):osg::Referenced(),
+                                       _imageunit(imagebinding),
+                                       _level(level),
+                                       _layered(layered),
+                                       _layer(layer),
+                                       _access(access),
+                                       _format(format) {}
+       inline bool operator ==(const ImageUnitBinding&o) const {
+           if(_imageunit!=o._imageunit)return false;
+           if(_access!=o._access)return false;
+           if(_format!=o._format)return false;
+           if(_level!=o._level)return false;
+           if(_layered!=o._layered)return false;
+           if(_layer!=o._layer)return false;
+           return true;
+       }
+       inline void operator =(const ImageUnitBinding&o){
+          _imageunit=o._imageunit;
+          _access=o._access;
+          _level=o._level;
+          _layered=o._layered;
+          _layer=o._layer;
+          _format=o._format;
+       }
+       void setImageUnit( GLuint i){_imageunit=i;}
+        void setLevel( GLint i){_level=i;}
+        void setIsLayered( GLboolean i){_layered=i;}
+        void setLayer( GLint i){_layer=i;}
+        void setAccess( ImageAccess i){_access=i;}
+        void setFormat( GLenum i){_format=i;}
 
+        GLuint getImageUnit( )const{return _imageunit;}
+        GLint getLevel( )const{return _level;}
+        GLboolean getIsLayered( )const{return _layered;}
+        GLint getLayer(  )const{return _layer;}
+        GLenum getAccess(  )const{return _access;}
+        GLenum getFormat(  )const{return _format;}
+        GLuint _imageunit;
+        GLint _level;
+        GLboolean _layered;
+        GLint _layer;
+        GLenum _access;
+        GLenum _format;
+   };
         class OSG_EXPORT TextureObject : public GraphicsObject
         {
         public:
 
+            osg::ref_ptr<ImageUnitBinding> _ib;
+            inline void setImageUnitBinding(ImageUnitBinding *ib ){_ib=ib;}
+            inline ImageUnitBinding * getImageUnitBinding() const {return _ib;}
             inline TextureObject(Texture* texture, GLuint id, GLenum target):
                 _id(id),
                 _profile(target),
