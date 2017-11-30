@@ -256,8 +256,28 @@ bool isGuesting(const osg::BufferObject&bo,const osg::BufferData*bd)
 }
 
 #ifndef NEWVAS
+
     SharedVAOGeometry * MakeSharedBufferObjectsVisitor::treatBufferObjects(SharedVAOGeometry* g)
 #else
+/** Shared VAS createVASCallback **/
+struct MasterGeomVertexArrayStateCallback : public virtual osg::Drawable::CreateVertexArrayStateCallback
+{
+    osg::ref_ptr<osg::Drawable> _master;
+    MasterGeomVertexArrayStateCallback(osg::Drawable *dr=0):_master(dr) {}
+
+    void setMasterGeometry(osg::Drawable*dr){_master=dr;}
+    osg::Drawable * getMasterGeometry()const{return _master;}
+    MasterGeomVertexArrayStateCallback(const MasterGeomVertexArrayStateCallback& rhs,const osg::CopyOp& copyop):
+        osg::Drawable::CreateVertexArrayStateCallback(rhs, copyop) {_master=rhs._master;}
+
+    META_Object(osg, MasterGeomVertexArrayStateCallback);
+
+    /** do customized createVertexArrayState .*/
+    virtual osg::VertexArrayState* createVertexArrayStateImplementation(osg::RenderInfo& renderInfo, const osg::Drawable* /*drawable*/) const
+    {
+        return _master->createVertexArrayStateImplementation(renderInfo);
+    }
+};
     osg::Geometry*  MakeSharedBufferObjectsVisitor::treatBufferObjects(osg::Geometry* g)
 #endif
 
@@ -368,7 +388,8 @@ bool isGuesting(const osg::BufferObject&bo,const osg::BufferData*bd)
 
             setPrimitivesBaseVertex(g);
 
-            g->setVertexArrayState((*itbuffset).second->getVertexArrayState());
+            //g->setVertexArrayState((*itbuffset).second->getVertexArrayState());
+            g->setCreateVertexArrayStateCallback((*itbuffset).second->getCreateVertexArrayStateCallback());
 #endif
             OSG_WARN<<"already guested by the buffer set"<<std::endl;
             return g;
@@ -406,7 +427,8 @@ bool isGuesting(const osg::BufferObject&bo,const osg::BufferData*bd)
 #else
 
         setPrimitivesBaseVertex(g);
-        g->setVertexArrayState((*itbuffset).second->getVertexArrayState());
+       // g->setVertexArrayState((*itbuffset).second->getVertexArrayState());
+        g->setCreateVertexArrayStateCallback((*itbuffset).second->getCreateVertexArrayStateCallback());
 #endif
 
         return g;
@@ -461,7 +483,9 @@ bool isGuesting(const osg::BufferObject&bo,const osg::BufferData*bd)
 #else
 
         setPrimitivesBaseVertex(g);
-        g->setVertexArrayState(newBuffSet.second->getVertexArrayState());
+       // g->setVertexArrayState(newBuffSet.second->getVertexArrayState());
+newBuffSet.second->setCreateVertexArrayStateCallback(new MasterGeomVertexArrayStateCallback(newBuffSet.second));
+        g->setCreateVertexArrayStateCallback(newBuffSet.second->getCreateVertexArrayStateCallback());
 #endif
         return g;
     }
@@ -494,7 +518,10 @@ bool isGuesting(const osg::BufferObject&bo,const osg::BufferData*bd)
     g->setMaster(newBuffSet.second);
 #else
     setPrimitivesBaseVertex(g);
-    g->setVertexArrayState(newBuffSet.second->getVertexArrayState());
+   // g->setVertexArrayState(newBuffSet.second->getVertexArrayState());
+
+    newBuffSet.second->setCreateVertexArrayStateCallback(new MasterGeomVertexArrayStateCallback(newBuffSet.second));
+    g->setCreateVertexArrayStateCallback(newBuffSet.second->getCreateVertexArrayStateCallback());
 #endif
     return g;
 }

@@ -261,14 +261,14 @@ void State::initializeExtensionProcs()
         _forceVertexArrayObject = true;
     }
 
-    OSG_NOTICE<<"_forceVertexArrayObject = "<<_forceVertexArrayObject<<std::endl;
-    OSG_NOTICE<<"_forceVertexBufferObject = "<<_forceVertexBufferObject<<std::endl;
+    OSG_INFO<<"osg::State::initializeExtensionProcs() _forceVertexArrayObject = "<<_forceVertexArrayObject<<std::endl;
+    OSG_INFO<<"                                       _forceVertexBufferObject = "<<_forceVertexBufferObject<<std::endl;
 
 
-    // Set up up global PerContextVertexArrayState object
-    _globalPerContextVertexArrayState = new PerContextVertexArrayState(this);
-    _globalPerContextVertexArrayState->assignAllDispatchers();
-    // if (_useVertexArrayObject) _globalPerContextVertexArrayState->generateVertexArrayObject();
+    // Set up up global VertexArrayState object
+    _globalVertexArrayState = new VertexArrayState(this);
+    _globalVertexArrayState->assignAllDispatchers();
+    // if (_useVertexArrayObject) _globalVertexArrayState->generateVertexArrayObject();
 
     setCurrentToGlobalVertexArrayState();
 

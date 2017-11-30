@@ -196,6 +196,7 @@ public:
             for(osgAnimation::IndexWeightList::iterator curinf=curvecinf.begin(); curinf!=curvecinf.end(); ++curinf) {
                 osgAnimation:: VertexIndexWeight& inf=*curinf;
                 index2influences[inf.first].push_back(BoneVecandInf(mapit->first, inf.second) );
+
             }
         }
 

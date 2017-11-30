@@ -241,7 +241,6 @@ Drawable::Drawable()
 #else
      _useVertexArrayObject = true;
 #endif
-     _vas = new osg::VertexArrayState();
 }
 
 Drawable::Drawable(const Drawable& drawable,const CopyOp& copyop):
@@ -255,12 +254,10 @@ Drawable::Drawable(const Drawable& drawable,const CopyOp& copyop):
     _supportsVertexBufferObjects(drawable._supportsVertexBufferObjects),
     _useVertexBufferObjects(drawable._useVertexBufferObjects),
     _useVertexArrayObject(drawable._useVertexArrayObject),
-    _drawCallback(drawable._drawCallback)
+    _drawCallback(drawable._drawCallback),
+    _createVertexArrayStateCallback(drawable._createVertexArrayStateCallback)
 {
     setStateSet(copyop(drawable._stateset.get()));
-
-    if (copyop.getCopyFlags() & CopyOp::DEEP_COPY_ARRAYS) _vas =drawable.getVertexArrayState(); //share vas if they share arrays
-    else  _vas = new VertexArrayState();
 }
 
 Drawable::~Drawable()
@@ -311,11 +308,7 @@ void Drawable::resizeGLObjectBuffers(unsigned int maxSize)
     if (_drawCallback.valid()) _drawCallback->resizeGLObjectBuffers(maxSize);
 
     _globjList.resize(maxSize);
-#ifdef COMPUTEDIPATCHTEST
-    if(_vas.valid())
-#else
-    #endif
-    _vas->getPCVertexArrayStates().resize(maxSize);
+    _vertexArrayStateList.resize(maxSize);
 
 }
 
@@ -343,20 +336,15 @@ void Drawable::releaseGLObjects(State* state) const
                 globj = 0;
             }
         }
-#ifdef COMPUTEDIPATCHTEST
-                if(_vas.valid()){
 
-                #endif
-        PerContextVertexArrayState* vas = contextID <_vas->  getPCVertexArrayStates().size() ? _vas->  getPCVertexArrayStates()[contextID].get() : 0;
+        VertexArrayState* vas = contextID <_vertexArrayStateList.size() ? _vertexArrayStateList[contextID].get() : 0;
 
         if (vas)
         {
             vas->release();
-            _vas->  getPCVertexArrayStates()[contextID] = 0;
+           _vertexArrayStateList[contextID] = 0;
         }
-#ifdef COMPUTEDIPATCHTEST
-              }
- #endif
+
 
     }
     else
@@ -472,9 +460,9 @@ void Drawable::dirtyGLObjects()
     }
 #endif
 
-    for(i=0; i<_vas->getPCVertexArrayStates().size(); ++i)
+    for(i=0; i<_vertexArrayStateList.size(); ++i)
     {
-        PerContextVertexArrayState* vas = _vas->getPCVertexArrayStates()[i].get();
+        VertexArrayState* vas = _vertexArrayStateList[i].get();
         if (vas) vas->dirty();
     }
 
@@ -658,11 +646,10 @@ void Drawable::draw(RenderInfo& renderInfo) const
     {
         unsigned int contextID = renderInfo.getContextID();
 
-        PerContextVertexArrayState* vas = _vas->getPCVertexArrayStates()[contextID].get();
+        VertexArrayState* vas = _vas->getPCVertexArrayStates()[contextID].get();
         if (!vas)
         {
-              _vas->getPCVertexArrayStates()[contextID] =
-                      vas = createPerContextVertexArrayState(renderInfo);
+              _vas->getPCVertexArrayStates()[contextID] = vas = createVertexArrayState(renderInfo);
         }
         else
         {
@@ -683,7 +670,7 @@ void Drawable::draw(RenderInfo& renderInfo) const
     // TODO, add check against whether VAO is active and supported
     if (state.getCurrentVertexArrayState())
     {
-        //OSG_NOTICE<<"state.getCurrentPerContextVertexArrayState()->getVertexArrayObject()="<< state.getCurrentPerContextVertexArrayState()->getVertexArrayObject()<<std::endl;
+        //OSG_NOTICE<<"state.getCurrentVertexArrayState()->getVertexArrayObject()="<< state.getCurrentVertexArrayState()->getVertexArrayObject()<<std::endl;
         state.bindVertexArrayObject(state.getCurrentVertexArrayState());
     }
 
@@ -715,7 +702,7 @@ void Drawable::draw(RenderInfo& renderInfo) const
     else
 #endif
     {
-        // if state.previousPerContextVertexArrayState() is different than currentPerContextVertexArrayState bind current
+        // if state.previousVertexArrayState() is different than currentVertexArrayState bind current
 
         // OSG_NOTICE<<"Fallback drawInner()........................"<<std::endl;
 
@@ -725,12 +712,13 @@ void Drawable::draw(RenderInfo& renderInfo) const
 
 #endif
 
-PerContextVertexArrayState* Drawable::createPerContextVertexArrayState(RenderInfo& renderInfo) const
+VertexArrayState* Drawable::createVertexArrayStateImplementation(RenderInfo& renderInfo) const
 {
-    PerContextVertexArrayState* vos = _vas->getPCVertexArrayStates()[renderInfo.getContextID()] = new osg::PerContextVertexArrayState(renderInfo.getState());
+    OSG_NOTICE<<"VertexArrayState* Drawable::createVertexArrayStateImplementation(RenderInfo& renderInfo) const "<<this<<std::endl;
+    VertexArrayState* vos = _vertexArrayStateList[renderInfo.getContextID()] = new osg::VertexArrayState(renderInfo.getState());
+    /*  VertexArrayState* vos = new osg::VertexArrayState(renderInfo.getState());*/
     vos->assignAllDispatchers();
     return vos;
-
 }
 
 TransformFeedbackDrawCallback::TransformFeedbackDrawCallback(const TransformFeedbackDrawCallback&dc,const CopyOp&co):osg::Drawable::DrawCallback(dc,co)

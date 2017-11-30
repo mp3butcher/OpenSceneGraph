@@ -171,7 +171,7 @@ return true; \
 
 
 #define DUMMYSTUFF
-WRAP_VALUEOBJECT_METHOD(osg::UIntValueObject, osg::Group, getNumChildren);
+WRAP_VALUEOBJECT_METHOD(osg::UIntValueObject, osg::Group, getNumChildren)
 //WRAP_VALUEOBJECT_METHOD2(osg::UIntValueObject, osg::Group, insertChild, XSTR(p1, p2), STR(p1, p2));
 //ADD_METHOD_OBJECT(##GETTERMETHODNAME, wrap_##GETTERMETHODNAME);
 

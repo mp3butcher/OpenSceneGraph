@@ -39,7 +39,7 @@ void UpdateMatrixTransform::operator()(osg::Node* node, osg::NodeVisitor* nv)
         osg::Transform * trans=node->asTransform();osg::Camera* cam;
         if(trans){
 
-            if(cam=trans->asCamera()){
+            if( ( cam = trans->asCamera() ) ){
                 _transforms.update();
                 const osg::Matrix& matrix = _transforms.getMatrix();
                 cam->setViewMatrix(osg::Matrix::inverse(matrix));

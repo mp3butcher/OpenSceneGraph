@@ -109,16 +109,17 @@ void TextBase::initArraysAndBuffers()
     _texcoords->setBufferObject(_vbo.get());
 }
 
-osg::PerContextVertexArrayState* TextBase::createPerContextVertexArrayState(osg::RenderInfo& renderInfo) const
+
+osg::VertexArrayState* TextBase::createVertexArrayStateImplementation(osg::RenderInfo& renderInfo) const
 {
     State& state = *renderInfo.getState();
 #if 1
 //robert way
-    PerContextVertexArrayState* vas = new osg::PerContextVertexArrayState(&state);
+    VertexArrayState* vas = new osg::VertexArrayState(&state);
 #else
-    PerContextVertexArrayState* vas = _vas->getPCVertexArrayStates()[state.getContextID()];
+    VertexArrayState* vas = _vertexArrayStateList[state.getContextID()];
     if(vas)return vas;
-    _vas->getPCVertexArrayStates()[state.getContextID()] = vas = new osg::PerContextVertexArrayState(&state);
+    _vertexArrayStateList[state.getContextID()] = vas = new osg::VertexArrayState(&state);
 #endif
     // OSG_NOTICE<<"Creating new osg::VertexArrayState "<< vas<<std::endl;
 

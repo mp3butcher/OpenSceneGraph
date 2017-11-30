@@ -1118,7 +1118,7 @@ void Text::drawImplementation(osg::RenderInfo& renderInfo) const
 void Text::drawImplementationSinglePass(osg::State& state, const osg::Vec4& colorMultiplier) const
 {
     if (colorMultiplier.a()==0.0f || _color.a()==0.0f) return;
-    osg::PerContextVertexArrayState* vas = state.getCurrentVertexArrayState();
+    osg::VertexArrayState* vas = state.getCurrentVertexArrayState();
 
     bool usingVertexBufferObjects = state.useVertexBufferObject(_supportsVertexBufferObjects && _useVertexBufferObjects);
     bool usingVertexArrayObjects = usingVertexBufferObjects && state.useVertexArrayObject(_useVertexArrayObject);
@@ -1199,7 +1199,7 @@ void Text::drawImplementation(osg::State& state, const osg::Vec4& colorMultiplie
 
     state.Normal(_normal.x(), _normal.y(), _normal.z());
 
-    osg::PerContextVertexArrayState* vas = state.getCurrentVertexArrayState();
+    osg::VertexArrayState* vas = state.getCurrentVertexArrayState();
     bool usingVertexBufferObjects = state.useVertexBufferObject(_supportsVertexBufferObjects && _useVertexBufferObjects);
     bool usingVertexArrayObjects = usingVertexBufferObjects && state.useVertexArrayObject(_useVertexArrayObject);
     bool requiresSetArrays = !usingVertexBufferObjects || !usingVertexArrayObjects || vas->getRequiresSetArrays();
@@ -1299,6 +1299,21 @@ void Text::accept(osg::PrimitiveFunctor& pf) const
             }
         }
     }
+}
+
+bool Text::getCharacterCorners(unsigned int index, osg::Vec3& bottomLeft, osg::Vec3& bottomRight, osg::Vec3& topLeft, osg::Vec3& topRight) const
+{
+    if (_coords) return false;
+
+    if ((index*4+4)>static_cast<unsigned int>(_coords->size())) return false;
+
+    unsigned int base = index*4;
+    topLeft = (*_coords)[base];
+    bottomLeft = (*_coords)[base+1];
+    bottomRight = (*_coords)[base+2];
+    topRight = (*_coords)[base+3];
+
+    return true;
 }
 
 void Text::resizeGLObjectBuffers(unsigned int maxSize)

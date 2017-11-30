@@ -11,8 +11,8 @@
  * OpenSceneGraph Public License for more details.
 */
 
-#ifndef OSG_PerContextVertexArrayState
-#define OSG_PerContextVertexArrayState 1
+#ifndef OSG_VertexArrayState
+#define OSG_VertexArrayState 1
 
 #include <osg/Referenced>
 #include <osg/GLExtensions>
@@ -21,11 +21,11 @@
 
 namespace osg {
 
-class OSG_EXPORT PerContextVertexArrayState : public osg::Referenced
+class OSG_EXPORT VertexArrayState : public osg::Referenced
 {
 public:
 
-        PerContextVertexArrayState(osg::State* state, GLint basevertex = 0);
+        VertexArrayState(osg::State* state, GLint basevertex = 0);
 
         struct ArrayDispatch : public osg::Referenced
         {
@@ -212,7 +212,7 @@ public:
 };
 
 
-inline void PerContextVertexArrayState::lazyDisablingOfVertexAttributes()
+inline void VertexArrayState::lazyDisablingOfVertexAttributes()
 {
     _activeDispatchers.swap(_previous_activeDispatchers);
     _activeDispatchers.clear();
@@ -227,7 +227,7 @@ inline void PerContextVertexArrayState::lazyDisablingOfVertexAttributes()
     }
 }
 
-inline void PerContextVertexArrayState::applyDisablingOfVertexAttributes(osg::State& state)
+inline void VertexArrayState::applyDisablingOfVertexAttributes(osg::State& state)
 {
     for(ActiveDispatchers::iterator itr = _previous_activeDispatchers.begin();
         itr != _previous_activeDispatchers.end();
@@ -244,7 +244,7 @@ inline void PerContextVertexArrayState::applyDisablingOfVertexAttributes(osg::St
     _previous_activeDispatchers.clear();
 }
 
-inline void PerContextVertexArrayState::disableTexCoordArrayAboveAndIncluding(osg::State& state, unsigned int index)
+inline void VertexArrayState::disableTexCoordArrayAboveAndIncluding(osg::State& state, unsigned int index)
 {
     for(unsigned int i=index; i<_texCoordArrays.size(); ++i)
     {
@@ -252,7 +252,7 @@ inline void PerContextVertexArrayState::disableTexCoordArrayAboveAndIncluding(os
     }
 }
 
-inline void PerContextVertexArrayState::disableVertexAttribArrayAboveAndIncluding(osg::State& state, unsigned int index)
+inline void VertexArrayState::disableVertexAttribArrayAboveAndIncluding(osg::State& state, unsigned int index)
 {
     for(unsigned int i=index; i<_vertexAttribArrays.size(); ++i)
     {
@@ -260,36 +260,6 @@ inline void PerContextVertexArrayState::disableVertexAttribArrayAboveAndIncludin
     }
 }
 
-/// new entity in order to share VAS among drawable and avoid duplicate vertex array object
-/// For the moment it's just a PCVAS array owner (clean component would require array composition but the case of mulitple buff primsets couldn't be managed..
-/// so it will stay dirty until further design change in osg (i would deprecate mulitple buff primsets case once and for all..it would be so nice for design)
-class OSG_EXPORT VertexArrayState : public osg::Object{
-public:
-META_Object(osg,VertexArrayState)
-    VertexArrayState();
-    ~VertexArrayState();
-    VertexArrayState(const VertexArrayState& val, const CopyOp& copyop = CopyOp::SHALLOW_COPY);
-
-    typedef buffered_object< osg::ref_ptr<PerContextVertexArrayState> > PerContextVertexArrayStateList;
-
-    inline  PerContextVertexArrayStateList& getPCVertexArrayStates()const{return  _pcvas;}
-    /*PerContextVertexArrayState * getOrCreatePCVertexArrayState(State&state)const;
-    inline void resize(unsigned int maxSize){_pcvas.resize(maxSize);}
-    void release(State&state);
-    inline void clear(){                     _pcvas.clear();    }
-    inline void dirtyGLObjects()
-    {
-        unsigned int i;
-
-        for(i=0; i<_pcvas.size(); ++i)
-        {
-            PerContextVertexArrayState* vas = _pcvas[i].get();
-            if (vas) vas->dirty();
-        }
-    }*/
-protected:
-    mutable PerContextVertexArrayStateList _pcvas;
-};
 }
 
 #endif

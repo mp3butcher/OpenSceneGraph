@@ -796,16 +796,17 @@ SharedGeometry::~SharedGeometry()
 {
 }
 
-osg::PerContextVertexArrayState* SharedGeometry::createPerContextVertexArrayState(osg::RenderInfo& renderInfo) const
+
+osg::VertexArrayState* SharedGeometry::createVertexArrayStateImplementation(osg::RenderInfo& renderInfo) const
 {
     osg::State& state = *renderInfo.getState();
 #if 0
 //robert way
-    osg::PerContextVertexArrayState* vas = new osg::PerContextVertexArrayState(&state);
+    osg::VertexArrayState* vas = new osg::VertexArrayState(&state);
 #else
-    osg::PerContextVertexArrayState* vas = _vas->getPCVertexArrayStates()[state.getContextID()];
-    if(vas)return vas;
-    _vas->getPCVertexArrayStates()[state.getContextID()] = vas = new osg::PerContextVertexArrayState(&state);
+    osg::VertexArrayState* vas = _vertexArrayStateList[state.getContextID()];
+    if(vas) return vas;
+    _vertexArrayStateList[state.getContextID()] = vas = new osg::VertexArrayState(&state);
 #endif
     // OSG_NOTICE<<"Creating new osg::VertexArrayState "<< vas<<std::endl;
 
@@ -861,13 +862,13 @@ void SharedGeometry::compileGLObjects(osg::RenderInfo& renderInfo) const
         if (state.useVertexArrayObject(_useVertexArrayObject))
         {
 
-            osg::PerContextVertexArrayState* vas = 0;
+            osg::VertexArrayState* vas = 0;
 #if 0
 //Robert way
 
-            _vertexArrayStateList[contextID] = vas = createPerContextVertexArrayState(renderInfo);
+            _vertexArrayStateList[contextID] = vas = createVertexArrayState(renderInfo);
 #else
-            vas = createPerContextVertexArrayState(renderInfo);
+            vas = createVertexArrayState(renderInfo);
 #endif
             // OSG_NOTICE<<"  setting up VertexArrayObject "<<vas<<std::endl;
 
@@ -916,7 +917,7 @@ void SharedGeometry::drawImplementation(osg::RenderInfo& renderInfo) const
     // OSG_NOTICE<<"SharedGeometry::drawImplementation "<<computeDiagonals<<std::endl;
 
     osg::State& state = *renderInfo.getState();
-    osg::PerContextVertexArrayState* vas = state.getCurrentVertexArrayState();
+    osg::VertexArrayState* vas = state.getCurrentVertexArrayState();
 
 
     // state.checkGLErrors("Before SharedGeometry::drawImplementation.");

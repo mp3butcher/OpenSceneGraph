@@ -72,12 +72,12 @@ public:
 
                 if (state.useVertexArrayObject(_useVertexArrayObject) && !bufferObjects.empty())
                 {
-                    osg::PerContextVertexArrayState* vas = 0;
+                    osg::VertexArrayState* vas = 0;
 
 
 
 
-                    _vas->getPCVertexArrayStates()[contextID] = vas = createPerContextVertexArrayState(renderInfo);
+                    _vertexArrayStateList[contextID] = vas = createVertexArrayState(renderInfo);
 
                     osg::State::SetCurrentVertexArrayStateProxy setVASProxy(state, vas);
 
@@ -104,17 +104,17 @@ public:
         }
 
 #endif
-    inline osg::PerContextVertexArrayState*  newcreatePerContextVertexArrayState(osg::RenderInfo&renderInfo)const
+    inline osg::VertexArrayState*  newcreateVertexArrayState(osg::RenderInfo&renderInfo)const
     {
         ///MY
-        ///this line transforms createPerContextVertexArrayState into getOrCreatePerContextVertexArrayState(RenderInfo& renderInfo)
+        ///this line transforms createVertexArrayState into getOrCreateVertexArrayState(RenderInfo& renderInfo)
         ///avoiding overwriting of _vertexArrayStateList[cID] when vas is shared among several geometries
-        if(_vas->getPCVertexArrayStates()[renderInfo.getContextID()])return _vas->getPCVertexArrayStates()[renderInfo.getContextID()];
+        if(_vertexArrayStateList[renderInfo.getContextID()])return _vertexArrayStateList[renderInfo.getContextID()];
         ///END MY
         osg::State& state = *renderInfo.getState();
-        osg::PerContextVertexArrayState* vas = _vas->getPCVertexArrayStates()[renderInfo.getContextID()]=new osg::PerContextVertexArrayState(&state);
+        osg::VertexArrayState* vas = _vertexArrayStateList[renderInfo.getContextID()]=new osg::VertexArrayState(&state);
 
-        // OSG_NOTICE<<"Creating new osg::PerContextVertexArrayState "<< vas<<std::endl;
+        // OSG_NOTICE<<"Creating new osg::VertexArrayState "<< vas<<std::endl;
 
         if (_vertexArray.valid()) vas->assignVertexArrayDispatcher();
         if (_colorArray.valid()) vas->assignColorArrayDispatcher();
@@ -127,13 +127,13 @@ public:
 
         if (state.useVertexArrayObject(_useVertexArrayObject))
         {
-            // OSG_NOTICE<<"  Setup PerContextVertexArrayState to use VAO "<<vas<<std::endl;
+            // OSG_NOTICE<<"  Setup VertexArrayState to use VAO "<<vas<<std::endl;
 
             vas->generateVertexArrayObject();
         }
         else
         {
-            // OSG_NOTICE<<"  Setup PerContextVertexArrayState to without using VAO "<<vas<<std::endl;
+            // OSG_NOTICE<<"  Setup VertexArrayState to without using VAO "<<vas<<std::endl;
         }
 
         return vas;
@@ -142,14 +142,14 @@ public:
 protected:
     virtual ~SharedVAOGeometry() {};
     ///overriden in order to hack vao sharing among geometries
-    virtual osg::PerContextVertexArrayState*  createPerContextVertexArrayState(osg::RenderInfo&ri)const
+    virtual osg::VertexArrayState*  createVertexArrayStateImplementation(osg::RenderInfo&ri)const
     {
         if(true){
             if(master!=this) //only master is its master
-                return master->newcreatePerContextVertexArrayState(ri);
+                return master->newcreateVertexArrayState(ri);
             if(getVertexArray())
             std::cout<<"master create vAS "<<this<<std::endl;}
-            return newcreatePerContextVertexArrayState(ri);
+            return newcreateVertexArrayState(ri);
 
       }
 };
