@@ -4,6 +4,7 @@
 #include <osg/BlendFunc>
 #include <osg/StateSet>
 #include <osg/Notify>
+#include <osg/Texture2D>
 #include <osg/Viewport>
 
 #include <osgDB/ReadFile>
@@ -19,7 +20,7 @@ using namespace osg;
 using namespace osgDB;
 
 
-class Logos: public osg::Drawable
+class Logos: public osg::Geometry
 {
     public:
         enum RelativePosition{
@@ -55,17 +56,51 @@ class Logos: public osg::Drawable
                 osg::Viewport *vp = cv->getViewport();
                 if( vp != NULL )
                 {
-                    if( vp->width() != logos->getViewport()->width() ||
-                        vp->height() != logos->getViewport()->height() )
+
+                    osg::Vec2f offset,newoffset(1.0f/(float)vp->width(),1.0f/(float)vp->height());
+                    logos->getViewportUniform()->get(offset);
+
+
+                    if( offset != newoffset )
                     {
-                        logos->getViewport()->setViewport( vp->x(), vp->y(), vp->width(), vp->height() );
-                        logos->dirtyDisplayList();
+                           logos->getViewportUniform()->set(newoffset);
                     }
                 }
                 return false;
             }
         };
+        void createTexturedQuadGeometry (Geometry*geom,const Vec3& corner,const Vec3& widthVec,const Vec3& heightVec, float l, float b, float r, float t)
+        {
+            Vec3Array* coords = new Vec3Array(4);
+            (*coords)[0] = corner+heightVec;
+            (*coords)[1] = corner;
+            (*coords)[2] = corner+widthVec;
+            (*coords)[3] = corner+widthVec+heightVec;
+            geom->setVertexArray(coords);
 
+            Vec2Array* tcoords = new Vec2Array(4);
+            (*tcoords)[0].set(l,t);
+            (*tcoords)[1].set(l,b);
+            (*tcoords)[2].set(r,b);
+            (*tcoords)[3].set(r,t);
+            geom->setTexCoordArray(0,tcoords);
+
+            osg::Vec4Array* colours = new osg::Vec4Array(1);
+            (*colours)[0].set(1.0f,1.0f,1.0,1.0f);
+            geom->setColorArray(colours, osg::Array::BIND_OVERALL);
+
+            DrawElementsUByte* elems = new DrawElementsUByte(PrimitiveSet::TRIANGLES);
+            elems->push_back(0);
+            elems->push_back(1);
+            elems->push_back(2);
+
+            elems->push_back(2);
+            elems->push_back(3);
+            elems->push_back(0);
+            geom->addPrimitiveSet(elems);
+        }
+
+        static osg::ref_ptr<osg::Program> _logoprog;
         Logos()
         {
             osg::StateSet *sset = new osg::StateSet;
@@ -74,7 +109,20 @@ class Logos: public osg::Drawable
             sset->setAttribute( transp );
             sset->setMode( GL_BLEND, osg::StateAttribute::ON );
             sset->setMode( GL_DEPTH_TEST, osg::StateAttribute::OFF );
-            sset->setTextureMode( 0, GL_TEXTURE_2D, osg::StateAttribute::OFF );
+            if(!_logoprog.valid()){
+                _logoprog=new osg::Program();
+                _logoprog->addShader(new osg::Shader(osg::Shader::VERTEX,
+                                                     "uniform vec2 rviewport;\n"\
+                                                     "uniform vec4 logosize;\n"\
+                                                     "void main(){\n"\
+                                                     "gl_Position=vec4(gl_Vertex.xy*rviewport-logosize.zw*(vec2(1)-logosize.xy*rviewport),0,1);\n"\
+                                                     "gl_TexCoord[0]=gl_MultiTexCoord0;}"));
+                _logoprog->addShader(new osg::Shader(osg::Shader::FRAGMENT,"uniform sampler2D tex;\n"\
+                                                     "void main(){\n"\
+                                                     "gl_FragColor=texture(tex,gl_TexCoord[0].st);\n}"));
+            }
+            sset->setAttributeAndModes(_logoprog);
+            sset->setTextureMode( 0, GL_TEXTURE_2D, osg::StateAttribute::ON );
 #if 1
             // for now we'll crudely set the bin number to 100 to force it to draw later and ontop of the scene
             sset->setRenderBinDetails( 100 , "RenderBin" );
@@ -82,20 +130,22 @@ class Logos: public osg::Drawable
             sset->setRenderBinDetails( StateSet::TRANSPARENT_BIN + 1 , "RenderBin" );
 #endif
             setStateSet( sset );
-            _viewport = new osg::Viewport;
+            _viewport = new osg::Uniform(osg::Uniform::FLOAT_VEC2,"rviewport");
+              sset->addUniform(_viewport);
             setCullCallback( new logosCullCallback );
             _contextID = 0;
         }
 
         Logos(const Logos& logo, const CopyOp& copyop=CopyOp::SHALLOW_COPY) :
-            Drawable( logo, copyop ),
+            Geometry( logo, copyop ),
             _contextID(0) {}
 
         virtual Object* cloneType() const { return new Logos(); }
         virtual Object* clone( const CopyOp& copyop) const { return new Logos(*this, copyop ); }
         virtual bool isSameKindAs(const Object* obj) const { return dynamic_cast<const Logos*>(obj)!=NULL; }
         virtual const char* className() const { return "Logos"; }
-
+#if 0
+        //oldstuff
         virtual void drawImplementation(osg::RenderInfo& renderInfo) const
         {
         #if !defined(OSG_GLES1_AVAILABLE) && !defined(OSG_GLES2_AVAILABLE) && !defined(OSG_GLES3_AVAILABLE) && !defined(OSG_GL3_AVAILABLE)
@@ -176,13 +226,25 @@ class Logos: public osg::Drawable
             OSG_NOTICE<<"Warning: Logos::drawImplementation(..) not supported."<<std::endl;
         #endif
         }
-
+#endif
         void addLogo( RelativePosition pos, std::string name )
         {
             osg::ref_ptr<osg::Image> image = osgDB::readRefImageFile( name.c_str() );
             if( image.valid())
             {
                 _logos[pos].push_back( image );
+                setUseDisplayList(false);
+                setUseVertexBufferObjects(true);
+                osg::Vec4f center(image->s(),image->t(),0,0);//default is upperleft
+                if( pos==LowerLeft ||pos==LowerRight||pos==LowerCenter)center.w()+=1;
+                if( pos==UpperLeft ||pos==UpperRight||pos==UpperCenter)center.w()-=1;
+                if( pos==LowerLeft ||pos==UpperLeft)center.z()+=1;
+                if( pos==LowerRight ||pos==UpperRight)center.z()-=1;
+
+                createTexturedQuadGeometry(this,osg::Vec3(-image->s(),-image->t(),0),osg::Vec3(2*image->s(),0,0),osg::Vec3(0,2*image->t(),0),0,0,1,1);
+                getOrCreateStateSet()->setTextureAttribute(0,new osg::Texture2D(image));
+                 osg::Uniform * logosize=new osg::Uniform("logosize",center);
+                 getOrCreateStateSet()->addUniform(logosize);
             }
             else
             {
@@ -190,7 +252,7 @@ class Logos: public osg::Drawable
             }
         }
 
-        osg::Viewport *getViewport() { return _viewport.get(); }
+        osg::Uniform *getViewportUniform() { return _viewport.get(); }
 
         void setContextID( unsigned int id ) { _contextID = id; }
         unsigned int getContextID() { return _contextID; }
@@ -208,18 +270,19 @@ class Logos: public osg::Drawable
             return osg::BoundingBox( -1, -1, -1, 1, 1, 1);
         }
 
+        typedef std::vector < osg::ref_ptr<osg::Image> >  Images;
+        Images _logos[last_position];
     protected:
         Logos& operator = (const Logos&) { return *this;}
 
         virtual ~Logos() {}
     private :
-        typedef std::vector < osg::ref_ptr<osg::Image> >  Images;
 
-        Images _logos[last_position];
-        osg::ref_ptr<osg::Viewport> _viewport;
+        osg::ref_ptr<osg::Uniform> _viewport;
         unsigned int _contextID;
 };
 
+ osg::ref_ptr<osg::Program> Logos::_logoprog=0;
 
 class LOGOReaderWriter : public osgDB::ReaderWriter
 {
@@ -259,7 +322,7 @@ class LOGOReaderWriter : public osgDB::ReaderWriter
             Logos::RelativePosition pos = Logos::LowerRight;
 
 
-            std::ifstream fin(filePath.c_str());
+            std::ifstream fin(fileName.c_str());
             if (!fin) return NULL;
 
             while(fin)
