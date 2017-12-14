@@ -402,7 +402,15 @@ void ParallelSplitShadowMap::init()
             osg::StateSet* stateset = pssmShadowSplitTexture._camera->getOrCreateStateSet();
 
 
+/* try override only fs but fails
+            static osg::ref_ptr<osg::Program > _defaultdepthwriter;
+              if(!_defaultdepthwriter.valid()){
 
+                    _defaultdepthwriter=new osg::Program();
+                    _defaultdepthwriter->addShader(new osg::Shader(osg::Shader::FRAGMENT,"void main(){gl_FragDepth=gl_FragCoord.z;\ngl_FragColor=vec4(0);\n}"));
+                }
+               stateset->setAttributeAndModes(_defaultdepthwriter,osg::StateAttribute::OVERRIDE|osg::StateAttribute::PROTECTED);
+               */
             //////////////////////////////////////////////////////////////////////////
             if ( _user_polgyonOffset_set ) {
                 float factor = _polgyonOffset.x();

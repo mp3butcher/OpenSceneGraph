@@ -56,38 +56,52 @@ class Logos: public osg::Geometry
                 osg::Viewport *vp = cv->getViewport();
                 if( vp != NULL )
                 {
+                    if(logos->getViewport()->width()!=vp->width() ||logos->getViewport()->height()!=vp->height()){
+                        logos->getViewport()->width()=vp->width() ;
+                        logos->getViewport()->height()=vp->height();
 
-                    osg::Vec2f offset,newoffset(1.0f/(float)vp->width(),1.0f/(float)vp->height());
-                    logos->getViewportUniform()->get(offset);
+                        osg::Vec2f rviewport(1.0f/(float)vp->width(),1.0f/(float)vp->height());
+                        osg::Vec2 r(logos->_logos[logos->_messy_pos][0].get()->s()*rviewport.x(),
+                                logos->_logos[logos->_messy_pos][0].get()->t()*rviewport.y() );
 
+                        osg::Vec3 corner(-r.x(),-r.y(),0),
+                                widthVec(2*r.x(),0,0),
+                                heightVec(0,2*r.y(),0);
 
-                    if( offset != newoffset )
-                    {
-                           logos->getViewportUniform()->set(newoffset);
-                    }
+                        osg::Vec3 center(0,0,0);
+                        if(logos->_messy_pos==LowerLeft ||logos->_messy_pos==LowerRight||logos->_messy_pos==LowerCenter)center.y()-=1;
+                        if( logos->_messy_pos==UpperLeft ||logos->_messy_pos==UpperRight||logos->_messy_pos==UpperCenter)center.y()+=1;
+                        if( logos->_messy_pos==LowerLeft ||logos->_messy_pos==UpperLeft)center.x()-=1;
+                        if( logos->_messy_pos==LowerRight ||logos->_messy_pos==UpperRight)center.x()+=1;
+
+                        center.x()*=1.0f-r.x();
+                        center.y()*=1.0f-r.y();
+                        corner+=center;
+                        osg::Vec3Array *coords=(osg::Vec3Array *)logos->getVertexArray();
+                        (*coords)[0] = corner+heightVec;
+                        (*coords)[1] = corner;
+                        (*coords)[2] = corner+widthVec;
+                        (*coords)[3] = corner+widthVec+heightVec;
+}
                 }
                 return false;
             }
         };
-        void createTexturedQuadGeometry (Geometry*geom,const Vec3& corner,const Vec3& widthVec,const Vec3& heightVec, float l, float b, float r, float t)
+
+        static osg::ref_ptr<osg::Program> _logoprog;
+        Logos()
         {
+            setUseDisplayList(false);
+            setUseVertexBufferObjects(true);
             Vec3Array* coords = new Vec3Array(4);
-            (*coords)[0] = corner+heightVec;
-            (*coords)[1] = corner;
-            (*coords)[2] = corner+widthVec;
-            (*coords)[3] = corner+widthVec+heightVec;
-            geom->setVertexArray(coords);
+            setVertexArray(coords);
 
             Vec2Array* tcoords = new Vec2Array(4);
-            (*tcoords)[0].set(l,t);
-            (*tcoords)[1].set(l,b);
-            (*tcoords)[2].set(r,b);
-            (*tcoords)[3].set(r,t);
-            geom->setTexCoordArray(0,tcoords);
-
-            osg::Vec4Array* colours = new osg::Vec4Array(1);
-            (*colours)[0].set(1.0f,1.0f,1.0,1.0f);
-            geom->setColorArray(colours, osg::Array::BIND_OVERALL);
+            (*tcoords)[0].set(0,1);
+            (*tcoords)[1].set(0,0);
+            (*tcoords)[2].set(1,0);
+            (*tcoords)[3].set(1,1);
+            setTexCoordArray(0,tcoords);
 
             DrawElementsUByte* elems = new DrawElementsUByte(PrimitiveSet::TRIANGLES);
             elems->push_back(0);
@@ -97,12 +111,8 @@ class Logos: public osg::Geometry
             elems->push_back(2);
             elems->push_back(3);
             elems->push_back(0);
-            geom->addPrimitiveSet(elems);
-        }
+            addPrimitiveSet(elems);
 
-        static osg::ref_ptr<osg::Program> _logoprog;
-        Logos()
-        {
             osg::StateSet *sset = new osg::StateSet;
             osg::BlendFunc *transp = new osg::BlendFunc;
             transp->setFunction(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
@@ -115,7 +125,7 @@ class Logos: public osg::Geometry
                                                      "uniform vec2 rviewport;\n"\
                                                      "uniform vec4 logosize;\n"\
                                                      "void main(){\n"\
-                                                     "gl_Position=vec4(gl_Vertex.xy*rviewport-logosize.zw*(vec2(1)-logosize.xy*rviewport),0,1);\n"\
+                                                     "gl_Position=gl_Vertex;//vec4(gl_Vertex.xy*rviewport-logosize.zw*(vec2(1)-logosize.xy*rviewport),0,1);\n"\
                                                      "gl_TexCoord[0]=gl_MultiTexCoord0;}"));
                 _logoprog->addShader(new osg::Shader(osg::Shader::FRAGMENT,"uniform sampler2D tex;\n"\
                                                      "void main(){\n"\
@@ -130,8 +140,8 @@ class Logos: public osg::Geometry
             sset->setRenderBinDetails( StateSet::TRANSPARENT_BIN + 1 , "RenderBin" );
 #endif
             setStateSet( sset );
-            _viewport = new osg::Uniform(osg::Uniform::FLOAT_VEC2,"rviewport");
-              sset->addUniform(_viewport);
+            _viewport = new osg::Viewport();//osg::Uniform::FLOAT_VEC2,"rviewport");
+            //  sset->addUniform(_viewport);
             setCullCallback( new logosCullCallback );
             _contextID = 0;
         }
@@ -227,24 +237,26 @@ class Logos: public osg::Geometry
         #endif
         }
 #endif
+
+      RelativePosition  _messy_pos;
+
         void addLogo( RelativePosition pos, std::string name )
-        {
+        {_messy_pos=pos;
             osg::ref_ptr<osg::Image> image = osgDB::readRefImageFile( name.c_str() );
             if( image.valid())
             {
                 _logos[pos].push_back( image );
-                setUseDisplayList(false);
-                setUseVertexBufferObjects(true);
-                osg::Vec4f center(image->s(),image->t(),0,0);//default is upperleft
+
+         /*       osg::Vec4f center(image->s(),image->t(),0,0);//default is upperleft
                 if( pos==LowerLeft ||pos==LowerRight||pos==LowerCenter)center.w()+=1;
                 if( pos==UpperLeft ||pos==UpperRight||pos==UpperCenter)center.w()-=1;
                 if( pos==LowerLeft ||pos==UpperLeft)center.z()+=1;
                 if( pos==LowerRight ||pos==UpperRight)center.z()-=1;
 
                 createTexturedQuadGeometry(this,osg::Vec3(-image->s(),-image->t(),0),osg::Vec3(2*image->s(),0,0),osg::Vec3(0,2*image->t(),0),0,0,1,1);
-                getOrCreateStateSet()->setTextureAttribute(0,new osg::Texture2D(image));
-                 osg::Uniform * logosize=new osg::Uniform("logosize",center);
-                 getOrCreateStateSet()->addUniform(logosize);
+            */    getOrCreateStateSet()->setTextureAttribute(0,new osg::Texture2D(image));
+            /*     osg::Uniform * logosize=new osg::Uniform("logosize",center);
+                 getOrCreateStateSet()->addUniform(logosize);*/
             }
             else
             {
@@ -252,7 +264,7 @@ class Logos: public osg::Geometry
             }
         }
 
-        osg::Uniform *getViewportUniform() { return _viewport.get(); }
+        osg::Viewport *getViewport() { return _viewport.get(); }
 
         void setContextID( unsigned int id ) { _contextID = id; }
         unsigned int getContextID() { return _contextID; }
@@ -278,7 +290,7 @@ class Logos: public osg::Geometry
         virtual ~Logos() {}
     private :
 
-        osg::ref_ptr<osg::Uniform> _viewport;
+        osg::ref_ptr<osg::Viewport> _viewport;
         unsigned int _contextID;
 };
 
