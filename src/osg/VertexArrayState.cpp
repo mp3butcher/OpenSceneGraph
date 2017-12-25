@@ -489,14 +489,15 @@ struct VertexAttribArrayDispatch : public VertexArrayState::ArrayDispatch
         ext->glEnableVertexAttribArray( unit );
         callVertexAttribPointer(ext, new_array, (const GLvoid *)(vbo->getOffset(new_array->getBufferIndex())-basevertex*new_array->getElementSize()));
     }
+
     virtual void enable_and_dispatch(osg::State& state, GLint size, GLenum type, GLsizei stride, const GLvoid *ptr, GLboolean normalized)
     {
         GLExtensions* ext = state.get<GLExtensions>();
-
+ 
         ext->glEnableVertexAttribArray( unit );
         ext->glVertexAttribPointer(static_cast<GLuint>(unit), size, type, normalized, stride, ptr);
-
     }
+
     virtual void dispatch(osg::State& state, const osg::Array* new_array)
     {
         GLExtensions* ext = state.get<GLExtensions>();
@@ -554,6 +555,8 @@ void VertexArrayState::deleteVertexArrayObject()
 
 void VertexArrayState::assignVertexArrayDispatcher()
 {
+    if (_vertexArray.valid()) return;
+
 #ifdef OSG_GL_VERTEX_ARRAY_FUNCS_AVAILABLE
     if (!_state->getUseVertexAttributeAliasing())
     {
@@ -569,6 +572,8 @@ void VertexArrayState::assignVertexArrayDispatcher()
 
 void VertexArrayState::assignNormalArrayDispatcher()
 {
+    if (_normalArray.valid()) return;
+
 #ifdef OSG_GL_VERTEX_ARRAY_FUNCS_AVAILABLE
     if (!_state->getUseVertexAttributeAliasing())
     {
@@ -584,6 +589,8 @@ void VertexArrayState::assignNormalArrayDispatcher()
 
 void VertexArrayState::assignColorArrayDispatcher()
 {
+    if (_colorArray.valid()) return;
+
 #ifdef OSG_GL_VERTEX_ARRAY_FUNCS_AVAILABLE
     if (!_state->getUseVertexAttributeAliasing())
     {
@@ -599,6 +606,8 @@ void VertexArrayState::assignColorArrayDispatcher()
 
 void VertexArrayState::assignSecondaryColorArrayDispatcher()
 {
+    if (_secondaryColorArray.valid()) return;
+
 #ifdef OSG_GL_VERTEX_ARRAY_FUNCS_AVAILABLE
     if (!_state->getUseVertexAttributeAliasing())
     {
@@ -613,6 +622,8 @@ void VertexArrayState::assignSecondaryColorArrayDispatcher()
 
 void VertexArrayState::assignFogCoordArrayDispatcher()
 {
+    if (_fogCoordArray.valid()) return;
+
 #ifdef OSG_GL_VERTEX_ARRAY_FUNCS_AVAILABLE
     if (!_state->getUseVertexAttributeAliasing())
     {
@@ -630,8 +641,7 @@ void VertexArrayState::assignTexCoordArrayDispatcher(unsigned int numUnits)
 #ifdef OSG_GL_VERTEX_ARRAY_FUNCS_AVAILABLE
     if (!_state->getUseVertexAttributeAliasing())
     {
-        _texCoordArrays.clear();
-        for(unsigned int i=0; i<numUnits; ++i)
+        for(unsigned int i=_texCoordArrays.size(); i<numUnits; ++i)
         {
             _texCoordArrays.push_back( new TexCoordArrayDispatch(i,_basevertex) );
         }
@@ -639,8 +649,7 @@ void VertexArrayState::assignTexCoordArrayDispatcher(unsigned int numUnits)
     else
 #endif
     {
-        _texCoordArrays.clear();
-        for(unsigned int i=0; i<numUnits; ++i)
+        for(unsigned int i=_texCoordArrays.size(); i<numUnits; ++i)
         {
             VAS_NOTICE<<"VertexArrayState::VertexArrayState::assignTexCoordArrayDispatcher() _state->getTexCoordAliasList()[i]._location="<<_state->getTexCoordAliasList()[i]._location<<std::endl;
             _texCoordArrays.push_back( new VertexAttribArrayDispatch(_state->getTexCoordAliasList()[i]._location,_basevertex) );
@@ -650,8 +659,7 @@ void VertexArrayState::assignTexCoordArrayDispatcher(unsigned int numUnits)
 
 void VertexArrayState::assignVertexAttribArrayDispatcher(unsigned int numUnits)
 {
-    _vertexAttribArrays.clear();
-    for(unsigned int i=0; i<numUnits; ++i)
+    for(unsigned int i=_vertexAttribArrays.size(); i<numUnits; ++i)
     {
         _vertexAttribArrays.push_back( new VertexAttribArrayDispatch(i,_basevertex) );
     }
@@ -737,16 +745,8 @@ void VertexArrayState::setArray(ArrayDispatch* vad, osg::State& state, GLint siz
             _activeDispatchers.push_back(vad);
         }
 
-        if (vad->array==0)
-        {
-            vad->enable_and_dispatch(state, size, type, stride, ptr, normalized);
-        }
-        else
-        {
-            vad->dispatch(state, size, type, stride, ptr, normalized);
-        }
+        vad->enable_and_dispatch(state, size, type, stride, ptr, normalized);
 
-        vad->array = 0;
         vad->modifiedCount = 0xffffffff;
 
     }
@@ -775,3 +775,103 @@ void VertexArrayState::dirty()
     setRequiresSetArrays(true);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+VertexArrayStateList::VertexArrayStateList():
+    _array(DisplaySettings::instance()->getMaxNumberOfGraphicsContexts())
+{
+}
+
+
+VertexArrayStateList& VertexArrayStateList::operator = (const VertexArrayStateList& rhs)
+{
+    if (&rhs==this) return *this;
+
+    _array = rhs._array;
+
+    return *this;
+}
+
+void VertexArrayStateList::assignAllDispatchers()
+{
+    for(Array::iterator itr = _array.begin();
+        itr != _array.end();
+        ++itr)
+    {
+        if (itr->valid()) (*itr)->assignAllDispatchers();
+    }
+}
+
+void VertexArrayStateList::assignVertexArrayDispatcher()
+{
+    for(Array::iterator itr = _array.begin();
+        itr != _array.end();
+        ++itr)
+    {
+        if (itr->valid()) (*itr)->assignVertexArrayDispatcher();
+    }
+}
+
+void VertexArrayStateList::assignNormalArrayDispatcher()
+{
+    for(Array::iterator itr = _array.begin();
+        itr != _array.end();
+        ++itr)
+    {
+        if (itr->valid()) (*itr)->assignNormalArrayDispatcher();
+    }
+}
+
+void VertexArrayStateList::assignColorArrayDispatcher()
+{
+    for(Array::iterator itr = _array.begin();
+        itr != _array.end();
+        ++itr)
+    {
+        if (itr->valid()) (*itr)->assignColorArrayDispatcher();
+    }
+}
+
+void VertexArrayStateList::assignSecondaryColorArrayDispatcher()
+{
+    for(Array::iterator itr = _array.begin();
+        itr != _array.end();
+        ++itr)
+    {
+        if (itr->valid()) (*itr)->assignSecondaryColorArrayDispatcher();
+    }
+}
+
+void VertexArrayStateList::assignFogCoordArrayDispatcher()
+{
+    for(Array::iterator itr = _array.begin();
+        itr != _array.end();
+        ++itr)
+    {
+        if (itr->valid()) (*itr)->assignFogCoordArrayDispatcher();
+    }
+}
+
+void VertexArrayStateList::assignTexCoordArrayDispatcher(unsigned int numUnits)
+{
+    for(Array::iterator itr = _array.begin();
+        itr != _array.end();
+        ++itr)
+    {
+        if (itr->valid())
+        {
+            (*itr)->assignTexCoordArrayDispatcher(numUnits);
+        }
+    }
+}
+
+void VertexArrayStateList::assignVertexAttribArrayDispatcher(unsigned int numUnits)
+{
+    for(Array::iterator itr = _array.begin();
+        itr != _array.end();
+        ++itr)
+    {
+        if (itr->valid()) (*itr)->assignVertexAttribArrayDispatcher(numUnits);
+    }
+}

@@ -82,7 +82,7 @@ class Logos: public osg::Geometry
                         (*coords)[1] = corner;
                         (*coords)[2] = corner+widthVec;
                         (*coords)[3] = corner+widthVec+heightVec;
-}
+                    }
                 }
                 return false;
             }

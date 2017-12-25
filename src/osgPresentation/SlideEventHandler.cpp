@@ -40,7 +40,7 @@ SlideEventHandler* SlideEventHandler::instance() { return s_seh.get(); }
 
 bool JumpData::jump(SlideEventHandler* seh) const
 {
-        OSG_NOTICE<<"Requires jump"<<seh<<", "<<relativeJump<<", "<<slideNum<<", "<<layerNum<<", "<<slideName<<", "<<layerName<<std::endl;
+        OSG_INFO<<"Requires jump"<<seh<<", "<<relativeJump<<", "<<slideNum<<", "<<layerNum<<", "<<slideName<<", "<<layerName<<std::endl;
 
         int slideNumToUse = slideNum;
         int layerNumToUse = layerNum;
@@ -1240,7 +1240,7 @@ bool SlideEventHandler::handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIAction
                 _hold = false;
                 return true;
             }
-            else if (ea.getKey()=='e')
+            else if (ea.getKey()=='R')
             {
                 // reload presentation to reflect changes from editor
                 setRequestReload(true);

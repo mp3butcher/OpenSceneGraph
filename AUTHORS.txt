@@ -1,4 +1,4 @@
-OpenSceneGraph Library 3.5.9
+OpenSceneGraph Library 3.5.10
 
 568 Contributors:
 
@@ -48,6 +48,7 @@ Magnus Kessler
 David Fries
 Tom Jolley
 Paul Melis
+Jordi Torres
 Luc Frauciel
 Aurelien Albert
 Torben Dannhauer
@@ -94,7 +95,6 @@ Fabien Lavignotte
 Thomas Hogarth
 Riccardo Corsi
 Melchior Franz
-Jordi Torres
 Johannes Baeuerle
 Neil Hughes
 Martin Beckett
