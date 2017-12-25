@@ -25,7 +25,7 @@
 using namespace osgDB;
 
 OutputStream::OutputStream( const osgDB::Options* options )
-:   _writeImageHint(WRITE_USE_IMAGE_HINT), _useSchemaData(false), _useRobustBinaryFormat(true), _writeBufferObjectConfiguration(false)
+:   _writeImageHint(WRITE_USE_IMAGE_HINT), _useSchemaData(false), _useRobustBinaryFormat(true)
 {
     BEGIN_BRACKET.set( "{", +INDENT_VALUE );
     END_BRACKET.set( "}", -INDENT_VALUE );
@@ -37,8 +37,6 @@ OutputStream::OutputStream( const osgDB::Options* options )
         _useRobustBinaryFormat = false;
     if ( options->getPluginStringData("SchemaData")=="true" )
         _useSchemaData = true;
-    if ( options->getPluginStringData("WriteBufferObjectConfiguration")=="false" )
-        _writeBufferObjectConfiguration = true;
     if ( !options->getPluginStringData("SchemaFile").empty() )
         _schemaName = options->getPluginStringData("SchemaFile");
     if ( !options->getPluginStringData("Compressor").empty() )

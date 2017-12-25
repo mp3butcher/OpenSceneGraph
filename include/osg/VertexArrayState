@@ -205,7 +205,6 @@ class OSG_EXPORT VertexArrayState : public osg::Referenced
 
         GLBufferObject*                 _currentVBO;
         GLBufferObject*                 _currentEBO;
-        GLBufferObject*                 _currentDIBO;
 
         bool                            _requiresSetArrays;
         GLint _basevertex;

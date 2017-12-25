@@ -41,12 +41,12 @@ namespace osg {
         notify(WARN)<<"Triangle Functor does not support Vec2* vertex arrays"<<std::endl;
     }
 
-    virtual void setVertexArray(unsigned int count,const Vec3* vertices)
+    virtual void setVertexArray(unsigned int ,const Vec3*)
     {
         notify(WARN)<<"Triangle Functor does not support Vec3* vertex arrays"<<std::endl;
     }
 
-    virtual void setVertexArray(unsigned int,const Vec4* )
+    virtual void setVertexArray(unsigned int,const Vec4*)
     {
         notify(WARN)<<"Triangle Functor does not support Vec4* vertex arrays"<<std::endl;
     }

@@ -529,7 +529,6 @@ VertexArrayState::VertexArrayState(osg::State* state, GLint basevertex):
     _vertexArrayObject(0),
     _currentVBO(0),
     _currentEBO(0),
-    _currentDIBO(0),
     _requiresSetArrays(true),
     _basevertex(basevertex)
 {

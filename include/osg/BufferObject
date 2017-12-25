@@ -655,6 +655,13 @@ class OSG_EXPORT DrawIndirectBufferObject : public BufferObject
 
         META_Object(osg,DrawIndirectBufferObject);
 
+        unsigned int addArray(osg::Array* array);
+        void removeArray(osg::Array* array);
+
+        void setArray(unsigned int i, Array* array);
+        Array* getArray(unsigned int i);
+        const Array* getArray(unsigned int i) const;
+
     protected:
         virtual ~DrawIndirectBufferObject();
 };
