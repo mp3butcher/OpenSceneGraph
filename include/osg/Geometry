@@ -211,11 +211,13 @@ class OSG_EXPORT Geometry : public Drawable
         /** Accept a PrimitiveFunctor and call its methods to tell it about the internal primitives that this Drawable has. */
         virtual void accept(PrimitiveIndexFunctor& pf) const;
 
+
     protected:
 
         Geometry& operator = (const Geometry&) { return *this;}
 
         virtual ~Geometry();
+
 
         void addVertexBufferObjectIfRequired(osg::Array* array);
         void addElementBufferObjectIfRequired(osg::PrimitiveSet* primitiveSet);

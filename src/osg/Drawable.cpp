@@ -641,10 +641,10 @@ void Drawable::draw(RenderInfo& renderInfo) const
     {
         unsigned int contextID = renderInfo.getContextID();
 
-        VertexArrayState* vas = _vas->getPCVertexArrayStates()[contextID].get();
+        VertexArrayState* vas = _vertexArrayStateList[contextID].get();
         if (!vas)
         {
-              _vas->getPCVertexArrayStates()[contextID] = vas = createVertexArrayState(renderInfo);
+              _vertexArrayStateListcontextID] = vas = createVertexArrayState(renderInfo);
         }
         else
         {

@@ -172,9 +172,26 @@ return true; \
 
 #define DUMMYSTUFF
 WRAP_VALUEOBJECT_METHOD(osg::UIntValueObject, osg::Group, getNumChildren)
-//WRAP_VALUEOBJECT_METHOD2(osg::UIntValueObject, osg::Group, insertChild, XSTR(p1, p2), STR(p1, p2));
+//WRAP_VALUEOBJECT_METHOD2(osg::UIntValueObject, osg::Group, insertChild, STR(p1, p2), STR(p1, p2));
 //ADD_METHOD_OBJECT(##GETTERMETHODNAME, wrap_##GETTERMETHODNAME);
 
+template <typename T,typename N>
+struct policy : public T{
+    using T::getString;
+N n;
+const char * getString(){return n.getString()+getString();};
+
+};
+
+struct sampleT{
+    std::string str;
+    sampleT(char *s){str=std::string(s);}
+    const char* getString(){return str.c_str();}
+};
+struct endT{
+    char* getString(){return 0;}
+};
+//policy<sampleT("fok"), policy<sampleT("fok"),endT> a;
 
 REGISTER_OBJECT_WRAPPER( Group,
                          new osg::Group,

@@ -1493,6 +1493,44 @@ inline void State::pushUniformList(UniformMap& uniformMap,const StateSet::Unifor
 }
 
 
+inline void State::pushDefineList(DefineMap& defineMap,const StateSet::DefineList& defineList)
+{
+    for(StateSet::DefineList::const_iterator aitr=defineList.begin();
+        aitr!=defineList.end();
+        ++aitr)
+    {
+        // get the attribute stack for incoming type {aitr->first}.
+        DefineStack& ds = defineMap.map[aitr->first];
+        DefineStack::DefineVec& dv = ds.defineVec;
+        if (dv.empty())
+        {
+            // first pair so simply push incoming pair to back.
+            dv.push_back(StateSet::DefinePair(aitr->second.first,aitr->second.second));
+
+            ds.changed = true;
+            defineMap.changed = true;
+        }
+        else if ((ds.defineVec.back().second & StateAttribute::OVERRIDE) && !(aitr->second.second & StateAttribute::PROTECTED)) // check the existing override flag
+        {
+            // push existing back since override keeps the previous value.
+            ds.defineVec.push_back(ds.defineVec.back());
+        }
+        else
+        {
+            // no override on so simply push incoming pair to back.
+            dv.push_back(StateSet::DefinePair(aitr->second.first,aitr->second.second));
+
+            // if the back of the stack has changed since the last then mark it as changed.
+            bool changed = (dv[dv.size()-2] != dv.back());
+            if (changed)
+            {
+                ds.changed = true;
+                defineMap.changed = true;
+            }
+        }
+    }
+}
+
 inline void State::popModeList(ModeMap& modeMap,const StateSet::ModeList& modeList)
 {
     for(StateSet::ModeList::const_iterator mitr=modeList.begin();
@@ -1540,6 +1578,27 @@ inline void State::popUniformList(UniformMap& uniformMap,const StateSet::Uniform
     }
 }
 
+inline void State::popDefineList(DefineMap& defineMap,const StateSet::DefineList& defineList)
+{
+    for(StateSet::DefineList::const_iterator aitr=defineList.begin();
+        aitr!=defineList.end();
+        ++aitr)
+    {
+        // get the attribute stack for incoming type {aitr->first}.
+        DefineStack& ds = defineMap.map[aitr->first];
+        DefineStack::DefineVec& dv = ds.defineVec;
+        if (!dv.empty())
+        {
+            // if the stack has less than 2 entries or new back vs old back are different then mark the DefineStack as changed
+            if ((dv.size() < 2) || (dv[dv.size()-2] != dv.back()))
+            {
+                ds.changed = true;
+                defineMap.changed = true;
+            }
+            dv.pop_back();
+        }
+    }
+}
 
 inline void State::applyModeList(ModeMap& modeMap,const StateSet::ModeList& modeList)
 {
