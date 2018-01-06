@@ -121,11 +121,11 @@ bool ZipArchive::open(const std::string& file, ArchiveStatus /*status*/, const o
         if ( !_zipLoaded ) // double-check avoids race condition
         {
             std::string ext = osgDB::getLowerCaseFileExtension(file);
-            if (!acceptsExtension(ext)) return osgDB::ReaderWriter::ReadResult::FILE_NOT_HANDLED;
+            if (!acceptsExtension(ext)) return false;
 
             // save the filename + password so other threads can open the file
             _filename = osgDB::findDataFile( file, options );
-            if (_filename.empty()) return osgDB::ReaderWriter::ReadResult::FILE_NOT_FOUND;
+            if (_filename.empty()) return false;
 
             _password = ReadPassword(options);
 
@@ -310,14 +310,16 @@ osgDB::ReaderWriter::ReadResult ZipArchive::readNode(const std::string& file,con
 
     return rresult;
 }
-osgDB::ReaderWriter::ReadResult ZipArchive::readScript(const std::string& file,const osgDB::ReaderWriter::Options* options) const{
+
+osgDB::ReaderWriter::ReadResult ZipArchive::readScript(const std::string& file,const osgDB::ReaderWriter::Options* options) const
+{
     osgDB::ReaderWriter::ReadResult rresult = osgDB::ReaderWriter::ReadResult::FILE_NOT_HANDLED;
 
     std::string ext = osgDB::getLowerCaseFileExtension(file);
     if (!_zipLoaded || !acceptsExtension(ext)) return osgDB::ReaderWriter::ReadResult::FILE_NOT_HANDLED;
 
     const ZIPENTRY* ze = GetZipEntry(file);
-    if(ze != NULL)
+    if (ze != NULL)
     {
         std::stringstream buffer;
 
@@ -341,8 +343,6 @@ osgDB::ReaderWriter::ReadResult ZipArchive::readScript(const std::string& file,c
 
     return rresult;
 }
-
-
 
 osgDB::ReaderWriter::ReadResult ZipArchive::readShader(const std::string& file,const osgDB::ReaderWriter::Options* options) const
 {

@@ -551,7 +551,8 @@ class OSG_EXPORT State : public Referenced
         /** Get the CurrentVetexArrayState object that take which vertex arrays are bound.*/
         inline VertexArrayState* getCurrentVertexArrayState() const { return _vas; }
 
-        /** Set the getCurrentVertexArrayState to the GloabalVertexArrayState.*/
+
+        /** Set the getCurrentVertexArrayState to the GlobalVertexArrayState.*/
         void setCurrentToGlobalVertexArrayState() { _vas = _globalVertexArrayState.get(); }
 
 

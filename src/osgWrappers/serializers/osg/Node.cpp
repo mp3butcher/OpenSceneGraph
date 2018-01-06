@@ -67,11 +67,19 @@ struct NodeFinishedObjectReadCallback : public osgDB::FinishedObjectReadCallback
 {
     virtual void objectRead(osgDB::InputStream&, osg::Object& obj)
     {
-
-        osg::Node& node = static_cast<osg::Node&>(obj);
-      //  node.setDataVariance(osg::Object::UNSPECIFIED);
-}
+    }
 };
+struct NodeGetOrCreateStateSet : public osgDB::MethodObject
+{
+    virtual bool run(void* objectPtr, osg::Parameters& inputParameters, osg::Parameters& outputParameters) const
+    {
+        osg::Node* node = reinterpret_cast<osg::Node*>(objectPtr);
+        outputParameters.push_back(node->getOrCreateStateSet());
+        return true;
+    }
+};
+
+
 REGISTER_OBJECT_WRAPPER( Node,
                          new osg::Node,
                          osg::Node,
@@ -93,5 +101,6 @@ REGISTER_OBJECT_WRAPPER( Node,
     }
 
     ADD_OBJECT_SERIALIZER( StateSet, osg::StateSet, NULL );  // _stateset
-    //wrapper->addFinishedObjectReadCallback( new NodeFinishedObjectReadCallback() );
+
+    ADD_METHOD_OBJECT( "getOrCreateStateSet", NodeGetOrCreateStateSet );
 }

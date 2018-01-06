@@ -70,6 +70,11 @@ REGISTER_OBJECT_WRAPPER( osgAnimation_RigGeometry,
                          osgAnimation::RigGeometry,
                          "osg::Object osg::Node osg::Drawable osg::Geometry osgAnimation::RigGeometry" )
 {
+    {
+         UPDATE_TO_VERSION_SCOPED( 154 )
+         ADDED_ASSOCIATE("osg::Node")
+    }
+
     ADD_USER_SERIALIZER( InfluenceMap );  // _vertexInfluenceMap
     ADD_OBJECT_SERIALIZER( SourceGeometry, osg::Geometry, NULL );  // _geometry
 
@@ -77,5 +82,6 @@ REGISTER_OBJECT_WRAPPER( osgAnimation_RigGeometry,
         UPDATE_TO_VERSION_SCOPED( 145 )
         ADD_OBJECT_SERIALIZER( RigTransformImplementation, osgAnimation::RigTransform, NULL );  // _geometry
     }
+
 }
 }

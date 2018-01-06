@@ -38,7 +38,7 @@ REGISTER_OBJECT_WRAPPER( Drawable,
                          "osg::Object osg::Node osg::Drawable" )
 {
     {
-            UPDATE_TO_VERSION_SCOPED( 145 )
+            UPDATE_TO_VERSION_SCOPED( 145 )//154
             ADDED_ASSOCIATE("osg::Node")
     }
     ADD_OBJECT_SERIALIZER( StateSet, osg::StateSet, NULL );  // _stateset
@@ -63,6 +63,7 @@ REGISTER_OBJECT_WRAPPER( Drawable,
         UPDATE_TO_VERSION_SCOPED( 145 )
         ADD_BOOL_SERIALIZER( CullingActive, true );  // _cullingActive
     }
+
 }
 
 

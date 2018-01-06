@@ -122,7 +122,6 @@ class OSG_EXPORT StateAttribute : public Object
           * that type's value. */
         enum Type
         {
-            SAMPLER,
             TEXTURE,
 
             POLYGONMODE,
@@ -207,8 +206,12 @@ class OSG_EXPORT StateAttribute : public Object
             DEPTHRANGEINDEXED,
             SCISSORINDEXED,
 
-            SUBROUTINEUNIFORM,///Should never be below PROGRAM
 
+
+            BINDIMAGETEXTURE,
+            SAMPLER,
+
+            SUBROUTINEUNIFORM,
             CAPABILITY = 100
         };
 

@@ -760,7 +760,7 @@ VertexArrayState* Geometry::createVertexArrayStateImplementation(RenderInfo& ren
     VertexArrayState* vas = new osg::VertexArrayState(&state);
 #else
     VertexArrayState* vas ;
-    if( vas = _vertexArrayStateList[state.getContextID()] )
+    if( (vas = _vertexArrayStateList[state.getContextID()]) )
         return vas;
 
     GLint basevertex = 0; osg::DrawElements * de;

@@ -151,6 +151,7 @@
 #include <osg/Image>
 #include <osg/Texture>
 #include <osg/TextureBuffer>
+#include <osg/BindImageTexture>
 #include <osg/BufferIndexBinding>
 #include <osg/ComputeBoundsVisitor>
 #include <osg/LightSource>
@@ -322,11 +323,10 @@ struct IndirectTarget
     {
         indirectCommandTextureBuffer = new osg::TextureBuffer(indirectCommands.get());
         indirectCommandTextureBuffer->setInternalFormat( GL_R32I );
-    #ifndef JUVAL
-        indirectCommandTextureBuffer->bindToImageUnit(index, osg::Texture::READ_WRITE);
-    #endif
+
         indirectCommandTextureBuffer->setUnRefImageDataAfterApply(false);
 
+        indirectCommandImageBinding=new osg::BindImageTexture(index, indirectCommandTextureBuffer, osg::BindImageTexture::READ_WRITE, GL_R32I);
 
 
         // add proper primitivesets to geometryAggregators
@@ -368,7 +368,8 @@ struct IndirectTarget
 
         instanceTarget = new osg::TextureBuffer(instanceTargetImage);
         instanceTarget->setInternalFormat( internalFormat );
-        instanceTarget->bindToImageUnit(OSGGPUCULL_MAXIMUM_INDIRECT_TARGET_NUMBER+index, osg::Texture::READ_WRITE);
+
+        instanceTargetimagebinding = new osg::BindImageTexture(OSGGPUCULL_MAXIMUM_INDIRECT_TARGET_NUMBER+index, instanceTarget, osg::BindImageTexture::READ_WRITE, internalFormat);
 
     }
 
@@ -377,6 +378,7 @@ struct IndirectTarget
         std::string uniformName = uniformNamePrefix + char( '0' + index );
         osg::Uniform* uniform = new osg::Uniform(uniformName.c_str(), (int)index );
         stateset->addUniform( uniform );
+        stateset->setAttribute(indirectCommandImageBinding);
         stateset->setTextureAttribute( index, indirectCommandTextureBuffer.get() );
 
 
@@ -392,6 +394,8 @@ struct IndirectTarget
 
         osg::Uniform* uniform = new osg::Uniform(uniformName.c_str(), (int)(OSGGPUCULL_MAXIMUM_INDIRECT_TARGET_NUMBER+index) );
         stateset->addUniform( uniform );
+
+        stateset->setAttribute(instanceTargetimagebinding);
         stateset->setTextureAttribute( OSGGPUCULL_MAXIMUM_INDIRECT_TARGET_NUMBER+index, instanceTarget.get() );
     }
 
@@ -402,16 +406,15 @@ struct IndirectTarget
     }
 
 
-#ifdef JUVAL
-#else
 
     osg::ref_ptr< osg::DefaultIndirectCommandDrawArrays >        indirectCommands;
    // osg::ref_ptr< osg::DrawArraysIndirectCommandArray >             indirectCommands;
     osg::ref_ptr<osg::TextureBuffer>                                indirectCommandTextureBuffer;
-#endif
+    osg::ref_ptr<osg::BindImageTexture>                             indirectCommandImageBinding;
     osg::ref_ptr< AggregateGeometryVisitor >                        geometryAggregator;
     osg::ref_ptr<osg::Program>                                      drawProgram;
     osg::ref_ptr< osg::TextureBuffer >                              instanceTarget;
+    osg::ref_ptr<osg::BindImageTexture>                             instanceTargetimagebinding;
     unsigned int                                                    maxTargetQuantity;
 };
 
@@ -1742,4 +1745,3 @@ int main( int argc, char **argv )
 
     return viewer.run();
 }
-

@@ -5,6 +5,20 @@
  *   Press b to swap Linear/Nearest filtering on second texture
  *   Julien Valentin
  */
+/*  -*-c++-*-
+ *  Copyright (C) 2017 Julien Valentin <mp3butcher@hotmail.com>
+ *
+ * This library is open source and may be redistributed and/or modified under
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * OpenSceneGraph Public License for more details.
+*/
+
 
 #include <osg/Program>
 #include <osg/Sampler>
@@ -73,7 +87,12 @@ int main(int argc, char* argv[])
 {
     osg::ArgumentParser arguments(&argc,argv);
     arguments.getApplicationUsage()->setApplicationName(arguments.getApplicationName());
-    arguments.getApplicationUsage()->setDescription(arguments.getApplicationName()+" is the standard OpenSceneGraph example for opengl sampler.");
+
+    arguments.getApplicationUsage()->setDescription(arguments.getApplicationName()+" is the standard OpenSceneGraph example for GL3 sampler.");
+    osg::ApplicationUsage::UsageMap kmap;
+    kmap["a"]="swap Linear/Nearest filtering on first texture";
+    kmap["b"]="swap Linear/Nearest filtering on second texture";
+    arguments.getApplicationUsage()->setKeyboardMouseBindings(kmap);
 
     osgViewer::Viewer viewer(arguments);
     osg::ref_ptr<osg::Program> program = new osg::Program();
@@ -163,25 +182,26 @@ int main(int argc, char* argv[])
     tex1->setFilter(osg::Texture::MAG_FILTER,osg::Texture::NEAREST);
     tex1->setFilter(osg::Texture::MIN_FILTER,osg::Texture::NEAREST);
 
-    tex2->setFilter(osg::Texture::MAG_FILTER,osg::Texture::LINEAR);
-    tex2->setFilter(osg::Texture::MIN_FILTER,osg::Texture::LINEAR);
+
+    tex2->setFilter(osg::Texture::MAG_FILTER,osg::Texture::NEAREST);
+    tex2->setFilter(osg::Texture::MIN_FILTER,osg::Texture::NEAREST);
+
 
     ///Filter Override samplers setup
     sampler1->setFilter(osg::Texture::MAG_FILTER,osg::Texture::LINEAR);
     sampler1->setFilter(osg::Texture::MIN_FILTER,osg::Texture::LINEAR);
 
-    sampler2->setFilter(osg::Texture::MAG_FILTER,osg::Texture::NEAREST);
-    sampler2->setFilter(osg::Texture::MIN_FILTER,osg::Texture::NEAREST);
-
+    sampler2->setFilter(osg::Texture::MAG_FILTER,osg::Texture::LINEAR);
+    sampler2->setFilter(osg::Texture::MIN_FILTER,osg::Texture::LINEAR);
 
     osg::StateSet *ss;
     ss = geode->getOrCreateStateSet();
 
-
     ss->setTextureAttribute(0,tex1,osg::StateAttribute::ON);
-    ss->setTextureAttribute(0,sampler1,osg::StateAttribute::ON);
     ss->setTextureAttribute(1,tex2,osg::StateAttribute::ON);
+    ss->setTextureAttribute(0,sampler1,osg::StateAttribute::ON);
     ss->setTextureAttribute(1,sampler2,osg::StateAttribute::ON);
+
     ss->addUniform(new osg::Uniform("tex1",(int)0));
     ss->addUniform(new osg::Uniform("tex2",(int)1));
     ss->setAttribute(program.get());
@@ -190,7 +210,7 @@ int main(int argc, char* argv[])
     viewer.addEventHandler(new KeyboardEventHandler(sampler1, sampler2,ss));
     viewer.addEventHandler(new osgViewer::StatsHandler);
 
-
+    viewer.addEventHandler(new osgViewer::HelpHandler(arguments.getApplicationUsage()));
     viewer.setSceneData(geode.get());
     return viewer.run();
 }

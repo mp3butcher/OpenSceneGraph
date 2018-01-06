@@ -172,6 +172,10 @@ REGISTER_OBJECT_WRAPPER( Geometry,
                          osg::Geometry,
                          "osg::Object osg::Node osg::Drawable osg::Geometry" )
 {
+  {
+         UPDATE_TO_VERSION_SCOPED( 154 )
+         ADDED_ASSOCIATE("osg::Node")
+    }
     //ADD_LIST_SERIALIZER( PrimitiveSetList, osg::Geometry::PrimitiveSetList );  // _primitives
     ADD_VECTOR_SERIALIZER( PrimitiveSetList, osg::Geometry::PrimitiveSetList, osgDB::BaseSerializer::RW_OBJECT, 0 );
 
