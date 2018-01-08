@@ -189,7 +189,7 @@ public:
                     break;
             }*/
     }
-    std::vector<uint> newindex;
+    std::vector<unsigned int> newindex;
     osg::PrimitiveSet::Mode newmode;
     template<typename T> inline void drawElementsImplementation(GLenum mode, GLsizei count, const T* indices, const GLuint basevertex = 0)
     {

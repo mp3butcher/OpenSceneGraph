@@ -16,7 +16,11 @@
 #include <osgUtil/Simplifier>
 
 #include <algorithm>
-
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <vector>
+#include <set>
 using namespace osgUtil;
 
 
