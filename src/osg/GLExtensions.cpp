@@ -914,7 +914,14 @@ GLExtensions::GLExtensions(unsigned int in_contextID):
         maxTextureSize = osg_max_size;
     }
 
+    setGLExtensionFuncPtr(glTexStorage1D,"glTexStorage1D","glTexStorage1DARB", validContext);
+    setGLExtensionFuncPtr(glTextureStorage1D,"glTextureStorage1D","glTextureStorage1DARB", validContext);
     setGLExtensionFuncPtr(glTexStorage2D,"glTexStorage2D","glTexStorage2DARB", validContext);
+    setGLExtensionFuncPtr(glTextureStorage2D,"glTextureStorage2D","glTextureStorage2DARB", validContext);
+    setGLExtensionFuncPtr(glTexStorage3D, "glTexStorage3D","glTexStorage3DEXT", validContext);
+    setGLExtensionFuncPtr(glTextureStorage3D, "glTextureStorage3D","glTextureStorage3DEXT", validContext);
+    setGLExtensionFuncPtr(glTextureView, "glTextureView","glTextureViewEXT", validContext);
+
     setGLExtensionFuncPtr(glCompressedTexImage2D,"glCompressedTexImage2D","glCompressedTexImage2DARB", validContext);
     setGLExtensionFuncPtr(glCompressedTexSubImage2D,"glCompressedTexSubImage2D","glCompressedTexSubImage2DARB", validContext);
     setGLExtensionFuncPtr(glGetCompressedTexImage,"glGetCompressedTexImage","glGetCompressedTexImageARB", validContext);;
@@ -950,9 +957,6 @@ GLExtensions::GLExtensions(unsigned int in_contextID):
 
     setGLExtensionFuncPtr(glTexImage3D, "glTexImage3D","glTexImage3DEXT", validContext);
     setGLExtensionFuncPtr(glTexSubImage3D, "glTexSubImage3D","glTexSubImage3DEXT", validContext);
-    setGLExtensionFuncPtr(glTexStorage3D, "glTexStorage3D","glTexStorage3DEXT", validContext);
-    setGLExtensionFuncPtr(glTextureStorage3D, "glTextureStorage3D","glTextureStorage3DEXT", validContext);
-    setGLExtensionFuncPtr(glTextureView, "glTextureView","glTextureViewEXT", validContext);
 
     setGLExtensionFuncPtr(glCompressedTexImage3D, "glCompressedTexImage3D","glCompressedTexImage3DARB", validContext);
     setGLExtensionFuncPtr(glCompressedTexSubImage3D, "glCompressedTexSubImage3D","glCompressedTexSubImage3DARB", validContext);
