@@ -158,7 +158,7 @@ class OSG_EXPORT Texture2D : public Texture
         virtual ~Texture2D();
 
         virtual void computeInternalFormat() const;
-        void allocateMipmap(State& state) const;
+        virtual void allocateMipmap(State& state) const;
 
         /** Return true of the TextureObject assigned to the context associate with osg::State object is valid.*/
         bool textureObjectValid(State& state) const;

@@ -20,6 +20,7 @@
 // This example can work only if GL version is 4.3 or greater
 
 #include <osg/Texture2D>
+#include <osg/TextureView>
 #include <osg/BindImageTexture>
 #include <osg/ComputeDispatch>
 #include <osg/Geode>
@@ -47,12 +48,23 @@ int main( int argc, char** argv )
 
     // Create the texture as both the output of compute shader and the input of a normal quad
     osg::ref_ptr<osg::Texture2D> tex2D = new osg::Texture2D;
+    osg::ref_ptr<osg::TextureView> texView = new osg::TextureView;
     tex2D->setTextureSize( 512, 512 );
     tex2D->setFilter( osg::Texture2D::MIN_FILTER, osg::Texture2D::LINEAR );
     tex2D->setFilter( osg::Texture2D::MAG_FILTER, osg::Texture2D::LINEAR );
     tex2D->setInternalFormat( GL_R32F );
     tex2D->setSourceFormat( GL_RED );
     tex2D->setSourceType( GL_FLOAT );
+
+
+
+    texView->setFilter( osg::Texture2D::MIN_FILTER, osg::Texture2D::LINEAR );
+    texView->setFilter( osg::Texture2D::MAG_FILTER, osg::Texture2D::LINEAR );
+    texView->setInternalFormat( GL_RGBA8 ); //interpret RGBA as R32
+    texView->setTextureTarget( GL_TEXTURE_2D );
+    texView->setParentTexture(tex2D);
+    /*tex2D->setSourceFormat( GL_RED );
+    tex2D->setSourceType( GL_FLOAT );*/
     // So we can use 'image2D' in the compute shader
     osg::ref_ptr<osg::BindImageTexture> imagbinding = new osg::BindImageTexture(0, tex2D, osg::BindImageTexture::WRITE_ONLY, GL_R32F);
 
@@ -76,7 +88,7 @@ int main( int argc, char** argv )
     osg::ref_ptr<osg::Geode> quad = new osg::Geode;
     quad->addDrawable( geom );
     quad->getOrCreateStateSet()->setMode( GL_LIGHTING, osg::StateAttribute::OFF );
-    quad->getOrCreateStateSet()->setTextureAttributeAndModes( 0, tex2D.get() );
+    quad->getOrCreateStateSet()->setTextureAttributeAndModes( 0, texView.get() );
     // Create the scene graph and start the viewer
     osg::ref_ptr<osg::Group> scene = new osg::Group;
     scene->addChild( sourceNode );

@@ -1,0 +1,111 @@
+/*  -*-c++-*-
+ *  Copyright (C) 2017 Julien Valentin <mp3butcher@hotmail.com>
+ *
+ * This library is open source and may be redistributed and/or modified under
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or
+ * (at your option) any later version.  The full license is in LICENSE file
+ * included with this distribution, and on the openscenegraph.org website.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * OpenSceneGraph Public License for more details.
+*/
+#ifndef OSG_TEXTUREVIEW_H
+#define OSG_TEXTUREVIEW_H 1
+
+#include <osg/Export>
+#include <osg/Texture>
+
+namespace osg{
+/**  OpenGL TextureView
+ *   OpenGL 4.2 required
+ *   https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_texture_view.txt
+ *   State Attribute overriding interpretation of a GL texture storage
+ *   TextureView allows to reinterpret a texture
+*/
+
+
+class OSG_EXPORT TextureView : public Texture
+{
+    public:
+        TextureView();
+
+        /** Copy constructor using CopyOp to manage deep vs shallow copy. */
+        TextureView(const TextureView& text,const CopyOp& copyop=CopyOp::SHALLOW_COPY);
+
+        META_StateAttribute(osg,TextureView,TEXTURE)
+
+
+        /// Specifies the index of the first layer to include in the view.
+        GLuint getFirstLayer() const { return _minlayer; }
+        void setFirstLayer(GLuint n) {  _minlayer = n; }
+        /// Specifies the number of layers to include in the view.
+        GLuint getNumLayers() const { return _numlayers; }
+        void setNumLayers(GLuint n) {  _numlayers = n; }
+
+     //   virtual bool isTextureAttribute() const { return true; }
+
+        /** Sets the texture image for the specified face. */
+        virtual void setImage(unsigned int face, Image* image) { if (_parentTexture.valid())  _parentTexture->setImage(face,image); }
+        /** Gets the texture image for the specified face. */
+        virtual Image* getImage(unsigned int face) { if (_parentTexture.valid()) return _parentTexture->getImage(face); return 0; }
+        /** Gets the const texture image for specified face. */
+        virtual const Image* getImage(unsigned int face) const  { if (_parentTexture.valid()) return _parentTexture->getImage(face);  return 0;}
+        virtual unsigned int getNumImages() const { if (_parentTexture.valid()) return _parentTexture->getNumImages();  return 0;}
+
+
+        virtual int compare(const StateAttribute& sa) const;
+        void setTextureTarget(GLenum e) { _target = e;}
+        virtual GLenum getTextureTarget() const { return _target;}
+
+
+        /** Sets the parent texture this view. */
+        void setParentTexture(Texture *t){ _parentTexture = t; }
+
+        /** Gets the parent texture this view */
+        const Texture * getParentTexture() const { return _parentTexture; }
+
+
+        virtual void apply(State& state) const;
+
+        virtual void compileGLObjects(State&) const;
+
+        /** release state's TextureViewObject **/
+       // virtual void releaseGLObjects(State* state=0) const;
+
+        // Texture::compare should be sufficicent virtual int compare(const StateAttribute& sa) const;
+
+    protected:
+        virtual void allocateMipmap(State& state) const{if (_parentTexture.valid())_parentTexture->allocateMipmap(state);}
+                virtual void computeInternalFormat() const
+                {if (_parentTexture.valid()) _parentTexture->computeInternalFormat();
+                   // if (_image.valid()) computeInternalFormatWithImage(*_image);
+                   // else computeInternalFormatType();
+                }
+virtual ~TextureView(){}
+
+        /** Helper method. Sets texture view parameters. */
+        void applyTextureViewParameters(GLenum target, State& state) const;
+
+        GLenum _target;
+       /*inherited /// Specifies the internal format for the newly created view.
+GLenum _internalFormat;
+        /// Specifies lowest level of detail of the view.
+        GLuint _minlevel,
+        /// Specifies the number of levels of detail to include in the view.
+        numlevels,*/
+        /// Specifies the index of the first layer to include in the view.
+        GLuint _minlayer,
+        /// Specifies the number of layers to include in the view.
+        _numlayers;
+        ref_ptr<Texture> _parentTexture;
+
+        mutable buffered_value<GLuint> _PCTextureView;
+        mutable buffered_value<uint8_t> _PCdirtyflags;
+
+        typedef buffered_object< ref_ptr<Texture::TextureObject> >  TextureObjectBuffer;
+        mutable TextureObjectBuffer _textureObjectBuffer;
+};
+}
+#endif

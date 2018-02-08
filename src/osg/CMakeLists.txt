@@ -186,6 +186,7 @@ SET(TARGET_H
     ${HEADER_PATH}/TextureBuffer
     ${HEADER_PATH}/TextureCubeMap
     ${HEADER_PATH}/TextureRectangle
+    ${HEADER_PATH}/TextureView
     ${HEADER_PATH}/Timer
     ${HEADER_PATH}/TransferFunction
     ${HEADER_PATH}/Transform
@@ -392,6 +393,7 @@ SET(TARGET_SRC
     TextureBuffer.cpp
     TextureCubeMap.cpp
     TextureRectangle.cpp
+    TextureView.cpp
     Timer.cpp
     TransferFunction.cpp
     Transform.cpp

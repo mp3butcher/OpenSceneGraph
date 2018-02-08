@@ -420,6 +420,7 @@ class TextureObjectManager;
 */
 class OSG_EXPORT Texture : public osg::StateAttribute
 {
+    friend class TextureView;
 
     public :
 
