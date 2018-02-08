@@ -57,8 +57,7 @@ class OSG_EXPORT TextureView : public Texture
 
         virtual int compare(const StateAttribute& sa) const;
         void setTextureTarget(GLenum e) { _target = e;}
-        virtual GLenum getTextureTarget() const { return _target;}
-
+        virtual GLenum getTextureTarget() const  { return _target;}
 
         /** Sets the parent texture this view. */
         void setParentTexture(Texture *t){ _parentTexture = t; }
@@ -105,7 +104,7 @@ GLenum _internalFormat;
         mutable buffered_value<uint8_t> _PCdirtyflags;
 
         typedef buffered_object< ref_ptr<Texture::TextureObject> >  TextureObjectBuffer;
-        mutable TextureObjectBuffer _textureObjectBuffer;
+    //    mutable TextureObjectBuffer _textureObjectBuffer;
 };
 }
 #endif

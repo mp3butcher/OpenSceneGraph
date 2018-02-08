@@ -24,10 +24,11 @@ using namespace osg;
 TextureView::TextureView(): Texture(),
     _target(GL_NONE),
     _minlayer(0),
-    _numlayers(0),
+    _numlayers(1),
     _parentTexture(0)
 
 {
+    _useHardwareMipMapGeneration=false;
     _PCdirtyflags.setAllElementsTo(true);
     _PCTextureView.setAllElementsTo(0);
 }
@@ -61,7 +62,6 @@ void TextureView::applyTextureViewParameters(GLenum target, State& state) const
     const unsigned int contextID = state.getContextID();
     const GLExtensions* extensions = state.get<GLExtensions>();
 
-    TextureObject* to = getTextureObject(contextID);
 
     glTexParameterf(target, TEXTURE_VIEW_MIN_LEVEL, _minlod);
     glTexParameterf(target, TEXTURE_VIEW_NUM_LEVELS, (_maxlod-_minlod)>0?_maxlod-_minlod+1:1);
@@ -73,9 +73,8 @@ void TextureView::applyTextureViewParameters(GLenum target, State& state) const
 /** bind TextureViewObject **/
 void TextureView::apply(State&state) const
 {
-
-    /// TODO same test for all textures type
-    //state.setReportGLErrors(true);
+if(_internalFormat != 0)//_target != GL_NONE)//parentTexture.valid()) ///if not a cloneType
+{
 
     // get the contextID (user defined ID of 0 upwards) for the
     // current OpenGL context.
@@ -86,60 +85,50 @@ void TextureView::apply(State&state) const
     if(!parenttextureObject && true/*todo check texture data dirtiness*/){
         //_parentTexture->apply(state);
         state.applyTextureAttribute(state.getActiveTextureUnit(),_parentTexture);
+        parenttextureObject = _parentTexture->getTextureObject(contextID);
+        GLint immutable;  glGetTexParameteriv(_parentTexture->getTextureTarget(), GL_TEXTURE_IMMUTABLE_FORMAT, &immutable);
+        if(immutable==0 && state.get<GLExtensions>()->glTextureView)
+            OSG_FATAL<<"TextureView:: can't make a view of an non immutable texture storage: "<<std::endl<<"you'll have to fix "<<_parentTexture->className()<<"::apply()"<<std::endl;
     }
-parenttextureObject->setAllocated(true);
     Texture::TextureObject * textureObject = _textureObjectBuffer[contextID];
 
-  /*  if (textureObject)
-    {
-        bool textureObjectInvalidated = false;
-        if (_image.valid() && getModifiedCount(contextID) != _image->getModifiedCount())
-        {
-            textureObjectInvalidated = !textureObjectValid(state);
-        }
-
-        if (textureObjectInvalidated)
-        {
-            // OSG_NOTICE<<"Discarding TextureObject"<<std::endl;
-            textureObject->release();
-            to->setTextureObject(contextID,0);
-          //  _textureObjectBuffer[contextID]->release();
-           // _textureObjectBuffer[contextID] = 0;
-            textureObject = 0;
-        }
-    }
-*/
     if (textureObject)
     {
         textureObject->bind();
 
         if (getTextureParameterDirty(state.getContextID()))
             applyTexParameters(_target,state);
-}else if ((_internalFormat!=GL_NONE) )
+    }
+    else //if( _internalFormat != 0 )
     {
         GLuint err;
 
+
+
+        state.applyTextureAttribute(state.getActiveTextureUnit(),_parentTexture);
+       //illegal glTexParameteri(_parentTexture->getTextureTarget(),GL_TEXTURE_IMMUTABLE_FORMAT,GL_TRUE);
+        GLint fok;  glGetTexParameteriv(_parentTexture->getTextureTarget(), GL_TEXTURE_IMMUTABLE_FORMAT, &fok);
+
+        OSG_WARN<<fok<<std::endl;
+
         textureObject = generateAndAssignTextureObject(contextID,_target);//,0,_internalFormat,_parentTexture->getTextureWidth(),_parentTexture->getTextureHeight(),1,_borderWidth);//,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,1,_borderWidth);
-       // textureObject->setAllocated(0,_internalFormat,_parentTexture->getTextureWidth(),_parentTexture->getTextureHeight(),1,_borderWidth);
-        err=glGetError();
-        if(err!=GL_NO_ERROR){
-            OSG_WARN<<err<<std::endl;
-        }
-
-
-        if(state.get<GLExtensions>()->glTextureView)
-            state.get<GLExtensions>()->glTextureView(textureObject->id(), _target,  parenttextureObject->id(), _internalFormat,
+        // textureObject->setAllocated(0,_internalFormat,_parentTexture->getTextureWidth(),_parentTexture->getTextureHeight(),1,_borderWidth);
+         err=glGetError();
+         if(err!=GL_NO_ERROR){
+             OSG_WARN<<"generateAndAssignTextureObject"<<err-GL_INVALID_ENUM<<std::endl;
+         }
+        state.get<GLExtensions>()->glTextureView(textureObject->id(), _target,  parenttextureObject->id(), _internalFormat,
                           _minlod,(_maxlod-_minlod)>0?_maxlod-_minlod+1:1,_minlayer,_numlayers);
         err=glGetError();
         if(err!=GL_NO_ERROR){
-               OSG_WARN<<err<<std::endl;
+               OSG_WARN<<"glTextureView"<<err-GL_INVALID_ENUM<<std::endl;
             }
         textureObject->bind();
         err=glGetError();
         if(err!=GL_NO_ERROR){
-           OSG_WARN<<err<<std::endl;
+           OSG_WARN<<"bind"<<err-GL_INVALID_ENUM<<std::endl;
         }
-        applyTextureViewParameters(_target,state);
+        applyTexParameters(_target,state);
         _textureObjectBuffer[contextID]=textureObject;
 
        /* if (_readPBuffer.valid())
@@ -148,11 +137,11 @@ parenttextureObject->setAllocated(true);
         }*/
 
     }
-    else
-    {
-    //    glBindTexture( _target, 0 );
-    }
 
+} else
+{
+    glBindTexture( _target, 0 );
+}
 
 }
 /*

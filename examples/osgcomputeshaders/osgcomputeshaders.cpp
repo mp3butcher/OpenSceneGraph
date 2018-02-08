@@ -52,7 +52,7 @@ int main( int argc, char** argv )
     tex2D->setTextureSize( 512, 512 );
     tex2D->setFilter( osg::Texture2D::MIN_FILTER, osg::Texture2D::LINEAR );
     tex2D->setFilter( osg::Texture2D::MAG_FILTER, osg::Texture2D::LINEAR );
-    tex2D->setInternalFormat( GL_R32F );
+    tex2D->setInternalFormat( GL_RGBA8 );
     tex2D->setSourceFormat( GL_RED );
     tex2D->setSourceType( GL_FLOAT );
 
@@ -60,13 +60,13 @@ int main( int argc, char** argv )
 
     texView->setFilter( osg::Texture2D::MIN_FILTER, osg::Texture2D::LINEAR );
     texView->setFilter( osg::Texture2D::MAG_FILTER, osg::Texture2D::LINEAR );
-    texView->setInternalFormat( GL_RGBA8 ); //interpret RGBA as R32
+    texView->setInternalFormat( GL_R32F ); //interpret RGBA as R32
     texView->setTextureTarget( GL_TEXTURE_2D );
     texView->setParentTexture(tex2D);
     /*tex2D->setSourceFormat( GL_RED );
     tex2D->setSourceType( GL_FLOAT );*/
     // So we can use 'image2D' in the compute shader
-    osg::ref_ptr<osg::BindImageTexture> imagbinding = new osg::BindImageTexture(0, tex2D, osg::BindImageTexture::WRITE_ONLY, GL_R32F);
+    osg::ref_ptr<osg::BindImageTexture> imagbinding = new osg::BindImageTexture(0, texView, osg::BindImageTexture::WRITE_ONLY, GL_R32F);
 
 
     // The compute shader can't work with other kinds of shaders
@@ -88,7 +88,7 @@ int main( int argc, char** argv )
     osg::ref_ptr<osg::Geode> quad = new osg::Geode;
     quad->addDrawable( geom );
     quad->getOrCreateStateSet()->setMode( GL_LIGHTING, osg::StateAttribute::OFF );
-    quad->getOrCreateStateSet()->setTextureAttributeAndModes( 0, texView.get() );
+    quad->getOrCreateStateSet()->setTextureAttributeAndModes( 0, tex2D.get() );
     // Create the scene graph and start the viewer
     osg::ref_ptr<osg::Group> scene = new osg::Group;
     scene->addChild( sourceNode );
