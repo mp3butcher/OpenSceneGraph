@@ -3,6 +3,8 @@
 #include <osgDB/InputStream>
 #include <osgDB/OutputStream>
 
+// #define USE_GEOMETRY_FINALIZER_CALLBACK
+
 static void add_user_value_func_AttributeBinding(osgDB::IntLookup* lookup)
 {
     lookup->add("BIND_OFF",0);                 // ADD_USER_VALUE("ADD_USER_VALUE( BIND_OFF );
@@ -213,5 +215,12 @@ REGISTER_OBJECT_WRAPPER( Geometry,
         UPDATE_TO_VERSION_SCOPED( 145 )
         ADD_BOOL_SERIALIZER(UseVertexArrayObject,false);
     }
+    {
+        UPDATE_TO_VERSION_SCOPED( 154 )
+        REMOVE_SERIALIZER(UseVertexArrayObject);
+    }
+
+#ifdef USE_GEOMETRY_FINALIZER_CALLBACK
     wrapper->addFinishedObjectReadCallback( new GeometryFinishedObjectReadCallback() );
+#endif
 }

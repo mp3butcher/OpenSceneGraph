@@ -19,6 +19,8 @@ ENDIF()
 
 SET(HEADER_PATH ${OpenSceneGraph_SOURCE_DIR}/include/${LIB_NAME})
 SET(TARGET_H
+    ${HEADER_PATH}/io_utils
+    ${HEADER_PATH}/os_utils
     ${HEADER_PATH}/AlphaFunc
     ${HEADER_PATH}/AnimationPath
     ${HEADER_PATH}/ApplicationUsage
@@ -97,7 +99,6 @@ SET(TARGET_H
     ${HEADER_PATH}/ImageSequence
     ${HEADER_PATH}/ImageStream
     ${HEADER_PATH}/ImageUtils
-    ${HEADER_PATH}/io_utils
     ${HEADER_PATH}/KdTree
     ${HEADER_PATH}/Light
     ${HEADER_PATH}/LightModel
@@ -241,6 +242,7 @@ SET(TARGET_H
 #    ${OPENSCENEGRAPH_USER_DEFINED_DYNAMIC_OR_STATIC}
 #    ${LIB_PUBLIC_HEADERS}
 SET(TARGET_SRC
+    os_utils.cpp
     AlphaFunc.cpp
     AnimationPath.cpp
     ApplicationUsage.cpp
