@@ -232,47 +232,13 @@ int main(int argc, char* argv[])
 
         viewer.addEventHandler(new SamplersKeyboardEventHandler(sampler1, sampler2));
     }
-<<<<<<< HEAD
-    ///Overrided Filtering setup
-    tex1->setFilter(osg::Texture::MAG_FILTER,osg::Texture::NEAREST);
-    tex1->setFilter(osg::Texture::MIN_FILTER,osg::Texture::NEAREST);
 
 
-    tex2->setFilter(osg::Texture::MAG_FILTER,osg::Texture::NEAREST);
-    tex2->setFilter(osg::Texture::MIN_FILTER,osg::Texture::NEAREST);
-
-
-    ///Filter Override samplers setup
-    sampler1->setFilter(osg::Texture::MAG_FILTER,osg::Texture::LINEAR);
-    sampler1->setFilter(osg::Texture::MIN_FILTER,osg::Texture::LINEAR);
-
-    sampler2->setFilter(osg::Texture::MAG_FILTER,osg::Texture::LINEAR);
-    sampler2->setFilter(osg::Texture::MIN_FILTER,osg::Texture::LINEAR);
-
-    osg::StateSet *ss;
-    ss = geode->getOrCreateStateSet();
-
-    ss->setTextureAttribute(0,tex1,osg::StateAttribute::ON);
-    ss->setTextureAttribute(1,tex2,osg::StateAttribute::ON);
-    ss->setTextureAttribute(0,sampler1,osg::StateAttribute::ON);
-    ss->setTextureAttribute(1,sampler2,osg::StateAttribute::ON);
-
-    ss->addUniform(new osg::Uniform("tex1",(int)0));
-    ss->addUniform(new osg::Uniform("tex2",(int)1));
-    ss->setAttribute(program.get());
-
-
-    viewer.addEventHandler(new KeyboardEventHandler(sampler1, sampler2,ss));
-=======
-
->>>>>>> upstream/master
     viewer.addEventHandler(new osgViewer::StatsHandler);
     viewer.addEventHandler(new osgViewer::HelpHandler(arguments.getApplicationUsage()));
-<<<<<<< HEAD
-=======
+
     viewer.addEventHandler(new osgViewer::WindowSizeHandler());
 
->>>>>>> upstream/master
     viewer.setSceneData(geode.get());
     return viewer.run();
 }
