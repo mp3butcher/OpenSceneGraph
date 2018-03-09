@@ -327,7 +327,7 @@ REGISTER_OBJECT_WRAPPER( Program,
         ADD_USER_SERIALIZER( BindUniformBlock );
     }
     {
-        UPDATE_TO_VERSION_SCOPED( 152 )
+        UPDATE_TO_VERSION_SCOPED( 150 )
         ADD_USER_SERIALIZER( BindUniformBlock );
     }
 

@@ -71,7 +71,7 @@ REGISTER_OBJECT_WRAPPER( osgAnimation_RigGeometry,
                          "osg::Object osg::Node osg::Drawable osg::Geometry osgAnimation::RigGeometry" )
 {
     {
-         UPDATE_TO_VERSION_SCOPED( 154 )
+         UPDATE_TO_VERSION_SCOPED( 135 )//154
          ADDED_ASSOCIATE("osg::Node")
     }
 
