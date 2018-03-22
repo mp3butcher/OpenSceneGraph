@@ -517,12 +517,12 @@ void RenderStage::runCameraSetUp(osg::RenderInfo& renderInfo)
             // and before call to glCheckFramebufferStatus
             if ( !colorAttached )
             {
+            #if !defined(OSG_GLES1_AVAILABLE) && !defined(OSG_GLES2_AVAILABLE) && !defined(OSG_GLES3_AVAILABLE)
                 setDrawBuffer( GL_NONE, true );
                 setReadBuffer( GL_NONE, true );
-                #if !defined(OSG_GLES1_AVAILABLE) && !defined(OSG_GLES2_AVAILABLE) && !defined(OSG_GLES3_AVAILABLE)
-                    glDrawBuffer( GL_NONE );
-                    glReadBuffer( GL_NONE );
-                #endif
+                state.glDrawBuffer( GL_NONE );
+                state.glReadBuffer( GL_NONE );
+            #endif
             }
 
             GLenum status = ext->glCheckFramebufferStatus(GL_FRAMEBUFFER_EXT);
@@ -914,10 +914,10 @@ void RenderStage::drawInner(osg::RenderInfo& renderInfo,RenderLeaf*& previous, b
         #if !defined(OSG_GLES1_AVAILABLE) && !defined(OSG_GLES2_AVAILABLE) && !defined(OSG_GLES3_AVAILABLE)
 
             if( getDrawBufferApplyMask() )
-                glDrawBuffer(_drawBuffer);
+                state.glDrawBuffer(_drawBuffer);
 
             if( getReadBufferApplyMask() )
-                glReadBuffer(_readBuffer);
+                state.glReadBuffer(_readBuffer);
 
         #endif
     }
@@ -1007,8 +1007,8 @@ void RenderStage::drawInner(osg::RenderInfo& renderInfo,RenderLeaf*& previous, b
                 osg::Camera::BufferComponent attachment = it->first;
                 if (attachment >=osg::Camera::COLOR_BUFFER0)
                 {
-                    glReadBuffer(GL_COLOR_ATTACHMENT0_EXT + (attachment - osg::Camera::COLOR_BUFFER0));
-                    glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT + (attachment - osg::Camera::COLOR_BUFFER0));
+                    state.glReadBuffer(GL_COLOR_ATTACHMENT0_EXT + (attachment - osg::Camera::COLOR_BUFFER0));
+                    state.glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT + (attachment - osg::Camera::COLOR_BUFFER0));
 
                     ext->glBlitFramebuffer(
                         static_cast<GLint>(_viewport->x()), static_cast<GLint>(_viewport->y()),

@@ -130,7 +130,7 @@ struct VertexArrayDispatch : public VertexArrayState::ArrayDispatch
 
     virtual void enable_and_dispatch(osg::State&, const osg::Array* new_array, const osg::GLBufferObject* vbo)
     {
-        OSG_WARN<<"    VertexArrayDispatch::enable_and_dispatch("<<new_array->getNumElements()<<", vbo="<<std::hex<<vbo<<std::dec<<")"<<vbo->getOffset(new_array->getBufferIndex())<<" "<<basevertex*new_array->getElementSize()<<std::endl;
+        //OSG_WARN<<"    VertexArrayDispatch::enable_and_dispatch("<<new_array->getNumElements()<<", vbo="<<std::hex<<vbo<<std::dec<<")"<<vbo->getOffset(new_array->getBufferIndex())<<" "<<basevertex*new_array->getElementSize()<<std::endl;
         glEnableClientState(GL_VERTEX_ARRAY);
         glVertexPointer(new_array->getDataSize(), new_array->getDataType(), 0, (const GLvoid *)(vbo->getOffset(new_array->getBufferIndex())-basevertex*new_array->getElementSize()));
     }

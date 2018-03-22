@@ -1980,7 +1980,15 @@ void Texture::applyTexParameters(GLenum target, State& state) const
             glTexParameteriv(target, GL_TEXTURE_SWIZZLE_RGBA, _swizzle.ptr());
         }
 
-        if (extensions->isTextureBorderClampSupported)
+
+    // integer textures are not supported by the shadow
+    // GL_TEXTURE_1D_ARRAY_EXT could be included in the check below but its not yet implemented in OSG
+    if (extensions->isShadowSupported &&
+        (target == GL_TEXTURE_2D || target == GL_TEXTURE_1D || target == GL_TEXTURE_RECTANGLE || target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_2D_ARRAY ) &&
+        _internalFormatType != SIGNED_INTEGER && _internalFormatType != UNSIGNED_INTEGER)
+    {
+        if (_use_shadow_comparison)
+
         {
 
             #ifndef GL_TEXTURE_BORDER_COLOR
@@ -2035,7 +2043,7 @@ void Texture::applyTexParameters(GLenum target, State& state) const
         glTexParameterf(target, GL_TEXTURE_MIN_LOD, _minlod);
         glTexParameterf(target, GL_TEXTURE_MAX_LOD, _maxlod);
     }
-
+}
     glTexParameterf(target, GL_TEXTURE_LOD_BIAS, _lodbias);
 
     getTextureParameterDirty(state.getContextID()) = false;

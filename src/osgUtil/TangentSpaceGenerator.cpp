@@ -291,6 +291,7 @@ void TangentSpaceGenerator::compute(osg::PrimitiveSet *pset,
     }
 
 
+#if 0
     osg::Vec2 uv12( uv2.x() - uv1.x(), uv2.y() - uv1.y() );
     osg::Vec2 uv13( uv3.x() - uv1.x(), uv3.y() - uv1.y()  );
 #define UVDISCONTINUITIES_THRESHOLD 0.001
@@ -303,6 +304,11 @@ void TangentSpaceGenerator::compute(osg::PrimitiveSet *pset,
     V = osg::Vec3(P2.x() - P1.x(),uv12.x(),uv12.y()) ^// uv2.x() - uv1.x(), uv2.y() - uv1.y()) ^
         osg::Vec3(P3.x() - P1.x(), uv13.x(),uv13.y());//uv3.x() - uv1.x(), uv3.y() - uv1.y());
     //
+#else
+    V = osg::Vec3(P2.x() - P1.x(), uv2.x() - uv1.x(), uv2.y() - uv1.y()) ^
+        osg::Vec3(P3.x() - P1.x(), uv3.x() - uv1.x(), uv3.y() - uv1.y());
+
+#endif
     if (V.x() != 0) {
         V.normalize();
         T1.x() += -V.y() / V.x();
@@ -313,8 +319,13 @@ void TangentSpaceGenerator::compute(osg::PrimitiveSet *pset,
         B3.x() += -V.z() / V.x();
     }
 
+#if 0
     V = osg::Vec3(P2.y() - P1.y(),uv12.x(),uv12.y())^// uv2.x() - uv1.x(), uv2.y() - uv1.y()) ^
         osg::Vec3(P3.y() - P1.y(),  uv13.x(),uv13.y());//uv3.x() - uv1.x(), uv3.y() - uv1.y());
+#else
+    V = osg::Vec3(P2.y() - P1.y(), uv2.x() - uv1.x(), uv2.y() - uv1.y()) ^
+        osg::Vec3(P3.y() - P1.y(), uv3.x() - uv1.x(), uv3.y() - uv1.y());
+#endif
     if (V.x() != 0) {
         V.normalize();
         T1.y() += -V.y() / V.x();
@@ -324,9 +335,13 @@ void TangentSpaceGenerator::compute(osg::PrimitiveSet *pset,
         T3.y() += -V.y() / V.x();
         B3.y() += -V.z() / V.x();
     }
-
+#if 0
     V = osg::Vec3(P2.z() - P1.z(), uv12.x(),uv12.y() ) ^//uv2.x() - uv1.x(), uv2.y() - uv1.y()) ^
         osg::Vec3(P3.z() - P1.z(),  uv13.x(),uv13.y());//uv3.x() - uv1.x(), uv3.y() - uv1.y());
+#else
+    V = osg::Vec3(P2.z() - P1.z(), uv2.x() - uv1.x(), uv2.y() - uv1.y()) ^
+        osg::Vec3(P3.z() - P1.z(), uv3.x() - uv1.x(), uv3.y() - uv1.y());
+#endif
     if (V.x() != 0) {
         V.normalize();
         T1.z() += -V.y() / V.x();

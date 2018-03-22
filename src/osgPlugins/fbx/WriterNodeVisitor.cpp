@@ -115,17 +115,17 @@ public:
 
     virtual void drawArrays(GLenum mode, GLint first, GLsizei count);
 
-    virtual void drawElements(GLenum mode, GLsizei count, const GLubyte* indices)
+    virtual void drawElements(GLenum mode, GLsizei count, const GLubyte* indices, const GLuint basevertex=0)
     {
         drawElementsImplementation<GLubyte>(mode, count, indices);
     }
 
-    virtual void drawElements(GLenum mode, GLsizei count, const GLushort* indices)
+    virtual void drawElements(GLenum mode, GLsizei count, const GLushort* indices, const GLuint basevertex=0)
     {
         drawElementsImplementation<GLushort>(mode, count, indices);
     }
 
-    virtual void drawElements(GLenum mode, GLsizei count, const GLuint* indices)
+    virtual void drawElements(GLenum mode, GLsizei count, const GLuint* indices, const GLuint basevertex=0)
     {
         drawElementsImplementation<GLuint>(mode, count, indices);
     }
