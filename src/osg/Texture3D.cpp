@@ -473,7 +473,7 @@ void Texture3D::applyTexImage3D(GLenum target, Image* image, State& state, GLsiz
                     }
                     else
                     {
-                        if(isCompressedInternalFormatSupportedByTexStorrage(_internalFormat))
+                        if(isCompressedInternalFormatSupportedByTexStorage(_internalFormat))
                         {
                             sizedInternalFormat = _internalFormat;
                         }

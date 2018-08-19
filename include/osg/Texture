@@ -657,6 +657,9 @@ class OSG_EXPORT Texture : public osg::StateAttribute
         /** Get the internal texture format type. */
         inline InternalFormatType getInternalFormatType() const { return _internalFormatType; }
 
+        /* select the size internal format to use based on Image when available or Texture format settings.*/
+        GLenum selectSizedInternalFormat(const osg::Image* image=0) const;
+
         class TextureObject;
 
 
@@ -860,7 +863,7 @@ class OSG_EXPORT Texture : public osg::StateAttribute
 
         static GLenum assumeSizedInternalFormat(GLint internalFormat, GLenum type);
 
-        static bool isCompressedInternalFormatSupportedByTexStorrage(GLint internalFormat);
+        static bool isCompressedInternalFormatSupportedByTexStorage(GLint internalFormat);
 
         typedef buffered_value<unsigned int> TexParameterDirtyList;
         mutable TexParameterDirtyList _texParametersDirtyList;

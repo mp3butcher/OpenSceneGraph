@@ -137,6 +137,7 @@ InternalPixelRelations sizedInternalFormats[] = {
 
 
     , { GL_RGBA8                               , GL_RGBA             , GL_UNSIGNED_BYTE                             }
+    , { GL_RGBA16                              , GL_RGBA             , GL_UNSIGNED_SHORT                            }
     , { GL_RGB10_A2                            , GL_RGBA             , GL_UNSIGNED_INT_10_10_10_2                   }
     , { GL_RGB10_A2                            , GL_RGBA             , GL_UNSIGNED_INT_2_10_10_10_REV               }
     , { GL_RGBA12                              , GL_RGBA             , GL_UNSIGNED_SHORT                            }
@@ -148,9 +149,9 @@ InternalPixelRelations sizedInternalFormats[] = {
     , { GL_RGB5_A1                             , GL_RGBA             , GL_UNSIGNED_SHORT_1_5_5_5_REV                }
     , { GL_RGB5_A1                             , GL_RGBA             , GL_UNSIGNED_INT_10_10_10_2                   }
     , { GL_RGB5_A1                             , GL_RGBA             , GL_UNSIGNED_INT_2_10_10_10_REV               }
- // , { GL_RGBA16F                             , GL_RGBA             , GL_HALF_FLOAT                                }
- // , { GL_RGBA16F                             , GL_RGBA             , GL_FLOAT                                     }
- // , { GL_RGBA32F                             , GL_RGBA             , GL_FLOAT                                     }
+    , { GL_RGBA16F                             , GL_RGBA             , GL_FLOAT                                     }
+    , { GL_RGBA32F                             , GL_RGBA             , GL_FLOAT                                     }
+    // , { GL_RGBA16F                             , GL_RGBA             , GL_HALF_FLOAT                                }
 
     , { GL_SRGB8                               , GL_RGB              , GL_UNSIGNED_BYTE                             }
     , { GL_SRGB8_ALPHA8                        , GL_RGBA             , GL_UNSIGNED_BYTE                             }
@@ -227,7 +228,7 @@ GLenum Texture::assumeSizedInternalFormat(GLint internalFormat, GLenum type)
     return 0;
 }
 
-bool Texture::isCompressedInternalFormatSupportedByTexStorrage(GLint internalFormat)
+bool Texture::isCompressedInternalFormatSupportedByTexStorage(GLint internalFormat)
 {
     const size_t formatsCount = sizeof(compressedInternalFormats) / sizeof(compressedInternalFormats[0]);
 
@@ -2101,10 +2102,46 @@ bool Texture::areAllTextureObjectsLoaded() const
     return true;
 }
 
+GLenum Texture::selectSizedInternalFormat(const osg::Image* image) const
+{
+    if (_borderWidth!=0) return 0;
+    if (image)
+    {
+        bool compressed_image = isCompressedInternalFormat((GLenum)image->getPixelFormat());
+        //calculate sized internal format
+        if(compressed_image)
+        {
+            if(isCompressedInternalFormatSupportedByTexStorage(_internalFormat))
+            {
+                return _internalFormat;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        else
+        {
+            if(isSizedInternalFormat(_internalFormat))
+            {
+                return _internalFormat;
+            }
+            else
+            {
+                return assumeSizedInternalFormat((GLenum)image->getInternalTextureFormat(), (GLenum)image->getDataType());
+            }
+        }
+    }
+    else
+    {
+        if (isSizedInternalFormat(_internalFormat)) return _internalFormat;
+        return assumeSizedInternalFormat(_internalFormat, (_sourceType!=0) ? _sourceType : GL_UNSIGNED_BYTE);
+    }
+}
 
 void Texture::applyTexImage2D_load(State& state, GLenum target, const Image* image, GLsizei inwidth, GLsizei inheight,GLsizei numMipmapLevels) const
 {
-    // if we don't have a valid image we can't create a texture!
+    // if we don't have a valid image to select internal formazt we can't create a texture!
     if (!image || !image->data())
         return;
 
@@ -2255,12 +2292,21 @@ void Texture::applyTexImage2D_load(State& state, GLenum target, const Image* ima
         if ( !compressed_image)
         {
             numMipmapLevels = 1;
-
-            glTexImage2D( target, 0, _internalFormat,
-                inwidth, inheight, _borderWidth,
-                (GLenum)image->getPixelFormat(),
-                (GLenum)image->getDataType(),
-                dataPtr);
+            GLenum sizedInternalFormat =  extensions->isTextureStorageEnabled && extensions->isTexStorage2DSupported() && (_borderWidth==0) ?
+                                          selectSizedInternalFormat(image) : 0;
+            // no image present, but dimensions at set so lets create the texture
+            if(sizedInternalFormat!=0){
+                extensions->glTexStorage2D( target, 0, sizedInternalFormat, inwidth, inheight);
+                glTexSubImage2D( target, 0, 0, 0, inwidth, inheight, (GLenum)image->getPixelFormat(),
+                        (GLenum)image->getDataType(),
+                        dataPtr);
+            }
+            else
+                glTexImage2D( target, 0, _internalFormat,
+                    inwidth, inheight, _borderWidth,
+                    (GLenum)image->getPixelFormat(),
+                    (GLenum)image->getDataType(),
+                    dataPtr);
 
         }
         else if (extensions->isCompressedTexImage2DSupported())
@@ -2291,38 +2337,13 @@ void Texture::applyTexImage2D_load(State& state, GLenum target, const Image* ima
             int width  = inwidth;
             int height = inheight;
 
-            bool useTexStorrage = extensions->isTextureStorageEnabled;
-            GLenum sizedInternalFormat = 0;
 
-            if(useTexStorrage)
-            {
-                if(extensions->isTexStorage2DSupported() && _borderWidth == 0)
-                {
-                    //calculate sized internal format
-                    if(!compressed_image)
-                    {
-                        if(isSizedInternalFormat(_internalFormat))
-                        {
-                            sizedInternalFormat = _internalFormat;
-                        }
-                        else
-                        {
-                            sizedInternalFormat = assumeSizedInternalFormat((GLenum)image->getInternalTextureFormat(), (GLenum)image->getDataType());
-                        }
-                    }
-                    else
-                    {
-                        if(isCompressedInternalFormatSupportedByTexStorrage(_internalFormat))
-                        {
-                            sizedInternalFormat = _internalFormat;
-                        }
-                    }
-                }
+            bool useTexStorage = extensions->isTextureStorageEnabled && extensions->isTexStorage2DSupported() && (_borderWidth==0);
+            GLenum sizedInternalFormat = useTexStorage ? selectSizedInternalFormat(image) : 0;
+            OSG_WARN<<"New path useTexStorage="<<useTexStorage<<", sizedInternalFormat="<<sizedInternalFormat<<std::endl;
 
-                useTexStorrage &= sizedInternalFormat != 0;
-            }
 
-            if(useTexStorrage)
+            if(useTexStorage&& sizedInternalFormat!=0)
             {
                 if (getTextureTarget()==GL_TEXTURE_CUBE_MAP)
                 {
@@ -2496,9 +2517,11 @@ void Texture::applyTexImage2D_load(State& state, GLenum target, const Image* ima
 
 void Texture::applyTexImage2D_subload(State& state, GLenum target, const Image* image, GLsizei inwidth, GLsizei inheight, GLint inInternalFormat, GLint numMipmapLevels) const
 {
-    // if we don't have a valid image we can't create a texture!
-    if (!image || !image->data())
+    // if we don't have a valid image
+    if (!image || !image->data()){
         return;
+
+    }
 
     // image size has changed so we have to re-load the image from scratch.
     if (image->s()!=inwidth || image->t()!=inheight || image->getInternalTextureFormat()!=inInternalFormat )

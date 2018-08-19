@@ -221,7 +221,7 @@ void TextureRectangle::apply(State& state) const
 
         _subloadCallback->load(*this, state);
 
-        textureObject->setAllocated(1,_internalFormat,_textureWidth,_textureHeight,1,0);
+        textureObject->setAllocated(1, _internalFormat, _textureWidth, _textureHeight, 1, 0);
 
         // in theory the following line is redundant, but in practice
         // have found that the first frame drawn doesn't apply the textures
@@ -231,7 +231,7 @@ void TextureRectangle::apply(State& state) const
     }
     else if (_image.valid() && _image->data())
     {
-
+        GLExtensions * extensions = state.get<GLExtensions>();
 
         // keep the image around at least till we go out of scope.
         osg::ref_ptr<osg::Image> image = _image;
@@ -242,8 +242,12 @@ void TextureRectangle::apply(State& state) const
         _textureWidth = image->s();
         _textureHeight = image->t();
 
+        GLenum texStorageSizedInternalFormat =  extensions->isTextureStorageEnabled && extensions->isTexStorage2DSupported() && (_borderWidth==0) ? selectSizedInternalFormat(image) : 0;
+
         textureObject = generateAndAssignTextureObject(
-                contextID,GL_TEXTURE_RECTANGLE,1,_internalFormat,_textureWidth,_textureHeight,1,0);
+                    contextID, GL_TEXTURE_RECTANGLE, 1,
+                    texStorageSizedInternalFormat!=0 ? texStorageSizedInternalFormat : _internalFormat,
+                    _textureWidth, _textureHeight, 1, 0);
 
         textureObject->bind();
 
@@ -268,20 +272,35 @@ void TextureRectangle::apply(State& state) const
     }
     else if ( (_textureWidth!=0) && (_textureHeight!=0) && (_internalFormat!=0) )
     {
-        textureObject = generateAndAssignTextureObject(
-                contextID,GL_TEXTURE_RECTANGLE,0,_internalFormat,_textureWidth,_textureHeight,1,0);
-
-        textureObject->bind();
-
-        applyTexParameters(GL_TEXTURE_RECTANGLE,state);
-
         // no image present, but dimensions at set so lets create the texture
-        glTexImage2D( GL_TEXTURE_RECTANGLE, 0, _internalFormat,
+        GLExtensions * extensions = state.get<GLExtensions>();
+        GLenum texStorageSizedInternalFormat =  extensions->isTextureStorageEnabled && extensions->isTexStorage2DSupported() && (_borderWidth==0) ? selectSizedInternalFormat() : 0;
+
+        if( texStorageSizedInternalFormat != 0)
+        {
+            //ensure _internalFormat is sized
+            textureObject = generateAndAssignTextureObject(
+                    contextID, GL_TEXTURE_RECTANGLE, 0, texStorageSizedInternalFormat, _textureWidth, _textureHeight, 1, 0);
+
+            textureObject->bind();
+
+            applyTexParameters(GL_TEXTURE_RECTANGLE,state);
+
+            extensions->glTexStorage2D( GL_TEXTURE_RECTANGLE, 1, texStorageSizedInternalFormat, _textureWidth, _textureHeight);
+       } else{
+            textureObject = generateAndAssignTextureObject(
+                    contextID, GL_TEXTURE_RECTANGLE, 0, _internalFormat, _textureWidth, _textureHeight, 1, 0);
+
+            textureObject->bind();
+
+            applyTexParameters(GL_TEXTURE_RECTANGLE, state);
+
+            glTexImage2D( GL_TEXTURE_RECTANGLE, 0, _internalFormat,
                      _textureWidth, _textureHeight, _borderWidth,
                      _sourceFormat ? _sourceFormat : _internalFormat,
                      _sourceType ? _sourceType : GL_UNSIGNED_BYTE,
                      0);
-
+        }
         if (_readPBuffer.valid())
         {
             _readPBuffer->bindPBufferToTexture(GL_FRONT);
@@ -316,6 +335,8 @@ void TextureRectangle::applyTexImage_load(GLenum target, Image* image, State& st
     glPixelStorei(GL_UNPACK_ROW_LENGTH,image->getRowLength());
 #endif
 
+    // select the internalFormat required for the texture.
+    bool compressed_image = isCompressedInternalFormat((GLenum)image->getPixelFormat());//_internalFormat?
     bool useClientStorage = extensions->isClientStorageSupported && getClientStorageHint();
     if (useClientStorage)
     {
@@ -338,20 +359,53 @@ void TextureRectangle::applyTexImage_load(GLenum target, Image* image, State& st
         dataPtr = reinterpret_cast<unsigned char*>(pbo->getOffset(image->getBufferIndex()));
     }
 
-    if(isCompressedInternalFormat(_internalFormat) && extensions->isCompressedTexImage2DSupported())
+    GLenum texStorageSizedInternalFormat = extensions->isTexStorage2DSupported() && (_borderWidth==0) ? selectSizedInternalFormat(image) : 0;
+
+    if(texStorageSizedInternalFormat!=0)
     {
-        extensions->glCompressedTexImage2D(target, 0, _internalFormat,
-          image->s(), image->t(), 0,
-          image->getImageSizeInBytes(),
-          dataPtr);
+        extensions->glTexStorage2D(target, 1, texStorageSizedInternalFormat, image->s(), image->t());
+
+        if( !compressed_image )
+        {
+               glTexSubImage2D( target, 0,
+                    0, 0,
+                     image->s(), image->t(),
+                    (GLenum)image->getPixelFormat(),
+                    (GLenum)image->getDataType(),
+                    dataPtr);
+        }
+        else if (extensions->isCompressedTexImage2DSupported())
+        {
+            GLint blockSize,size;
+
+            getCompressedSize(image->getInternalTextureFormat(),  image->s(), image->t(), 1, blockSize,size);
+
+            //state.checkGLErrors("before extensions->glCompressedTexSubImage2D(");
+
+            extensions->glCompressedTexSubImage2D(target, 0,
+                0, 0,
+                 image->s(), image->t(),
+                (GLenum)image->getPixelFormat(),
+                size,
+                dataPtr );
+
+            //state.checkGLErrors("after extensions->glCompressedTexSubImage2D(");
+        }
     }
-    else
-    {
-        glTexImage2D(target, 0, _internalFormat,
-          image->s(), image->t(), 0,
-          (GLenum)image->getPixelFormat(),
-          (GLenum)image->getDataType(),
-          dataPtr );
+    else{
+        if(compressed_image && extensions->isCompressedTexImage2DSupported())
+        {
+            extensions->glCompressedTexImage2D(target, 0, _internalFormat,
+              image->s(), image->t(), 0,
+              image->getImageSizeInBytes(),
+              dataPtr);
+        }
+        else
+            glTexImage2D(target, 0, _internalFormat,
+              image->s(), image->t(), 0,
+              (GLenum)image->getPixelFormat(),
+              (GLenum)image->getDataType(),
+              dataPtr );
     }
 
 
