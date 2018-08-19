@@ -978,12 +978,21 @@ GLExtensions::GLExtensions(unsigned int in_contextID):
     maxLayerCount = 0;
     if (validContext) glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxLayerCount);
 
-    // Bindless textures
+    // ARB_bindless_texture
     setGLExtensionFuncPtr(glGetTextureHandle,             "glGetTextureHandle", "glGetTextureHandleARB","glGetTextureHandleNV", validContext);
+    setGLExtensionFuncPtr(glGetTextureSamplerHandle,      "glGetTextureSamplerHandle","glGetTextureSamplerHandleARB", "glGetTextureSamplerHandleNV", validContext);
     setGLExtensionFuncPtr(glMakeTextureHandleResident,    "glMakeTextureHandleResident", "glMakeTextureHandleResidentARB","glMakeTextureHandleResidentNV", validContext);
     setGLExtensionFuncPtr(glMakeTextureHandleNonResident, "glMakeTextureHandleNonResident", "glMakeTextureHandleNonResidentARB", "glMakeTextureHandleNonResidentNV",validContext);
-    setGLExtensionFuncPtr(glUniformHandleui64,            "glUniformHandleui64", "glUniformHandleui64ARB","glUniformHandleui64NV", validContext);
     setGLExtensionFuncPtr(glIsTextureHandleResident,      "glIsTextureHandleResident","glIsTextureHandleResidentARB", "glIsTextureHandleResidentNV", validContext);
+    setGLExtensionFuncPtr(glGetImageHandle,      "glGetImageHandle","glGetImageHandleARB", "glGetImageHandleNV", validContext);
+    setGLExtensionFuncPtr(glMakeImageHandleResident,      "glMakeImageHandleResident","glMakeImageHandleResidentARB", "glMakeImageHandleResidentNV", validContext);
+    setGLExtensionFuncPtr(glMakeImageHandleNonResident,      "glMakeImageHandleNonResident","glMakeImageHandleNonResidentARB", "glMakeImageHandleNonResidentNV", validContext);
+    setGLExtensionFuncPtr(glIsImageHandleResident,      "glIsImageHandleResident","glIsImageHandleResidentARB", "glIsImageHandleResidentNV", validContext);
+    setGLExtensionFuncPtr(glUniformHandleui64,            "glUniformHandleui64", "glUniformHandleui64ARB","glUniformHandleui64NV", validContext);
+    setGLExtensionFuncPtr(glUniformHandleuiv64,      "glUniformHandleuiv64","glUniformHandleuiv64ARB", "glUniformHandleuiv64NV", validContext);
+    setGLExtensionFuncPtr(glProgramUniformHandleui64,      "glProgramUniformHandleui64","glProgramUniformHandleui64ARB", "glProgramUniformHandleui64NV", validContext);
+    setGLExtensionFuncPtr(glProgramUniformHandleuiv64,      "glProgramUniformHandleuiv64","glProgramUniformHandleuiv64ARB", "glProgramUniformHandleuiv64NV", validContext);
+
 
     // Blending
     isBlendColorSupported = validContext &&

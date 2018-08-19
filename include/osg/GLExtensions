@@ -365,11 +365,21 @@ class OSG_EXPORT GLExtensions : public osg::Referenced
         void (GL_APIENTRY * glUniformMatrix4x3dv)( GLint location, GLsizei count, GLboolean transpose, const GLdouble* value );
         void (GL_APIENTRY * glGetActiveAtomicCounterBufferiv)( GLuint program, GLuint bufferIndex, GLenum pname, GLint* params );
         void (GL_APIENTRY * glDispatchCompute)( GLuint numGroupsX, GLuint numGroupsY, GLuint numGroupsZ );
-        GLuint64 (GL_APIENTRY* glGetTextureHandle)(GLint texture);
-        void        (GL_APIENTRY* glMakeTextureHandleResident)(GLuint64 handle);
-        void        (GL_APIENTRY* glMakeTextureHandleNonResident)(GLuint64 handle);
-        void        (GL_APIENTRY* glUniformHandleui64)(GLint location, GLuint64 handle);
-        GLboolean   (GL_APIENTRY* glIsTextureHandleResident)(GLuint64 handle);
+
+        // ARB_bindless_texture
+        GLuint64 (GL_APIENTRY* glGetTextureHandle)(GLuint texture);
+        GLuint64 (GL_APIENTRY* glGetTextureSamplerHandle)(GLuint texture, GLuint sampler);
+        void (GL_APIENTRY* glMakeTextureHandleResident)(GLuint64 handle);
+        void (GL_APIENTRY* glMakeTextureHandleNonResident)(GLuint64 handle);
+        GLboolean (GL_APIENTRY* glIsTextureHandleResident)(GLuint64 handle);
+        GLuint64 (GL_APIENTRY* glGetImageHandle)(GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum format);
+        void (GL_APIENTRY* glMakeImageHandleResident)(GLuint64 handle);
+        void  (GL_APIENTRY* glMakeImageHandleNonResident)(GLuint64 handle);
+        GLboolean (GL_APIENTRY* glIsImageHandleResident)(GLuint64 handle);
+        void  (GL_APIENTRY* glUniformHandleui64)(GLint location, GLuint64 handle);
+        void  (GL_APIENTRY* glUniformHandleuiv64)(GLint location, GLsizei count, GLuint64 *handles);
+        void  (GL_APIENTRY* glProgramUniformHandleui64)(GLuint program, GLint location, GLuint64 handle);
+        void  (GL_APIENTRY* glProgramUniformHandleuiv64)(GLuint program, GLint location, GLsizei count, GLuint64 *handles);
 
         // Buffer Object extensions
         bool isBufferObjectSupported;
