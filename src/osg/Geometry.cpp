@@ -83,7 +83,7 @@ Geometry::Geometry(const Geometry& geometry,const CopyOp& copyop):
 Geometry::~Geometry()
 {
     // do dirty here to keep the getGLObjectSizeHint() estimate on the ball
-    dirtyGLObjects();
+    Geometry::releaseGLObjects();
 
     // no need to delete, all automatically handled by ref_ptr :-)
 }
