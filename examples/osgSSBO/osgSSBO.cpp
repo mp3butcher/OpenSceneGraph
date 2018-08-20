@@ -10,7 +10,7 @@
 #include <osg/StateAttributeCallback>
 #include <osg/Texture2D>
 #include <osg/Geometry>
-#include <osg/ComputeDispatch>
+#include <osg/DispatchCompute>
 #include <osgDB/ReadFile>
 #include <osgGA/StateSetManipulator>
 #include <osgViewer/Viewer>
@@ -167,7 +167,7 @@ class ComputeNode : public osg::PositionAttitudeTransform
 
 public:
 
-    osg::ref_ptr<osg::ComputeDispatch>                _computeDispatch;
+    osg::ref_ptr<osg::DispatchCompute>                _computeDispatch;
     osg::ref_ptr<osg::Program>                        _computeProgram;
     osg::ref_ptr<osg::Shader>                        _computeShader;        //compute and write position data in SSBO
 
@@ -205,7 +205,7 @@ public:
         _vertexShaderSourcePath = "shaders/osgssboVertexShader.vs";
         _geometryShaderSourcePath = "shaders/osgssboGeometryShader.gs";
         _fragmentShaderSourcePath = "shaders/osgssboFragmentShader.fs";
-	_computeDispatch=new osg::ComputeDispatch();
+	_computeDispatch=new osg::DispatchCompute();
         addChild(_computeDispatch);
     }
 

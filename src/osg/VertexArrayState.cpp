@@ -536,6 +536,7 @@ VertexArrayState::VertexArrayState(osg::State* state, GLint basevertex):
 {
     _ext = _state->get<GLExtensions>();
     _isVertexBufferObjectSupported =  _ext->isBufferObjectSupported;
+    //generateVertexArrayObject();
 }
 
 void VertexArrayState::generateVertexArrayObject()

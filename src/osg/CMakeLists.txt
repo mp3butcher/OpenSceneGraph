@@ -58,7 +58,6 @@ SET(TARGET_H
     ${HEADER_PATH}/ColorMaski
     ${HEADER_PATH}/ColorMatrix
     ${HEADER_PATH}/ComputeBoundsVisitor
-    ${HEADER_PATH}/ComputeDispatch
     ${HEADER_PATH}/ContextData
     ${HEADER_PATH}/ConvexPlanarOccluder
     ${HEADER_PATH}/ConvexPlanarPolygon
@@ -71,6 +70,7 @@ SET(TARGET_H
     ${HEADER_PATH}/DeleteHandler
     ${HEADER_PATH}/Depth
     ${HEADER_PATH}/DepthRangeIndexed
+    ${HEADER_PATH}/DispatchCompute
     ${HEADER_PATH}/DisplaySettings
     ${HEADER_PATH}/Drawable
     ${HEADER_PATH}/DrawPixels
@@ -275,7 +275,6 @@ SET(TARGET_SRC
     ColorMaski.cpp
     ColorMatrix.cpp
     ComputeBoundsVisitor.cpp
-    ComputeDispatch.cpp
     ContextData.cpp
     ConvexPlanarOccluder.cpp
     ConvexPlanarPolygon.cpp
@@ -288,6 +287,7 @@ SET(TARGET_SRC
     DeleteHandler.cpp
     Depth.cpp
     DepthRangeIndexed.cpp
+    DispatchCompute.cpp
     DisplaySettings.cpp
     Drawable.cpp
     DrawPixels.cpp

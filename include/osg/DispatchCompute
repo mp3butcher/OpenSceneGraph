@@ -12,27 +12,27 @@
  * OpenSceneGraph Public License for more details.
 */
 
-#ifndef OSG_COMPUTEDISPATCH
-#define OSG_COMPUTEDISPATCH 1
+#ifndef OSG_DISPATCHCOMPUTE
+#define OSG_DISPATCHCOMPUTE 1
 
 #include <osg/Export>
 
 #include <osg/Geometry>
 
 namespace osg{
-    class OSG_EXPORT ComputeDispatch : public osg::Drawable
+    class OSG_EXPORT DispatchCompute : public osg::Drawable
     {
         public:
-            ComputeDispatch(GLint numGroupsX=0, GLint numGroupsY=0, GLint numGroupsZ=0):
+            DispatchCompute(GLint numGroupsX=0, GLint numGroupsY=0, GLint numGroupsZ=0):
                 Drawable(),
                 _numGroupsX(numGroupsX),
                 _numGroupsY(numGroupsY),
                 _numGroupsZ(numGroupsZ)
             {}
 
-            ComputeDispatch(const ComputeDispatch&,const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY);
+            DispatchCompute(const DispatchCompute&,const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY);
 
-            META_Node(osg, ComputeDispatch);
+            META_Node(osg, DispatchCompute);
 
             virtual void compileGLObjects(RenderInfo&) const {}
 

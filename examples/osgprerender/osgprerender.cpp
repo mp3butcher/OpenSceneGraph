@@ -231,7 +231,6 @@ osg::Node* createPreRenderSubGraph(osg::Node* subgraph,
         texture2D->setInternalFormat(GL_RGBA);
         texture2D->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR);
         texture2D->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
-
         texture = texture2D;
     }
 
