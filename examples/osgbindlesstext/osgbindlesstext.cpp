@@ -143,10 +143,11 @@ std::string fragShader =
 "    uint64_t      tex[XXX];                                   \n"
 "};                                                            \n"
 "void main() {                                                 \n"
-"    int tIndex = (int)(textureIndex);                         \n"
-"    sampler2D myText = sampler2D(tex[tIndex]);                \n"
+"    int tIndex = textureIndex;                         \n"
+"    sampler2D myText = sampler2D(tex[textureIndex]);                \n"
 "    gl_FragColor = texture2D(myText,TexCoord);                \n"
-"    if (tex[tIndex] == 0) gl_FragColor.r = 1.0;               \n"
+"    uint64_t check = 0;                \n"
+" //    if (tex[textureIndex] == check) gl_FragColor.r = 1.0;               \n"
 "}                                                             \n"
 ;
 
@@ -161,17 +162,18 @@ public:
     static BindlessBufferRef Make(size_t count){
         BindlessBufferRef val = new BindlessBuffer();
         val->_count   = count;
-        val->_sbbo    = new osg::UniformBufferObject;
         val->_handles = new osg::UInt64Array();
-        val->_handles->resize(count*2,0);
-        val->_handles->setBufferObject(val->_sbbo.get());
+        val->_handles->resize(1*count,0);
+        val->_handles->setBufferObject(new osg::UniformBufferObject);
+     //   if(sizeof(GLuint64)*count!=val->_handles->getTotalDataSize())
+            OSG_WARN<<sizeof(GLuint64)*count<<" "<<val->_handles->getTotalDataSize()<<std::endl;
         val->_ssbb    = new osg::UniformBufferBinding(0, val->_handles.get(), 0, sizeof(GLuint64)*count);
         return val;
     }
     BindlessBuffer& operator  = (const BindlessBuffer& rhs){
         if (this != &rhs){
             _count=rhs._count;
-            _sbbo =rhs._sbbo ;
+           // _sbbo =rhs._sbbo ;
             _ssbb =rhs._ssbb ;
             _handles = rhs._handles;
         }
@@ -180,18 +182,16 @@ public:
     BindlessBuffer(const BindlessBuffer& rhs):osg::Referenced(rhs){
         if (this != &rhs){
             _count=rhs._count;
-            _sbbo =rhs._sbbo ;
+          //  _sbbo =rhs._sbbo ;
             _ssbb =rhs._ssbb ;
             _handles = rhs._handles;
         }
     }
-    UniformBufferObjectRef& Object(){return _sbbo;}
     UniformBufferBindingRef& Binding(){return _ssbb;}
     HandleArrayRef& Handles(){return _handles;}
     int count(){return _count;}
 private:
     int _count;
-    UniformBufferObjectRef _sbbo;
     UniformBufferBindingRef _ssbb;
     HandleArrayRef _handles;
      
@@ -226,6 +226,11 @@ protected:
     mutable osg::buffered_object<HandleList> _handles;
     mutable ImageList _ImageList;
     mutable osg::ref_ptr<BindlessBuffer> _buffer;
+
+    int _count;
+    osg::ref_ptr<osg::UniformBufferBinding> _ssbb;
+    osg::ref_ptr<osg::UInt64Array>  _ramhandles;
+
     mutable std::vector<bool> _isBound;
     mutable TextureObjectBuffer _textureBufferList;
     // array index = texture image unit.
@@ -280,9 +285,8 @@ void BindlessTexture::applyOnce(osg::State& state) const
     if (_textureBufferList[contextID].size() < _ImageList.size())
         _textureBufferList[contextID].resize( _ImageList.size());
     int txtcount  = _ImageList.size();
-    if (_buffer->count() < txtcount)
-        txtcount = _buffer->count();
-    //for each actual texture we have, bind it, get the texture hande, assign the value to our UBO
+  //  if (_buffer->count() < txtcount)        txtcount = _buffer->count();
+    //for each actual texture we have, bind it, get the texture handle, assign the value to our UBO
     for (int i = 0; i <txtcount; i++){
         image = _ImageList[i];
         if (_image.valid()) 
@@ -304,16 +308,16 @@ void BindlessTexture::applyOnce(osg::State& state) const
         //and then tell OpenGL to keep the handle resident
         _handles[contextID][i] = extensions->glGetTextureHandle( textureObject->id() );
         std::vector<GLuint64> &vec = _buffer->Handles()->asVector();
-        vec[i*2]  = _handles[contextID][i];
-        _buffer->Object()->dirty();
-        _buffer->Handles()->dirty();
+        vec[1*i]  = _handles[contextID][i];
+       // _buffer->Object()->dirty();
      
         if ( _handles[contextID][i] != 0L || extensions->glIsTextureHandleResident( _handles[contextID][i]) == GL_FALSE)
         {
             extensions->glMakeTextureHandleResident( _handles[contextID][i] );           
         }
     }
-    
+
+    _buffer->Handles()->dirty();
     // update the modified tag to show that it is up to date.
     getModifiedCount(contextID) = image->getModifiedCount();
 }
@@ -325,9 +329,6 @@ void BindlessTexture::apply(osg::State& state) const
    {
        applyOnce(state);
        _isBound[contextID] = true;
-   }else{
-       //we should mostly hit this during the lifetime of this object,
-       //note we basically do nothing......
    }
 }
 /// cleanup, we just need to tell OpenGL to release our texture handle
