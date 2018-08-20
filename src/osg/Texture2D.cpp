@@ -159,7 +159,6 @@ bool Texture2D::textureObjectValid(State& state) const
 
 void Texture2D::apply(State& state) const
 {
-
     //state.setReportGLErrors(true);
 
     // get the contextID (user defined ID of 0 upwards) for the
@@ -189,10 +188,6 @@ void Texture2D::apply(State& state) const
         }
     }
 
-    GLExtensions * extensions = state.get<GLExtensions>();
-
-    bool useTexStorage = extensions->isTextureStorageEnabled && extensions->isTexStorage2DSupported() && (_borderWidth==0);
-    GLenum sizedInternalFormat = useTexStorage ? selectSizedInternalFormat() : 0;
     if (textureObject)
     {
         textureObject->bind();
@@ -211,7 +206,7 @@ void Texture2D::apply(State& state) const
             applyTexParameters(GL_TEXTURE_2D,state);
 
             applyTexImage2D_subload(state,GL_TEXTURE_2D,_image.get(),
-                                    _textureWidth, _textureHeight,sizedInternalFormat?sizedInternalFormat: _internalFormat, _numMipmapLevels);
+                                    _textureWidth, _textureHeight, _internalFormat, _numMipmapLevels);
         }
         else if (_readPBuffer.valid())
         {
@@ -247,6 +242,7 @@ void Texture2D::apply(State& state) const
     }
     else if (_image.valid() && _image->data())
     {
+        GLExtensions * extensions = state.get<GLExtensions>();
 
         // keep the image around at least till we go out of scope.
         osg::ref_ptr<osg::Image> image = _image;
@@ -257,7 +253,11 @@ void Texture2D::apply(State& state) const
         // compute the dimensions of the texture.
         computeRequiredTextureDimensions(state,*image,_textureWidth, _textureHeight, _numMipmapLevels);
 
-        textureObject = generateAndAssignTextureObject(contextID,GL_TEXTURE_2D,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,1,_borderWidth);
+        GLenum texStorageSizedInternalFormat = extensions->isTextureStorageEnabled && (_borderWidth==0) ? selectSizedInternalFormat(_image) : 0;
+
+        textureObject = generateAndAssignTextureObject(contextID,GL_TEXTURE_2D,_numMipmapLevels,
+            texStorageSizedInternalFormat!=0 ? texStorageSizedInternalFormat : _internalFormat,
+            _textureWidth,_textureHeight,1,_borderWidth);
 
         textureObject->bind();
 
@@ -270,7 +270,7 @@ void Texture2D::apply(State& state) const
         {
             //OSG_NOTICE<<"Reusing texture object"<<std::endl;
             applyTexImage2D_subload(state,GL_TEXTURE_2D,image.get(),
-                                 _textureWidth, _textureHeight,sizedInternalFormat?sizedInternalFormat: _internalFormat, _numMipmapLevels);
+                                 _textureWidth, _textureHeight, _internalFormat, _numMipmapLevels);
         }
         else
         {
@@ -297,28 +297,29 @@ void Texture2D::apply(State& state) const
     }
     else if ( (_textureWidth!=0) && (_textureHeight!=0) && (_internalFormat!=0) )
     {
-
-
         // no image present, but dimensions at set so lets create the texture
-        if( useTexStorage && sizedInternalFormat!=0)
+        GLExtensions * extensions = state.get<GLExtensions>();
+        GLenum texStorageSizedInternalFormat = extensions->isTextureStorageEnabled && (_borderWidth==0) ? selectSizedInternalFormat() : 0;
+        if (texStorageSizedInternalFormat!=0)
         {
-            textureObject = generateAndAssignTextureObject(contextID,GL_TEXTURE_2D,_numMipmapLevels,sizedInternalFormat,_textureWidth,_textureHeight,1,_borderWidth);
-
-        textureObject->bind();
-        applyTexParameters(GL_TEXTURE_2D,state);
-            extensions->glTexStorage2D( GL_TEXTURE_2D, (_numMipmapLevels >0)?_numMipmapLevels:1, sizedInternalFormat, _textureWidth, _textureHeight);
-}
-        else
-        {       textureObject = generateAndAssignTextureObject(contextID,GL_TEXTURE_2D,_numMipmapLevels,_internalFormat,_textureWidth,_textureHeight,1,_borderWidth);
-
+            textureObject = generateAndAssignTextureObject(contextID, GL_TEXTURE_2D, _numMipmapLevels, texStorageSizedInternalFormat, _textureWidth, _textureHeight, 1, _borderWidth);
             textureObject->bind();
-            applyTexParameters(GL_TEXTURE_2D,state);
+            applyTexParameters(GL_TEXTURE_2D, state);
+            extensions->glTexStorage2D( GL_TEXTURE_2D, (_numMipmapLevels >0)?_numMipmapLevels:1, texStorageSizedInternalFormat,
+                     _textureWidth, _textureHeight);
+        }
+        else
+        {
+            GLenum internalFormat = _sourceFormat ? _sourceFormat : _internalFormat;
+            textureObject = generateAndAssignTextureObject(contextID, GL_TEXTURE_2D, _numMipmapLevels, internalFormat, _textureWidth, _textureHeight, 1, _borderWidth);
+            textureObject->bind();
+            applyTexParameters(GL_TEXTURE_2D, state);
             glTexImage2D( GL_TEXTURE_2D, 0, _internalFormat,
                      _textureWidth, _textureHeight, _borderWidth,
-                     _sourceFormat ? _sourceFormat : _internalFormat,
+                     internalFormat,
                      _sourceType ? _sourceType : GL_UNSIGNED_BYTE,
                      0);
-}
+        }
 
         if (_readPBuffer.valid())
         {
@@ -492,20 +493,14 @@ void Texture2D::allocateMipmap(State& state) const
         width >>= 1;
         height >>= 1;
 
-        GLExtensions * extensions = state.get<GLExtensions>();
-        bool useTexStorrage = extensions->isTextureStorageEnabled;
         for( GLsizei k = 1; k < numMipmapLevels  && (width || height); k++)
         {
             if (width == 0)
                 width = 1;
             if (height == 0)
                 height = 1;
-            // no image present, but dimensions at set so lets create the texture
-            if(useTexStorrage)
-                extensions->glTexStorage2D( GL_TEXTURE_2D, k, _internalFormat,
-                                width, height);
-            else
-                glTexImage2D( GL_TEXTURE_2D, k, _internalFormat,
+
+            glTexImage2D( GL_TEXTURE_2D, k, _internalFormat,
                      width, height, _borderWidth,
                      _sourceFormat ? _sourceFormat : _internalFormat,
                      _sourceType ? _sourceType : GL_UNSIGNED_BYTE, NULL);
@@ -518,4 +513,3 @@ void Texture2D::allocateMipmap(State& state) const
         state.haveAppliedTextureAttribute(state.getActiveTextureUnit(), this);
     }
 }
-

@@ -2286,17 +2286,16 @@ void Texture::applyTexImage2D_load(State& state, GLenum target, const Image* ima
 #endif
     if( !mipmappingRequired || useHardwareMipMapGeneration)
     {
+        numMipmapLevels = 1;
 
         GenerateMipmapMode mipmapResult = mipmapBeforeTexImage(state, useHardwareMipMapGeneration);
-
+        GLenum sizedInternalFormat =  extensions->isTextureStorageEnabled && extensions->isTexStorage2DSupported() && (_borderWidth==0) ?
+                                      selectSizedInternalFormat(image) : 0;
         if ( !compressed_image)
         {
-            numMipmapLevels = 1;
-            GLenum sizedInternalFormat =  extensions->isTextureStorageEnabled && extensions->isTexStorage2DSupported() && (_borderWidth==0) ?
-                                          selectSizedInternalFormat(image) : 0;
-            // no image present, but dimensions at set so lets create the texture
-            if(sizedInternalFormat!=0){
-                extensions->glTexStorage2D( target, 0, sizedInternalFormat, inwidth, inheight);
+            if( sizedInternalFormat!=0)
+            {
+                extensions->glTexStorage2D( target, numMipmapLevels, sizedInternalFormat, inwidth, inheight);
                 glTexSubImage2D( target, 0, 0, 0, inwidth, inheight, (GLenum)image->getPixelFormat(),
                         (GLenum)image->getDataType(),
                         dataPtr);
@@ -2311,15 +2310,20 @@ void Texture::applyTexImage2D_load(State& state, GLenum target, const Image* ima
         }
         else if (extensions->isCompressedTexImage2DSupported())
         {
-            numMipmapLevels = 1;
-
             GLint blockSize, size;
             getCompressedSize(_internalFormat, inwidth, inheight, 1, blockSize,size);
-
-            extensions->glCompressedTexImage2D(target, 0, _internalFormat,
-                inwidth, inheight,0,
-                size,
-                dataPtr);
+            if(false)
+            {//no immutable for compressed texture!!
+                extensions->glTexStorage2D( target, numMipmapLevels, sizedInternalFormat, inwidth, inheight);
+                extensions->glCompressedTexSubImage2D( target, 0, 0, 0, inwidth, inheight, sizedInternalFormat,
+                        size,
+                        dataPtr);
+            }
+            else
+                extensions->glCompressedTexImage2D(target, 0, _internalFormat,
+                    inwidth, inheight,0,
+                    size,
+                    dataPtr);
         }
 
         mipmapAfterTexImage(state, mipmapResult);
