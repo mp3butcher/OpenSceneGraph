@@ -63,7 +63,8 @@ namespace osgAnimation
         inline const Skeleton* getSkeleton(unsigned int i =0) const { return _roots[i].get(); }
         inline Skeleton* getSkeleton(unsigned int i=0) { return _roots[i].get(); }
         // will be used by the update callback to init correctly the rig mesh
-       //deprecated inline void setSkeleton(Skeleton* root){ _roots[0] = root;}
+       //deprecated 
+	    inline void setSkeleton(Skeleton* root){if(_roots.empty())_roots.resize(1); _roots[0] = root;}
         inline unsigned int getNumSkeletons()const{return _roots.size();}
         inline void addSkeleton(Skeleton* root){ _roots.push_back(root);}
         inline void removeSkeleton(const unsigned int i){_roots.erase(_roots.begin()+i);}

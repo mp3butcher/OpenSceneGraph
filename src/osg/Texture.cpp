@@ -149,8 +149,8 @@ InternalPixelRelations sizedInternalFormats[] = {
     , { GL_RGB5_A1                             , GL_RGBA             , GL_UNSIGNED_SHORT_1_5_5_5_REV                }
     , { GL_RGB5_A1                             , GL_RGBA             , GL_UNSIGNED_INT_10_10_10_2                   }
     , { GL_RGB5_A1                             , GL_RGBA             , GL_UNSIGNED_INT_2_10_10_10_REV               }
-    , { GL_RGBA16F                             , GL_RGBA             , GL_FLOAT                                     }
-    , { GL_RGBA32F                             , GL_RGBA             , GL_FLOAT                                     }
+    , { GL_RGBA16F_ARB                         , GL_RGBA             , GL_FLOAT                                     }
+    , { GL_RGBA32F_ARB                         , GL_RGBA             , GL_FLOAT                                     }
     // , { GL_RGBA16F                             , GL_RGBA             , GL_HALF_FLOAT                                }
 
     , { GL_SRGB8                               , GL_RGB              , GL_UNSIGNED_BYTE                             }
@@ -2014,7 +2014,7 @@ void Texture::applyTexParameters(GLenum target, State& state) const
         // integer textures are not supported by the shadow
         // GL_TEXTURE_1D_ARRAY_EXT could be included in the check below but its not yet implemented in OSG
         if (extensions->isShadowSupported &&
-            (target == GL_TEXTURE_2D || target == GL_TEXTURE_1D || target == GL_TEXTURE_RECTANGLE || target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_2D_ARRAY_EXT ) &&
+            (target == GL_TEXTURE_2D || target == GL_TEXTURE_1D || target == GL_TEXTURE_RECTANGLE || target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_2D_ARRAY ) &&
             _internalFormatType != SIGNED_INTEGER && _internalFormatType != UNSIGNED_INTEGER)
         {
             if (_use_shadow_comparison)
