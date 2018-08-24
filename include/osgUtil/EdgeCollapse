@@ -28,7 +28,7 @@
 namespace osgUtil {
 
     class Simplifier;
-    class EdgeCollapse
+    class OSGUTIL_EXPORT EdgeCollapse
     {
     public:
 #if 1

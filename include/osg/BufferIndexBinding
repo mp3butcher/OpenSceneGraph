@@ -215,7 +215,7 @@ class OSG_EXPORT ShaderStorageBufferBinding : public BufferIndexBinding
 };
 
 ///read back From
-class BufferBindingReadBack : public Camera::DrawCallback{
+class OSG_EXPORT BufferBindingReadBack : public Camera::DrawCallback{
 public:
     BufferBindingReadBack(BufferIndexBinding*bb):_bb(bb){}
 
