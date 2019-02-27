@@ -709,7 +709,7 @@ void Program::PerContextProgram::linkProgram(osg::State& state)
         _loadedBinary = _isLinked = (linked == GL_TRUE);
     }
 
-    if (!_loadedBinary && _extensions->isGeometryShader4Supported && _geometryVerticesOut != 0)
+    if (!_loadedBinary && _extensions->isGeometryShader4Supported &&  _program->_geometryVerticesOut != 0)
     {
         _extensions->glProgramParameteri( _glProgramHandle, GL_GEOMETRY_VERTICES_OUT_EXT, _program->_geometryVerticesOut );
         _extensions->glProgramParameteri( _glProgramHandle, GL_GEOMETRY_INPUT_TYPE_EXT, _program->_geometryInputType );
