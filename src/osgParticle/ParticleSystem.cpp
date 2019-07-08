@@ -830,7 +830,7 @@ void osgParticle::ParticleSystem::ArrayData::dispatchArrays(osg::State& state)
     if (normals.valid()) vas->setNormalArray(state, normals.get());
     if (colors.valid()) vas->setColorArray(state, colors.get());
     if (texcoords2.valid()) vas->setTexCoordArray(state, 0, texcoords2.get());
-    if (texcoords3.valid()) vas->setTexCoordArray(state, 0, texcoords3.get());
+    if (texcoords3.valid()) vas->setTexCoordArray(state, 1, texcoords3.get());
 
     vas->applyDisablingOfVertexAttributes(state);
 }
