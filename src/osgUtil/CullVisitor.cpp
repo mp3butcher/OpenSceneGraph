@@ -1727,7 +1727,7 @@ void CullVisitor::apply(osg::OcclusionQueryNode& node)
     if (node_state) pushStateSet(node_state);
 
 
-    osg::Camera* camera = getCurrentRenderStage()->getCamera();
+    osg::Camera* camera = getRenderStage()->getCamera();
 
     // If previous query indicates visible, then traverse as usual.
     if (node.getPassed( camera, *this ))
