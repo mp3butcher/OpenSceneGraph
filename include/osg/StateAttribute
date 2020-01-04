@@ -122,11 +122,16 @@ class OSG_EXPORT StateAttribute : public Object
           * that type's value. */
         enum Type
         {
+            PROGRAM,            
+            VERTEXPROGRAM,
+            FRAGMENTPROGRAM,
+            MATERIAL,
             TEXTURE,
-
+            SAMPLER,
+            BINDIMAGETEXTURE,
             POLYGONMODE,
             POLYGONOFFSET,
-            MATERIAL,
+
             ALPHAFUNC,
             ANTIALIAS,
             COLORTABLE,
@@ -158,10 +163,7 @@ class OSG_EXPORT StateAttribute : public Object
             MULTISAMPLE,
             CLIPPLANE,
             COLORMATRIX,
-            VERTEXPROGRAM,
-            FRAGMENTPROGRAM,
             POINTSPRITE,
-            PROGRAM,
             CLAMPCOLOR,
             HINT,
             SAMPLEMASKI,
@@ -205,11 +207,6 @@ class OSG_EXPORT StateAttribute : public Object
             VIEWPORTINDEXED,
             DEPTHRANGEINDEXED,
             SCISSORINDEXED,
-
-
-
-            BINDIMAGETEXTURE,
-            SAMPLER,
 
             SUBROUTINEUNIFORM,
             CAPABILITY = 100
